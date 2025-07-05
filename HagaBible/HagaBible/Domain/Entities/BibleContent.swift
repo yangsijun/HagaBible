@@ -14,6 +14,8 @@ struct BibleContent: Codable, Identifiable {
 struct Book: Codable, Identifiable {
     let id: String
     let book: String
+    let bookOrder: Int
+    let bookName: String
     let version: String
     let totalChapters: Int
     var chapters: [Chapter] = []
