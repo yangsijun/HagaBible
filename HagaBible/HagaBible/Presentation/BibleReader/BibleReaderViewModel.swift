@@ -54,6 +54,10 @@ class BibleReaderViewModel {
         }
     }
     
+    func selectVersion(versionId: String) {
+        version = availableVersions.first(where: { $0.id == versionId })
+    }
+    
     func fetchBibleContent(versionId: String) async {
         isLoading = true
         defer {
@@ -66,6 +70,28 @@ class BibleReaderViewModel {
             isLoadingSuccess = true
         } catch {
             print("Error fetching Bible content: \(error)")
+        }
+    }
+    
+    func getPrevChapter() {
+        if chapterNum > 1 {
+            chapterNum -= 1
+        } else {
+            if bookNum > 1 {
+                bookNum -= 1
+                chapterNum = book?.chapters.count ?? 0
+            }
+        }
+    }
+    
+    func getNextChapter() {
+        if chapterNum < (book?.chapters.count ?? 0) {
+            chapterNum += 1
+        } else {
+            if bookNum < (bibleContent?.books.count ?? 0) {
+                bookNum += 1
+                chapterNum = 1
+            }
         }
     }
 }
