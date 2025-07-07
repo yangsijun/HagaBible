@@ -8,6 +8,7 @@
 import Observation
 
 @Observable
+@MainActor
 class BibleReaderViewModel {
     var isLoading: Bool = false
     var isLoadingSuccess: Bool?
@@ -34,6 +35,12 @@ class BibleReaderViewModel {
     var verses: [Verse]? {
         chapter?.verses
     }
+    
+    var fontConfiguration: FontConfiguration = FontConfiguration(
+        type: .sans,
+        style: .regular,
+        size: 17
+    )
     
     init(bibleRepository: BibleRepository, bookNum: Int = 1, chapterNum: Int = 1) {
         self.bibleRepository = bibleRepository

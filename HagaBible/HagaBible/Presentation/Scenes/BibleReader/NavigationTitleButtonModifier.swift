@@ -28,6 +28,7 @@ private struct NavigationTitleButtonModifier<T: StringProtocol, S: StringProtoco
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                     self.scrollOffset = value
                     self.isTitleLarge = scrollOffset > threshold
+                    print("scrollOffset: \(scrollOffset)")
                 }
                 .toolbar {
                     Group {
