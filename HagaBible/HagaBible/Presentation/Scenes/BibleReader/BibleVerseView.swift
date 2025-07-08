@@ -60,6 +60,11 @@ struct BibleVerseView: View {
         BibleVerseView(
             verseNumber: 1,
             verseText: "In the beginning, God created the heavens and the earth.",
+            font: .pretendard(size: 17)
+        )
+        BibleVerseView(
+            verseNumber: 1,
+            verseText: "In the beginning, God created the heavens and the earth.",
             font: .maruBuri(size: 17)
         )
         BibleVerseView(

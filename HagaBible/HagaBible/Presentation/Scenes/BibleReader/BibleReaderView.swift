@@ -20,7 +20,18 @@ struct BibleReaderView: View {
                     .ignoresSafeArea(.all)
                 ScrollViewReader { proxy in
                     ScrollView {
-                        BibleVerseListView(verses: viewModel.verses, fontConfiguration: viewModel.fontConfiguration)
+                        BibleVerseListView(
+                            verses: viewModel.verses,
+                            fontConfiguration: viewModel.fontConfiguration,
+                            navigatedVerseNum: viewModel.verseNum
+                        )
+                        .onChange(of: viewModel.verseNum) {
+                            if viewModel.verseNum != nil {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    viewModel.verseNum = nil
+                                }
+                            }
+                        }
                     }
                     .disabled(isDraggingHorizontally)
                     .background(Color.white)

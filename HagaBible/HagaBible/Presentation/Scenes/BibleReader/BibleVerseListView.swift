@@ -10,6 +10,7 @@ import SwiftUI
 struct BibleVerseListView: View {
     let verses: [Verse]?
     let fontConfiguration: FontConfiguration
+    var navigatedVerseNum: Int?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -26,6 +27,9 @@ struct BibleVerseListView: View {
                         )
                         .id(index + 1)
                         .padding(.vertical, 8)
+                        .background(
+                            navigatedVerseNum == index + 1 ? Color.mint.opacity(0.25) : Color.clear
+                        )
                     }
                 } else {
                     ProgressView()
@@ -46,6 +50,7 @@ struct BibleVerseListView: View {
     
     return BibleVerseListView(
         verses: verses,
-        fontConfiguration: FontConfiguration(type: .sans, style: .regular, size: 17)
+        fontConfiguration: FontConfiguration(type: .sans, style: .regular, size: 17),
+        navigatedVerseNum: 1
     )
 }
