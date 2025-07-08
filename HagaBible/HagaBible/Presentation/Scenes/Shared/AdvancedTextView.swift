@@ -27,14 +27,17 @@ struct AdvancedTextView: View {
     }
 
     var body: some View {
-        InternalRepresentable(
-            text: text,
-            font: font,
-            alignment: alignment,
-            lineBreakMode: lineBreakMode,
-            dynamicHeight: $height
-        )
-            .frame(height: height)
+        GeometryReader { geometry in
+            InternalRepresentable(
+                text: text,
+                font: font,
+                alignment: alignment,
+                lineBreakMode: lineBreakMode,
+                availableWidth: geometry.size.width,
+                dynamicHeight: $height
+            )
+        }
+        .frame(height: height)
     }
 
     struct InternalRepresentable: UIViewRepresentable {
@@ -42,6 +45,7 @@ struct AdvancedTextView: View {
         var font: UIFont
         var alignment: NSTextAlignment
         var lineBreakMode: NSLineBreakMode
+        var availableWidth: CGFloat
         @Binding var dynamicHeight: CGFloat
 
         func makeUIView(context: Context) -> UILabel {
@@ -58,7 +62,7 @@ struct AdvancedTextView: View {
         func updateUIView(_ uiView: UILabel, context: Context) {
             uiView.text = text
             
-            let newSize = uiView.sizeThatFits(CGSize(width: uiView.frame.width, height: CGFloat.greatestFiniteMagnitude))
+            let newSize = uiView.sizeThatFits(CGSize(width: availableWidth, height: CGFloat.greatestFiniteMagnitude))
             
             if dynamicHeight != newSize.height {
                 DispatchQueue.main.async {

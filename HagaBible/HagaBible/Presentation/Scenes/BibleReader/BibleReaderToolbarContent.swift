@@ -11,10 +11,13 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let bookName: String?
     let chapterNum: Int
     let version: BibleVersion?
+    @Binding var showBibleNavigation: Bool
     
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button(action: {}) {
+            Button(action: {
+                showBibleNavigation.toggle()
+            }) {
                 HStack {
                     Text("\(bookName ?? "") \(chapterNum)\(version?.language == "ko-KR" ? "장" : "")")
                         .font(.title2)
@@ -22,15 +25,15 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     Text("\(version?.id ?? "")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                } // HStack
+                }
                 .padding(.vertical, 8)
-            } // Button
-        } // ToolbarItem
+            }
+        }
         ToolbarItem {
             Button(action: {}) {
                 Image(systemName: "headphones")
-            } // Button
-        } // ToolbarItem
+            }
+        }
         ToolbarSpacer(.fixed)
         ToolbarItem {
             Menu {
@@ -42,17 +45,17 @@ struct BibleReaderToolbarContent: ToolbarContent {
 //                                }
                 } label: {
                     Label("Versions", systemImage: "books.vertical")
-                } // Menu
+                }
                 Button(action: {}) {
                     Label("Bookmarks", systemImage: "bookmark")
-                } // Button
+                }
                 Button(action: {}) {
                     Label("Font & Themes", systemImage: "textformat.size")
-                } // Button
+                }
             } label: {
                 Image(systemName: "ellipsis")
-            } // Menu
-        } // ToolbarItem
+            }
+        }
     }
 }
 
@@ -64,8 +67,9 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 BibleReaderToolbarContent(
                     bookName: "Genesis",
                     chapterNum: 1,
-                    version: .init(id: "WEBBE", language: "en-GB", name: "WEBBE", isDownloaded: true)
+                    version: .init(id: "WEBBE", language: "en-GB", name: "WEBBE", isDownloaded: true),
+                    showBibleNavigation: .constant(false)
                 )
             }
-    } // NavigationStack
+    }
 }

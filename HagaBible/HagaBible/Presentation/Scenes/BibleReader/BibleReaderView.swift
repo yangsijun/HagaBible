@@ -9,6 +9,9 @@ import SwiftUI
 
 struct BibleReaderView: View {
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    @State private var showBibleNavigation: Bool = false
+    
+    @State private var isDraggingHorizontally = false
     
     var body: some View {
         NavigationStack {
@@ -17,15 +20,35 @@ struct BibleReaderView: View {
                     .ignoresSafeArea(.all)
                 ScrollViewReader { proxy in
                     ScrollView {
-                        Color.clear
-                            .frame(height: 0)
-                            .id("topAnchor")
                         BibleVerseListView(verses: viewModel.verses, fontConfiguration: viewModel.fontConfiguration)
                     }
+                    .disabled(isDraggingHorizontally)
                     .background(Color.white)
-                    .swipeGesture(onLeftSwipe: viewModel.getPrevChapter, onRightSwipe: viewModel.getNextChapter)
-                    .onChange(of: viewModel.chapterNum, initial: false) {
-                        proxy.scrollTo("topAnchor", anchor: .top)
+                    .swipeGesture(
+                        isDraggingHorizontally: $isDraggingHorizontally,
+                        onLeftSwipe: {
+                            viewModel.getPrevChapter()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                withAnimation(.linear(duration: 0.3)) {
+                                    proxy.scrollTo(0, anchor: .top)
+                                }
+                            }
+                        },
+                        onRightSwipe: {
+                            viewModel.getNextChapter()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                withAnimation(.linear(duration: 0.3)) {
+                                    proxy.scrollTo(0, anchor: .top)
+                                }
+                            }
+                        }
+                    )
+                    .onChange(of: viewModel.bibleNavigationUpdateTrigger, initial: false) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation(.linear(duration: 0.3)) {
+                                proxy.scrollTo((viewModel.verseNum ?? 1) - 1, anchor: .top)
+                            }
+                        }
                     }
                 }
             }
@@ -34,8 +57,13 @@ struct BibleReaderView: View {
                 BibleReaderToolbarContent(
                     bookName: viewModel.bookName,
                     chapterNum: viewModel.chapterNum,
-                    version: viewModel.version
+                    version: viewModel.version,
+                    showBibleNavigation: $showBibleNavigation
                 )
+            }
+            .sheet(isPresented: $showBibleNavigation) {
+                BibleNavigationView()
+                    .environment(viewModel)
             }
         }
         .task {

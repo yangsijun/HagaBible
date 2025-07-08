@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct SwipeGestureViewModifier: ViewModifier {
-    @State var offset: CGSize = .zero
     
     @State private var dragOffset: CGSize = .zero
+    @Binding var isDraggingHorizontally: Bool
     
     var onLeftSwipe: () -> Void
     var onRightSwipe: () -> Void
@@ -25,8 +25,6 @@ struct SwipeGestureViewModifier: ViewModifier {
                 onRightSwipe()
             }
         }
-        
-        self.dragOffset = .zero
     }
     
     func body(content: Content) -> some View {
@@ -35,24 +33,14 @@ struct SwipeGestureViewModifier: ViewModifier {
             .gesture(
                 DragGesture()
                     .onChanged { gesture in
-                        if abs(gesture.translation.width) > abs(gesture.translation.height) {
-                            self.dragOffset = gesture.translation
-                        } else {
-                            withAnimation(.easeInOut) {
-                                self.dragOffset = .zero
-                            }
-                        }
+                        self.dragOffset = gesture.translation
+                        self.isDraggingHorizontally = true
                     }
                     .onEnded { gesture in
-                        if abs(gesture.translation.width) > abs(gesture.translation.height) {
-                            withAnimation(.easeInOut) {
-                                handleSwipe(gesture)
-                            }
-                        } else {
-                            withAnimation(.easeInOut) {
-                                self.dragOffset = .zero
-                            }
-                        }
+                        handleSwipe(gesture)
+                        
+                        self.dragOffset = .zero
+                        self.isDraggingHorizontally = false
                     }
             )
     }
@@ -60,11 +48,12 @@ struct SwipeGestureViewModifier: ViewModifier {
 
 extension View {
     func swipeGesture(
+        isDraggingHorizontally: Binding<Bool>,
         onLeftSwipe: @escaping () -> Void,
         onRightSwipe: @escaping () -> Void
     ) -> some View {
         modifier(
-            SwipeGestureViewModifier(onLeftSwipe: onLeftSwipe, onRightSwipe: onRightSwipe)
+            SwipeGestureViewModifier(isDraggingHorizontally: isDraggingHorizontally, onLeftSwipe: onLeftSwipe, onRightSwipe: onRightSwipe)
         )
     }
 }

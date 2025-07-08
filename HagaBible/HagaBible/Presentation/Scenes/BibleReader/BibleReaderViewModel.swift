@@ -22,6 +22,9 @@ class BibleReaderViewModel {
     var bookName: String? {
         book?.bookName
     }
+    var books: [Book]? {
+        bibleContent?.books
+    }
     var bookNum: Int
     var book: Book? {
         bibleContent?.books[bookNum - 1]
@@ -32,6 +35,7 @@ class BibleReaderViewModel {
         book?.chapters[chapterNum - 1]
     }
     
+    var verseNum: Int?
     var verses: [Verse]? {
         chapter?.verses
     }
@@ -101,4 +105,6 @@ class BibleReaderViewModel {
             }
         }
     }
+    
+    var bibleNavigationUpdateTrigger: Bool = false
 }

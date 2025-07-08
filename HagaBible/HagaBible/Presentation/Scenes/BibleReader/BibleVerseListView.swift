@@ -13,41 +13,39 @@ struct BibleVerseListView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            if let verses {
-                ForEach(0..<verses.count, id: \.self) { index in
-                    BibleVerseView(
-                        verseNumber: index + 1,
-                        verseText: verses[index].text,
-                        font: getUIFontFromFontConfiguration(fontConfiguration)
-                    )
-                    .padding(.vertical, 8)
+            Color.clear
+                .frame(height: 0)
+                .id(0)
+            VStack(spacing: 0) {
+                if let verses {
+                    ForEach(0..<verses.count, id: \.self) { index in
+                        BibleVerseView(
+                            verseNumber: index + 1,
+                            verseText: verses[index].text,
+                            font: getUIFontFromFontConfiguration(fontConfiguration)
+                        )
+                        .id(index + 1)
+                        .padding(.vertical, 8)
+                    }
+                } else {
+                    ProgressView()
                 }
-            } else {
-                ProgressView()
             }
+            .padding(.vertical, 16)
+            .padding(.horizontal, 8)
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 16)
     }
 }
 
 #Preview {
-    struct PreviewWrapper: View {
-        @State private var verses: [Verse]?
-        
-        var body: some View {
-            BibleVerseListView (
-                verses: verses,
-                fontConfiguration: FontConfiguration(type: .sans, style: .regular, size: 17)
-            )
-                .task {
-                    do {
-                        verses = try await MockBibleRepositoryImpl().getChapter(bookNum: 1, chapter: 1, versionId: "WEBBE").verses
-                    } catch {
-                        verses = nil
-                    }
-                }
-        }
-    }
-    return PreviewWrapper()
+    let verses: [Verse] = [
+        Verse(id: "GN1_1_WEBBE", canonOrder: "002_001_001", book: "GEN", chapter: 1, verse: 1, version: "WEBBE", text: "In the beginning, God created the heavens and the earth."),
+        Verse(id: "GN1_2_WEBBE", canonOrder: "002_001_002", book: "GEN", chapter: 1, verse: 2, version: "WEBBE", text: "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."),
+        Verse(id: "GN1_3_WEBBE", canonOrder: "002_001_003", book: "GEN", chapter: 1, verse: 3, version: "WEBBE", text: "God said, “Let there be light,” and there was light."),
+    ]
+    
+    return BibleVerseListView(
+        verses: verses,
+        fontConfiguration: FontConfiguration(type: .sans, style: .regular, size: 17)
+    )
 }
