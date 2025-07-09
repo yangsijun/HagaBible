@@ -11,7 +11,7 @@ struct BibleContent: Codable, Identifiable, Equatable {
     var books: [Book] = []
 }
 
-struct Book: Codable, Identifiable, Equatable {
+struct Book: Codable, Identifiable, Equatable, Hashable {
     let id: String
     let book: String
     let bookOrder: Int
@@ -21,7 +21,7 @@ struct Book: Codable, Identifiable, Equatable {
     var chapters: [Chapter] = []
 }
 
-struct Chapter: Codable, Identifiable, Equatable {
+struct Chapter: Codable, Identifiable, Equatable, Hashable {
     let id: String
     let book: String
     let chapter: Int
@@ -30,7 +30,7 @@ struct Chapter: Codable, Identifiable, Equatable {
     var verses: [Verse] = []
 }
 
-struct Verse: Codable, Identifiable, Equatable {
+struct Verse: Codable, Identifiable, Equatable, Hashable {
     let id: String
     let canonOrder: String
     let book: String

@@ -39,6 +39,7 @@ class BibleReaderViewModel {
     var verses: [Verse]? {
         chapter?.verses
     }
+    var navigatedVerseNum: Int?
     
     var fontConfiguration: FontConfiguration = FontConfiguration(
         type: .sans,
@@ -65,8 +66,12 @@ class BibleReaderViewModel {
         }
     }
     
-    func selectVersion(versionId: String) {
+    func selectVersion(versionId: String) async {
         version = availableVersions.first(where: { $0.id == versionId })
+        
+        if let versionId = version?.id {
+            await fetchBibleContent(versionId: versionId)
+        }
     }
     
     func fetchBibleContent(versionId: String) async {
@@ -78,12 +83,22 @@ class BibleReaderViewModel {
         do {
             bibleContent = try await bibleRepository.getBibleContent(versionId: versionId)
             self.version = version
+            if let books = bibleContent?.books, let bookCode = self.book?.book {
+                if !books.contains(where: { $0.book == bookCode }) {
+                    self.bookNum = 1
+                    self.chapterNum = 1
+                }
+                if chapterNum > (book?.chapters.count ?? 0) {
+                    chapterNum = books[bookNum - 1].chapters.count
+                }
+            }
             isLoadingSuccess = true
         } catch {
             print("Error fetching Bible content: \(error)")
         }
     }
     
+    // TODO: Chapter가 끝나면 Book을 이동하도록 수정
     func getPrevChapter() {
         if chapterNum > 1 {
             chapterNum -= 1

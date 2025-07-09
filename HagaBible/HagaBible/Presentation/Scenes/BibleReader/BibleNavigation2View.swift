@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct BibleNavigationView: View {
+struct BibleNavigation2View: View {
     @Environment(\.dismiss) var dismiss
     @Environment(BibleReaderViewModel.self) private var viewModel: BibleReaderViewModel
     
@@ -18,29 +18,31 @@ struct BibleNavigationView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                HStack(alignment: .top, spacing: 0) {
-                    Picker("BookPicker", selection: $selectedBook) {
-                        ForEach(viewModel.books ?? []) { book in
-                            Text(book.bookName).tag(book)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    HStack(spacing: 0) {
-                        Picker("ChapterPicker", selection: $selectedChapter) {
-                            ForEach(selectedBook?.chapters ?? []) { chapter in
-                                Text("\(chapter.chapter)").tag(chapter)
-                            }
-                        }
-                        .pickerStyle(.wheel)
-                        Picker("VersePicker", selection: $selectedVerse) {
-                            ForEach(selectedChapter?.verses ?? []) { verse in
-                                Text("\(verse.verse)").tag(verse)
-                            }
-                        }
-                        .pickerStyle(.wheel)
-                    }
+            Grid(horizontalSpacing: 0, verticalSpacing: 0) {
+                GridRow {
+                    BibleNavigationColumnView(
+                        columnTitle: "Book",
+                        itemList: viewModel.books ?? [],
+                        selectedItem: $selectedBook,
+                        getDesciption: { $0.bookName },
+                        columnTitleAlignment: .leading,
+                        itemAlignment: .leading
+                    )
+                    .gridCellColumns(2)
+                    BibleNavigationColumnView(
+                        columnTitle: "Chapter",
+                        itemList: selectedBook?.chapters ?? [],
+                        selectedItem: $selectedChapter,
+                        getDesciption: { "\($0.chapter) 장" }
+                    )
+                    BibleNavigationColumnView(
+                        columnTitle: "Verse",
+                        itemList: selectedChapter?.verses ?? [],
+                        selectedItem: $selectedVerse,
+                        getDesciption: { "\($0.verse) 절" }
+                    )
                 }
+                .scrollIndicators(.hidden)
                 .navigationBarTitleDisplayMode(.inline)
             }
             .toolbarTitleMenu {
@@ -104,7 +106,7 @@ struct BibleNavigationView: View {
             Text("present")
         }
         .sheet(isPresented: $isPresented) {
-            BibleNavigationView()
+            BibleNavigation2View()
                 .environment(viewModel)
                 .presentationDetents([.small])
         }

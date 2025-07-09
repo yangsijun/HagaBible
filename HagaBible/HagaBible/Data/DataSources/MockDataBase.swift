@@ -24,6 +24,7 @@ struct MockDataBase {
         )
     ]
     
+    // TODO: 개역개정 샘플 추가
     var bibleContents: [BibleContent] = [
         BibleContent(id: "GEN_WEBBE", version: "WEBBE", books: [
             Book(id: "GEN_WEBBE", book: "GEN", bookOrder: 1, bookName: "Genesis", version: "WEBBE", totalChapters: 50, chapters: [
@@ -87,7 +88,11 @@ struct MockDataBase {
                     Verse(id: "GN2_24_WEBBE", canonOrder: "002_002_024", book: "GEN", chapter: 2, verse: 24, version: "WEBBE", text: "Therefore a man will leave his father and his mother, and will join with his wife, and they will be one flesh."),
                     Verse(id: "GN2_25_WEBBE", canonOrder: "002_002_025", book: "GEN", chapter: 2, verse: 25, version: "WEBBE", text: "The man and his wife were both naked, and they were not ashamed."),
                 ])
-            ])
+            ]),
+            Book(id: "EXO_WEBBE", book: "EXO", bookOrder: 2, bookName: "Exodus", version: "WEBBE", totalChapters: 40, chapters: []),
+            Book(id: "LEV_WEBBE", book: "LEV", bookOrder: 3, bookName: "Leviticus", version: "WEBBE", totalChapters: 27, chapters: []),
+            Book(id: "NUM_WEBBE", book: "NUM", bookOrder: 4, bookName: "Numbers", version: "WEBBE", totalChapters: 36, chapters: []),
+            Book(id: "DEU_WEBBE", book: "DEU", bookOrder: 5, bookName: "Deuteronomy", version: "WEBBE", totalChapters: 34, chapters: []),
         ])
     ]
 }

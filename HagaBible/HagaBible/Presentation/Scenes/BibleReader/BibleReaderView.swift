@@ -10,8 +10,8 @@ import SwiftUI
 struct BibleReaderView: View {
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var showBibleNavigation: Bool = false
-    
     @State private var isDraggingHorizontally = false
+    @State private var highlightTask: Task<Void, Error>?
     
     var body: some View {
         NavigationStack {
@@ -23,18 +23,20 @@ struct BibleReaderView: View {
                         BibleVerseListView(
                             verses: viewModel.verses,
                             fontConfiguration: viewModel.fontConfiguration,
-                            navigatedVerseNum: viewModel.verseNum
+                            highlightedVerseNum: viewModel.navigatedVerseNum
                         )
-                        .onChange(of: viewModel.verseNum) {
-                            if viewModel.verseNum != nil {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                    viewModel.verseNum = nil
+                        .onChange(of: viewModel.navigatedVerseNum) {
+                            if viewModel.navigatedVerseNum != nil {
+                                highlightTask?.cancel()
+                                highlightTask = Task {
+                                    try await Task.sleep(for: .seconds(3))
+                                    viewModel.navigatedVerseNum = nil
                                 }
                             }
                         }
                     }
                     .disabled(isDraggingHorizontally)
-                    .background(Color.white)
+                    .background(Color(uiColor: .systemBackground))
                     .swipeGesture(
                         isDraggingHorizontally: $isDraggingHorizontally,
                         onLeftSwipe: {
@@ -73,13 +75,17 @@ struct BibleReaderView: View {
                 )
             }
             .sheet(isPresented: $showBibleNavigation) {
-                BibleNavigationView()
+                BibleNavigation2View(
+                    selectedBook: viewModel.book,
+                    selectedChapter: viewModel.chapter
+                )
                     .environment(viewModel)
+                    .presentationDetents([.small])
             }
         }
         .task {
             await viewModel.fetchAvailableVersions()
-            viewModel.selectVersion(versionId: "WEBBE")
+            await viewModel.selectVersion(versionId: "WEBBE")
             await viewModel.fetchBibleContent(versionId: "WEBBE")
         }
     }

@@ -10,7 +10,7 @@ import SwiftUI
 struct BibleVerseListView: View {
     let verses: [Verse]?
     let fontConfiguration: FontConfiguration
-    var navigatedVerseNum: Int?
+    var highlightedVerseNum: Int?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -26,9 +26,9 @@ struct BibleVerseListView: View {
                             font: getUIFontFromFontConfiguration(fontConfiguration)
                         )
                         .id(index + 1)
-                        .padding(.vertical, 8)
+                        .padding(8)
                         .background(
-                            navigatedVerseNum == index + 1 ? Color.mint.opacity(0.25) : Color.clear
+                            highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear
                         )
                     }
                 } else {
@@ -36,7 +36,6 @@ struct BibleVerseListView: View {
                 }
             }
             .padding(.vertical, 16)
-            .padding(.horizontal, 8)
         }
     }
 }
@@ -51,6 +50,7 @@ struct BibleVerseListView: View {
     return BibleVerseListView(
         verses: verses,
         fontConfiguration: FontConfiguration(type: .sans, style: .regular, size: 17),
-        navigatedVerseNum: 1
+        highlightedVerseNum: 1
+        
     )
 }
