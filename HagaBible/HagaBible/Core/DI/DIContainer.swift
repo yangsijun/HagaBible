@@ -32,7 +32,7 @@ extension DIContainer {
     static func registerForPreview() {
         let container = DIContainer.shared
         
-        container.register(type: BibleRepository.self, component: MockBibleRepositoryImpl())
+        container.register(type: BibleRepository.self, component: MockBibleRepository.shared)
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))

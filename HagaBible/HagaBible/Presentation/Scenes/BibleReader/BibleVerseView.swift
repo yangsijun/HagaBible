@@ -12,8 +12,8 @@ struct BibleVerseView: View {
     var verseText: String
     var font: UIFont
     var fontWidth: Font.Width
-    var alignment: NSTextAlignment = .natural
-    var lineBreakMode: NSLineBreakMode = .byWordWrapping
+    var alignment: NSTextAlignment
+    var lineBreakMode: NSLineBreakMode
     
     init(
         verseNumber: Int,

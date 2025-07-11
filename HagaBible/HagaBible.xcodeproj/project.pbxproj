@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EDADAA8D2E1F365000CFCBE0 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = EDADAA8C2E1F365000CFCBE0 /* GRDB */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		ED6A820A2E15339A003E0D6E /* HagaBible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HagaBible.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EDADAA8D2E1F365000CFCBE0 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = HagaBible;
 			packageProductDependencies = (
+				EDADAA8C2E1F365000CFCBE0 /* GRDB */,
 			);
 			productName = HagaBible;
 			productReference = ED6A820A2E15339A003E0D6E /* HagaBible.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = ED6A82012E15339A003E0D6E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EDADAA8B2E1F365000CFCBE0 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ED6A820B2E15339A003E0D6E /* Products */;
 			projectDirPath = "";
@@ -345,6 +354,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EDADAA8B2E1F365000CFCBE0 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EDADAA8C2E1F365000CFCBE0 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EDADAA8B2E1F365000CFCBE0 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = ED6A82022E15339A003E0D6E /* Project object */;
 }

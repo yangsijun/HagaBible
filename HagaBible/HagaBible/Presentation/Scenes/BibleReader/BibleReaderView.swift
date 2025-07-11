@@ -20,11 +20,21 @@ struct BibleReaderView: View {
                     .ignoresSafeArea(.all)
                 ScrollViewReader { proxy in
                     ScrollView {
-                        BibleVerseListView(
-                            verses: viewModel.verses,
-                            fontConfiguration: viewModel.fontConfiguration,
-                            highlightedVerseNum: viewModel.navigatedVerseNum
-                        )
+                        Group {
+                            if viewModel.bibleVersion?.language == "English" {
+                                BibleVerseListView(
+                                    verses: viewModel.bibleVerseList,
+                                    fontConfiguration: viewModel.fontConfiguration,
+                                    highlightedVerseNum: viewModel.navigatedVerseNum
+                                )
+                            } else {
+                                BibleVerseListView(
+                                    verses: viewModel.bibleVerseList,
+                                    fontConfiguration: viewModel.fontConfigurationKorean,
+                                    highlightedVerseNum: viewModel.navigatedVerseNum
+                                )
+                            }
+                        }
                         .onChange(of: viewModel.navigatedVerseNum) {
                             if viewModel.navigatedVerseNum != nil {
                                 highlightTask?.cancel()
@@ -40,7 +50,7 @@ struct BibleReaderView: View {
                     .swipeGesture(
                         isDraggingHorizontally: $isDraggingHorizontally,
                         onLeftSwipe: {
-                            viewModel.getPrevChapter()
+                            viewModel.goToPreviousChapter()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 withAnimation(.linear(duration: 0.3)) {
                                     proxy.scrollTo(0, anchor: .top)
@@ -48,7 +58,7 @@ struct BibleReaderView: View {
                             }
                         },
                         onRightSwipe: {
-                            viewModel.getNextChapter()
+                            viewModel.goToNextChapter()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 withAnimation(.linear(duration: 0.3)) {
                                     proxy.scrollTo(0, anchor: .top)
@@ -59,7 +69,7 @@ struct BibleReaderView: View {
                     .onChange(of: viewModel.bibleNavigationUpdateTrigger, initial: false) {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             withAnimation(.linear(duration: 0.3)) {
-                                proxy.scrollTo((viewModel.verseNum ?? 1) - 1, anchor: .top)
+                                proxy.scrollTo((viewModel.navigatedVerseNum ?? 1) - 1, anchor: .top)
                             }
                         }
                     }
@@ -68,25 +78,21 @@ struct BibleReaderView: View {
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 BibleReaderToolbarContent(
-                    bookName: viewModel.bookName,
+                    bookName: viewModel.bibleBook?.bookName,
                     chapterNum: viewModel.chapterNum,
-                    version: viewModel.version,
+                    bibleVersion: viewModel.bibleVersion,
                     showBibleNavigation: $showBibleNavigation
                 )
             }
             .sheet(isPresented: $showBibleNavigation) {
-                BibleNavigation2View(
-                    selectedBook: viewModel.book,
-                    selectedChapter: viewModel.chapter
+                BibleNavigationView(
+                    selectedVersion: viewModel.bibleVersion,
+                    selectedBook: viewModel.bibleBook,
+                    selectedChapter: viewModel.bibleChapter
                 )
                     .environment(viewModel)
                     .presentationDetents([.small])
             }
-        }
-        .task {
-            await viewModel.fetchAvailableVersions()
-            await viewModel.selectVersion(versionId: "WEBBE")
-            await viewModel.fetchBibleContent(versionId: "WEBBE")
         }
     }
 }

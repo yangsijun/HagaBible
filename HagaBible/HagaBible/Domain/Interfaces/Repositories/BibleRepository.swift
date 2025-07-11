@@ -6,8 +6,10 @@
 //
 
 protocol BibleRepository {
-    func getAvailableVersions() async throws -> [BibleVersion]
-    func getBibleContent(versionId: String) async throws -> BibleContent
-    func getChapter(bookNum: Int, chapter: Int, versionId: String) async throws -> Chapter
-    func downloadVersion(versionId: String, progress: @escaping (Double) -> Void) async throws
+    func fetchBibleVersionList() throws -> [BibleVersion]
+    func fetchBibleBookList(versionCode: String) throws -> [BibleBook]
+    func fetchBibleChapterList(versionCode: String, bookCode: String) throws -> [BibleChapter]
+    func fetchBibleVerseList(versionCode: String, bookCode: String, chapter: Int) throws -> [BibleVerse]
+    func fetchBibleVerse(versionCode: String, bookCode: String, chapter: Int, verse: Int) throws -> BibleVerse?
+    func findByVerseTextContaining(versionCode: String, keyword: String) throws -> [BibleVerse]
 }

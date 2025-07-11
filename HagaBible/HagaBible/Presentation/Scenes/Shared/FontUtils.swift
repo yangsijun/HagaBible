@@ -29,3 +29,21 @@ func getUIFontFromFontConfiguration(_ config: FontConfiguration) -> UIFont {
         }
     }
 }
+
+func getNSAlignmentFromFontConfiguration(_ config: FontConfiguration) -> NSTextAlignment {
+    switch config.alignment {
+    case .natural:
+        return .natural
+    case .justified:
+        return .justified
+    }
+}
+
+func getNSLineBreakModeFromFontConfiguration(_ config: FontConfiguration) -> NSLineBreakMode {
+    switch config.lineBreakMode {
+    case .byWordWrapping:
+        return .byWordWrapping
+    case .byCharWrapping:
+        return .byCharWrapping
+    }
+}

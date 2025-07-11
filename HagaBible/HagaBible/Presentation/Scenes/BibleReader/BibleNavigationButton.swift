@@ -38,39 +38,29 @@ struct BibleNavigationButton<L: View, T: Equatable>: View {
 }
 
 #Preview {
-    @Previewable @State var selectedBook: Book?
-    let books = [
-        Book(
-            id: "book1",
-            book: "1BK",
-            bookOrder: 1,
-            bookName: "1 Book",
-            version: "MOCK",
-            totalChapters: 2
+    @Previewable @State var selectedBibleBook: BibleBook?
+    let bibleBooks = [
+        BibleBook(
+            bookCode: "1BK", bookName: "1 Book", bookOrder: 1, totalChapters: 2, versionCode: "MOCK"
         ),
-        Book(
-            id: "book2",
-            book: "2BK",
-            bookOrder: 2,
-            bookName: "2 Book",
-            version: "MOCK",
-            totalChapters: 3
+        BibleBook(
+            bookCode: "2BK", bookName: "2 Book", bookOrder: 2, totalChapters: 3, versionCode: "MOCK"
         )
     ]
     VStack {
         BibleNavigationButton(
             label: {
-                Text(books[0].bookName)
+                Text(bibleBooks[0].bookName)
             },
-            value: books[0],
-            selection: $selectedBook
+            value: bibleBooks[0],
+            selection: $selectedBibleBook
         )
         BibleNavigationButton(
             label: {
-                Text(books[1].bookName)
+                Text(bibleBooks[1].bookName)
             },
-            value: books[1],
-            selection: $selectedBook
+            value: bibleBooks[1],
+            selection: $selectedBibleBook
         )
     }
 }

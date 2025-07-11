@@ -11,10 +11,10 @@ struct BibleNavigation2View: View {
     @Environment(\.dismiss) var dismiss
     @Environment(BibleReaderViewModel.self) private var viewModel: BibleReaderViewModel
     
-    @State private var selectedVersionId: String?
-    @State var selectedBook: Book?
-    @State var selectedChapter: Chapter?
-    @State var selectedVerse: Verse?
+    @State var selectedVersion: BibleVersion?
+    @State var selectedBook: BibleBook?
+    @State var selectedChapter: BibleChapter?
+    @State var selectedVerse: BibleVerse?
     
     var body: some View {
         NavigationStack {
@@ -22,7 +22,7 @@ struct BibleNavigation2View: View {
                 GridRow {
                     BibleNavigationColumnView(
                         columnTitle: "Book",
-                        itemList: viewModel.books ?? [],
+                        itemList: (selectedVersion != nil) ? viewModel.getBibleBookListByVersion(of: selectedVersion!) : [],
                         selectedItem: $selectedBook,
                         getDesciption: { $0.bookName },
                         columnTitleAlignment: .leading,
@@ -31,13 +31,13 @@ struct BibleNavigation2View: View {
                     .gridCellColumns(2)
                     BibleNavigationColumnView(
                         columnTitle: "Chapter",
-                        itemList: selectedBook?.chapters ?? [],
+                        itemList: (selectedBook != nil) ? viewModel.getBibleChapterListByBook(of: selectedBook!) : [],
                         selectedItem: $selectedChapter,
                         getDesciption: { "\($0.chapter) 장" }
                     )
                     BibleNavigationColumnView(
                         columnTitle: "Verse",
-                        itemList: selectedChapter?.verses ?? [],
+                        itemList: (selectedChapter != nil) ? viewModel.getBibleVerseListByChapter(of: selectedChapter!) : [],
                         selectedItem: $selectedVerse,
                         getDesciption: { "\($0.verse) 절" }
                     )
@@ -46,20 +46,50 @@ struct BibleNavigation2View: View {
                 .navigationBarTitleDisplayMode(.inline)
             }
             .toolbarTitleMenu {
-                Picker(selection: $selectedVersionId, label: Text("Sorting options")) {
-                    ForEach(viewModel.availableVersions) { version in
-                        Text(version.name).tag(version.id)
+                Picker(selection: $selectedVersion, label: Text("Sorting options")) {
+                    ForEach(viewModel.availableVersions, id: \.versionCode) { version in
+                        Text(version.versionName).tag(version)
                     }
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .title) {
-                    Text(viewModel.version?.name ?? "Version")
+                    Text(viewModel.bibleVersion?.versionName ?? "Version")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: {
+                        if selectedVersion == nil {
+                            selectedVersion = viewModel.availableVersions.first!
+                        }
+                        if selectedBook == nil {
+                            selectedBook = viewModel.bibleBookList.first!
+                        }
+                        if selectedChapter == nil {
+                            selectedChapter = viewModel.getBibleChapterListByBook(of: selectedBook!).first!
+                        }
+                        if selectedVerse == nil {
+                            selectedVerse = viewModel.getBibleVerseListByChapter(of: selectedChapter!).first!
+                        }
+                        
+                        if let selectedVersion = selectedVersion {
+                            viewModel.versionCode = selectedVersion.versionCode
+                        }
+                        if let selectedBook = selectedBook {
+                            viewModel.bookCode = selectedBook.bookCode
+                        }
+                        if let selectedChapter = selectedChapter {
+                            viewModel.chapterNum = selectedChapter.chapter
+                        }
+                        if let selectedVerse = selectedVerse {
+                            viewModel.navigatedVerseNum = selectedVerse.verse
+                        }
+                        
                         dismiss()
-                        viewModel.navigatedVerseNum = viewModel.verseNum
+                        if let selectedVerse = selectedVerse {
+                            viewModel.navigatedVerseNum = selectedVerse.verse
+                        } else {
+                            viewModel.navigatedVerseNum = 1
+                        }
                         viewModel.bibleNavigationUpdateTrigger.toggle()
                     }) {
                         Image(systemName: "checkmark")
@@ -67,31 +97,6 @@ struct BibleNavigation2View: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.orange)
                 }
-            }
-            .onChange(of: selectedBook, initial: false) {
-                if let book = selectedBook {
-                    selectedChapter = book.chapters.first ?? nil
-                }
-            }
-            .onChange(of: selectedChapter, initial: false) {
-                if let chapter = selectedChapter {
-                    selectedVerse = chapter.verses.first ?? nil
-                }
-            }
-            .onChange(of: selectedVerse, initial: false) {
-                if let verseNum = selectedVerse?.verse {
-                    if let bookNum = selectedBook?.bookOrder {
-                        viewModel.bookNum = bookNum
-                    }
-                    if let chapterNum = selectedChapter?.chapter {
-                        viewModel.chapterNum = chapterNum
-                    }
-                    viewModel.verseNum = verseNum
-                }
-            }
-            .task(id: selectedVersionId) {
-                guard let versionId = selectedVersionId else { return }
-                await viewModel.selectVersion(versionId: versionId)
             }
         }
     }
@@ -110,10 +115,5 @@ struct BibleNavigation2View: View {
                 .environment(viewModel)
                 .presentationDetents([.small])
         }
-    }
-    .task {
-        await viewModel.fetchAvailableVersions()
-        await viewModel.selectVersion(versionId: "WEBBE")
-        await viewModel.fetchBibleContent(versionId: "WEBBE")
     }
 }

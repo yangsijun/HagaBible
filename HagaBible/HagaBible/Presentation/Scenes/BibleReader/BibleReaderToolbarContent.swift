@@ -10,7 +10,7 @@ import SwiftUI
 struct BibleReaderToolbarContent: ToolbarContent {
     let bookName: String?
     let chapterNum: Int
-    let version: BibleVersion?
+    let bibleVersion: BibleVersion?
     @Binding var showBibleNavigation: Bool
     
     var body: some ToolbarContent {
@@ -19,10 +19,10 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 showBibleNavigation.toggle()
             }) {
                 HStack {
-                    Text("\(bookName ?? "") \(chapterNum)\(version?.language == "ko-KR" ? "장" : "")")
+                    Text("\(bookName ?? "") \(chapterNum)\(bibleVersion?.language == "Korean" ? "장" : "")")
                         .font(.title2)
                         .bold()
-                    Text("\(version?.id ?? "")")
+                    Text("\(bibleVersion?.versionCode ?? "")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -67,7 +67,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 BibleReaderToolbarContent(
                     bookName: "Genesis",
                     chapterNum: 1,
-                    version: .init(id: "WEBBE", language: "en-GB", name: "WEBBE", isDownloaded: true),
+                    bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean"),
                     showBibleNavigation: .constant(false)
                 )
             }

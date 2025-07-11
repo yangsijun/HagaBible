@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BibleVerseListView: View {
-    let verses: [Verse]?
+    let verses: [BibleVerse]
     let fontConfiguration: FontConfiguration
     var highlightedVerseNum: Int?
     
@@ -18,21 +18,20 @@ struct BibleVerseListView: View {
                 .frame(height: 0)
                 .id(0)
             VStack(spacing: 0) {
-                if let verses {
-                    ForEach(0..<verses.count, id: \.self) { index in
-                        BibleVerseView(
-                            verseNumber: index + 1,
-                            verseText: verses[index].text,
-                            font: getUIFontFromFontConfiguration(fontConfiguration)
-                        )
-                        .id(index + 1)
-                        .padding(8)
-                        .background(
-                            highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear
-                        )
-                    }
-                } else {
-                    ProgressView()
+                ForEach(0..<verses.count, id: \.self) { index in
+                    BibleVerseView(
+                        verseNumber: index + 1,
+                        verseText: verses[index].verseText ?? "",
+                        font: getUIFontFromFontConfiguration(fontConfiguration),
+                        alignment: getNSAlignmentFromFontConfiguration(fontConfiguration),
+                        lineBreakMode: getNSLineBreakModeFromFontConfiguration(fontConfiguration),
+                    )
+                    .id(index + 1)
+                    .padding(8)
+                    .padding(.horizontal, 8)
+                    .background(
+                        highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear
+                    )
                 }
             }
             .padding(.vertical, 16)
@@ -41,16 +40,15 @@ struct BibleVerseListView: View {
 }
 
 #Preview {
-    let verses: [Verse] = [
-        Verse(id: "GN1_1_WEBBE", canonOrder: "002_001_001", book: "GEN", chapter: 1, verse: 1, version: "WEBBE", text: "In the beginning, God created the heavens and the earth."),
-        Verse(id: "GN1_2_WEBBE", canonOrder: "002_001_002", book: "GEN", chapter: 1, verse: 2, version: "WEBBE", text: "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."),
-        Verse(id: "GN1_3_WEBBE", canonOrder: "002_001_003", book: "GEN", chapter: 1, verse: 3, version: "WEBBE", text: "God said, “Let there be light,” and there was light."),
+    let verses: [BibleVerse] = [
+        BibleVerse(bookCode: "GEN", bookOrder: 1, chapter: 1, verse: 1, verseText: "태초에 하나님이 천지를 창조하시니라", versionCode: "KRV"),
+        BibleVerse(bookCode: "GEN", bookOrder: 1, chapter: 1, verse: 2, verseText: "땅이 혼돈하고 공허하며 흑암이 깊음 위에 있고 하나님의 신은 수면에 운행하시니라", versionCode: "KRV"),
+        BibleVerse(bookCode: "GEN", bookOrder: 1, chapter: 1, verse: 3, verseText: "하나님이 가라사대 빛이 있으라 하시매 빛이 있었고", versionCode: "KRV"),
     ]
     
-    return BibleVerseListView(
+     BibleVerseListView(
         verses: verses,
-        fontConfiguration: FontConfiguration(type: .sans, style: .regular, size: 17),
+        fontConfiguration: FontConfiguration(type: .serif, style: .regular, size: 17, alignment: .justified, lineBreakMode: .byCharWrapping),
         highlightedVerseNum: 1
-        
     )
 }

@@ -15,109 +15,182 @@ class BibleReaderViewModel {
     
     var bibleRepository: BibleRepository
     
+    var bibleVersion: BibleVersion?
+    var bibleBook: BibleBook?
+    var bibleChapter: BibleChapter?
+    
     var availableVersions: [BibleVersion] = []
-    var version: BibleVersion?
-    var bibleContent: BibleContent?
+    var bibleBookList: [BibleBook] = []
+    var bibleChapterList: [BibleChapter] = []
+    var bibleVerseList: [BibleVerse] = []
     
-    var bookName: String? {
-        book?.bookName
+    var versionCode: String {
+        didSet {
+            fetchBibleVersion()
+        }
     }
-    var books: [Book]? {
-        bibleContent?.books
+    var bookCode: String {
+        didSet {
+            fetchBibleBook()
+        }
     }
-    var bookNum: Int
-    var book: Book? {
-        bibleContent?.books[bookNum - 1]
+    var chapterNum: Int {
+        didSet {
+            fetchBibleChapter()
+        }
     }
     
-    var chapterNum: Int
-    var chapter: Chapter? {
-        book?.chapters[chapterNum - 1]
-    }
-    
-    var verseNum: Int?
-    var verses: [Verse]? {
-        chapter?.verses
-    }
     var navigatedVerseNum: Int?
     
     var fontConfiguration: FontConfiguration = FontConfiguration(
         type: .sans,
         style: .regular,
-        size: 17
+        size: 17,
+        alignment: .natural,
+        lineBreakMode: .byWordWrapping
     )
     
-    init(bibleRepository: BibleRepository, bookNum: Int = 1, chapterNum: Int = 1) {
+    var fontConfigurationKorean: FontConfiguration = FontConfiguration(
+        type: .serif,
+        style: .regular,
+        size: 17,
+        alignment: .justified,
+        lineBreakMode: .byCharWrapping
+    )
+    
+    init(bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1) {
         self.bibleRepository = bibleRepository
-        self.bookNum = bookNum
-        self.chapterNum = chapterNum
+        
+        self.versionCode = versionCode
+        self.bookCode = bookCode
+        self.chapterNum = chapter
+        
+        fetchAvailableVersions()
+        fetchBibleVersion()
+        fetchBibleBook()
+        fetchBibleChapter()
     }
     
-    func fetchAvailableVersions() async {
-        isLoading = true
-        defer {
-            isLoading = false
-        }
-        
+    func fetchAvailableVersions() {
         do {
-            availableVersions = try await bibleRepository.getAvailableVersions()
+            availableVersions = try bibleRepository.fetchBibleVersionList()
         } catch {
+            #if DEBUG
             print("Error fetching available versions: \(error)")
+            #endif
         }
     }
     
-    func selectVersion(versionId: String) async {
-        version = availableVersions.first(where: { $0.id == versionId })
-        
-        if let versionId = version?.id {
-            await fetchBibleContent(versionId: versionId)
+    func fetchBibleVersion() {
+        bibleVersion = availableVersions.first { $0.versionCode == versionCode }
+        if let versionCode = bibleVersion?.versionCode {
+            fetchBibleBookList(versionCode: versionCode)
         }
     }
     
-    func fetchBibleContent(versionId: String) async {
-        isLoading = true
-        defer {
-            isLoading = false
-        }
-        
+    func fetchBibleBookList(versionCode: String)  {
         do {
-            bibleContent = try await bibleRepository.getBibleContent(versionId: versionId)
-            self.version = version
-            if let books = bibleContent?.books, let bookCode = self.book?.book {
-                if !books.contains(where: { $0.book == bookCode }) {
-                    self.bookNum = 1
-                    self.chapterNum = 1
-                }
-                if chapterNum > (book?.chapters.count ?? 0) {
-                    chapterNum = books[bookNum - 1].chapters.count
-                }
-            }
-            isLoadingSuccess = true
+            bibleBookList = try bibleRepository.fetchBibleBookList(versionCode: versionCode)
         } catch {
-            print("Error fetching Bible content: \(error)")
+            #if DEBUG
+            print("Error fetching books: \(error)")
+            #endif
         }
     }
     
-    // TODO: Chapter가 끝나면 Book을 이동하도록 수정
-    func getPrevChapter() {
+    func fetchBibleBook() {
+        bibleBook = bibleBookList.first { $0.bookCode == bookCode }
+        if let bookCode = bibleBook?.bookCode {
+            fetchBibleChapterList(versionCode: versionCode, bookCode: bookCode)
+        }
+    }
+    
+    func fetchBibleChapterList(versionCode: String, bookCode: String) {
+        do {
+            bibleChapterList = try bibleRepository.fetchBibleChapterList(versionCode: versionCode, bookCode: bookCode)
+        } catch {
+            #if DEBUG
+            print("Error fetching chapters: \(error)")
+            #endif
+        }
+    }
+    
+    func fetchBibleChapter() {
+        bibleChapter = bibleChapterList.first { $0.chapter == chapterNum }
+        if let chapterNum = bibleChapter?.chapter {
+            fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapterNum: chapterNum)
+        }
+    }
+    
+    func fetchBibleVerseList(versionCode: String, bookCode: String, chapterNum: Int) {
+        do {
+            bibleVerseList = try bibleRepository.fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum)
+        } catch {
+            #if DEBUG
+            print("Error fetching verses: \(error)")
+            #endif
+        }
+    }
+    
+    func goToPreviousChapter() {
         if chapterNum > 1 {
-            chapterNum -= 1
-        } else {
-            if bookNum > 1 {
-                bookNum -= 1
-                chapterNum = book?.chapters.count ?? 0
-            }
+            self.chapterNum = chapterNum - 1
+            return
+        }
+        if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
+            if index == 0 { return }
+            self.bookCode = bibleBookList[index - 1].bookCode
+            self.chapterNum = bibleBookList[index - 1].totalChapters
+            return
         }
     }
     
-    func getNextChapter() {
-        if chapterNum < (book?.chapters.count ?? 0) {
-            chapterNum += 1
-        } else {
-            if bookNum < (bibleContent?.books.count ?? 0) {
-                bookNum += 1
-                chapterNum = 1
-            }
+    func goToNextChapter() {
+        if chapterNum < bibleChapterList.last!.chapter {
+            self.chapterNum = chapterNum + 1
+            fetchBibleChapter()
+            return
+        }
+        if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
+            if index == bibleBookList.count - 1 { return }
+            self.bookCode = bibleBookList[index + 1].bookCode
+            self.chapterNum = 1
+        }
+    }
+    
+    func getBibleBookListByVersion(of version: BibleVersion) -> [BibleBook] {
+        do {
+            let bookList: [BibleBook] = try bibleRepository.fetchBibleBookList(versionCode: version.versionCode)
+            return bookList
+        } catch {
+            #if DEBUG
+            print("Error fetching book list: \(error)")
+            #endif
+            return []
+        }
+    }
+    
+    func getBibleChapterListByBook(of book: BibleBook) -> [BibleChapter] {
+        do {
+            let chapterList: [BibleChapter] = try bibleRepository.fetchBibleChapterList(versionCode: book.versionCode, bookCode: book.bookCode)
+            return chapterList
+        } catch {
+            #if DEBUG
+            print("Error fetching chapter list: \(error)")
+            #endif
+            return []
+        }
+    }
+    
+    func getBibleVerseListByChapter(of chapter: BibleChapter) -> [BibleVerse] {
+        do {
+            let verseList: [BibleVerse] = try bibleRepository.fetchBibleVerseList(versionCode: chapter.versionCode, bookCode: chapter.bookCode, chapter: chapter.chapter)
+            return verseList
+        } catch {
+            #if DEBUG
+            print("Error fetching verse list: \(error)")
+            #endif
+            return []
         }
     }
     
