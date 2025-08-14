@@ -9,8 +9,8 @@ import SwiftUI
 
 struct SwipeGestureViewModifier: ViewModifier {
     
-    @State private var dragOffset: CGSize = .zero
-    @Binding var isDraggingHorizontally: Bool
+    @State var offset: CGSize = .zero
+    @State var isDraggingHorizontally: Bool = false
     
     var onLeftSwipe: () -> Void
     var onRightSwipe: () -> Void
@@ -29,18 +29,31 @@ struct SwipeGestureViewModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .offset(x: self.dragOffset.width)
-            .gesture(
+            .disabled(isDraggingHorizontally)
+            .offset(x: self.offset.width)
+            .simultaneousGesture(
                 DragGesture()
                     .onChanged { gesture in
-                        self.dragOffset = gesture.translation
-                        self.isDraggingHorizontally = true
+                        if abs(gesture.translation.width) > abs(gesture.translation.height) {
+                            offset = gesture.translation
+                            isDraggingHorizontally = true
+                        } else {
+                            withAnimation(.linear(duration: 0.1)) {
+                                offset = .zero
+                            }
+                            isDraggingHorizontally = false
+                        }
                     }
                     .onEnded { gesture in
-                        handleSwipe(gesture)
-                        
-                        self.dragOffset = .zero
-                        self.isDraggingHorizontally = false
+                        if abs(gesture.translation.width) > abs(gesture.translation.height) {
+                            withAnimation(.easeInOut) {
+                                handleSwipe(gesture)
+                            }
+                        }
+                        withAnimation(.easeInOut) {
+                            offset = .zero
+                        }
+                        isDraggingHorizontally = false
                     }
             )
     }
@@ -48,12 +61,14 @@ struct SwipeGestureViewModifier: ViewModifier {
 
 extension View {
     func swipeGesture(
-        isDraggingHorizontally: Binding<Bool>,
         onLeftSwipe: @escaping () -> Void,
         onRightSwipe: @escaping () -> Void
     ) -> some View {
         modifier(
-            SwipeGestureViewModifier(isDraggingHorizontally: isDraggingHorizontally, onLeftSwipe: onLeftSwipe, onRightSwipe: onRightSwipe)
+            SwipeGestureViewModifier(
+                onLeftSwipe: onLeftSwipe,
+                onRightSwipe: onRightSwipe
+            )
         )
     }
 }

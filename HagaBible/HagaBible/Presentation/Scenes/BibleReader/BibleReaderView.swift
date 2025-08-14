@@ -45,10 +45,8 @@ struct BibleReaderView: View {
                             }
                         }
                     }
-                    .disabled(isDraggingHorizontally)
                     .background(Color(uiColor: .systemBackground))
                     .swipeGesture(
-                        isDraggingHorizontally: $isDraggingHorizontally,
                         onLeftSwipe: {
                             viewModel.goToPreviousChapter()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
