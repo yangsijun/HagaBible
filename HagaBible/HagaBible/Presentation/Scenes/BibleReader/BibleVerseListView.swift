@@ -24,7 +24,6 @@ struct BibleVerseListView: View {
                         verseText: verses[index].verseText ?? "",
                         font: getUIFontFromFontConfiguration(fontConfiguration),
                         alignment: getNSAlignmentFromFontConfiguration(fontConfiguration),
-                        lineBreakMode: getNSLineBreakModeFromFontConfiguration(fontConfiguration),
                     )
                     .id(index + 1)
                     .padding(8)

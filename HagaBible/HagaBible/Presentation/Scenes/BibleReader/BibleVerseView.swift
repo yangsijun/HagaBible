@@ -10,30 +10,36 @@ import SwiftUI
 struct BibleVerseView: View {
     var verseNumber: Int
     var verseText: String
-    var font: UIFont
-    var fontWidth: Font.Width
-    var alignment: NSTextAlignment
-    var lineBreakMode: NSLineBreakMode
+    
+    private var font: UIFont
+    private var alignment: NSTextAlignment
+    private var lineHeight: CGFloat?
+    private var lineSpacing: CGFloat?
+    
+    private var verseFontWidth: Font.Width
     
     init(
         verseNumber: Int,
         verseText: String,
         font: UIFont? = nil,
         alignment: NSTextAlignment = .natural,
-        lineBreakMode: NSLineBreakMode = .byWordWrapping
+        lineHeight: CGFloat? = nil,
+        lineSpacing: CGFloat? = nil
     ) {
         self.verseNumber = verseNumber
         self.verseText = verseText
         self.font = font ?? .systemFont(ofSize: 17)
-        if verseNumber < 10 {
-            self.fontWidth = .standard
-        } else if verseNumber < 100 {
-            self.fontWidth = .condensed
-        } else {
-            self.fontWidth = .compressed
-        }
         self.alignment = alignment
-        self.lineBreakMode = lineBreakMode
+        self.lineHeight = lineHeight
+        self.lineSpacing = lineSpacing
+        
+        if verseNumber < 10 {
+            self.verseFontWidth = .standard
+        } else if verseNumber < 100 {
+            self.verseFontWidth = .condensed
+        } else {
+            self.verseFontWidth = .compressed
+        }
     }
     
     var body: some View {
@@ -41,11 +47,30 @@ struct BibleVerseView: View {
             Text("\(verseNumber)")
                 .frame(minWidth: 12, minHeight: 22, alignment: .center)
                 .font(.caption)
-                .fontWidth(fontWidth)
+                .fontWidth(verseFontWidth)
                 .foregroundStyle(.secondary)
-            AdvancedTextView(verseText, font: font, alignment: alignment, lineBreakMode: lineBreakMode)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
+            AdvancedText(
+                attributedText: NSMutableAttributedString(
+                    string: verseText,
+                    attributes: [
+                        .font: font,
+                        .paragraphStyle: {
+                            let style = NSMutableParagraphStyle()
+                            style.alignment = alignment
+                            if let lineHeight = lineHeight {
+                                style.minimumLineHeight = lineHeight
+                                style.maximumLineHeight = lineHeight
+                            }
+                            if let lineSpacing = lineSpacing {
+                                style.lineSpacing = lineSpacing
+                            }
+                            return style
+                        }(),
+                    ]
+                )
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .multilineTextAlignment(.leading)
         }
     }
 }
@@ -71,15 +96,19 @@ struct BibleVerseView: View {
             verseNumber: 4,
             verseText: "빛이 하나님이 보시기에 좋았더라 하나님이 빛과 어둠을 나누사",
             font: .pretendard(size: 17),
-            alignment: .justified,
-            lineBreakMode: .byCharWrapping
+            alignment: .justified
         )
         BibleVerseView(
             verseNumber: 4,
             verseText: "빛이 하나님이 보시기에 좋았더라 하나님이 빛과 어둠을 나누사",
             font: .maruBuri(size: 17),
-            alignment: .justified,
-            lineBreakMode: .byCharWrapping
+            alignment: .justified
+        )
+        BibleVerseView(
+            verseNumber: 14,
+            verseText: "하나님이 가라사대 하늘의 궁창에 광명이 있어 주야를 나뉘게 하라 또 그 광명으로 하여 징조와 사시와 일자와 연한이 이루라",
+            font: .maruBuri(size: 23),
+            alignment: .justified
         )
         BibleVerseView(verseNumber: 88, verseText: "In the beginning, God created the heavens and the earth.")
         BibleVerseView(verseNumber: 118, verseText: "In the beginning, God created the heavens and the earth.")
