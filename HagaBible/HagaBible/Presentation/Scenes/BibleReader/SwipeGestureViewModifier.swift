@@ -46,9 +46,7 @@ struct SwipeGestureViewModifier: ViewModifier {
                     }
                     .onEnded { gesture in
                         if abs(gesture.translation.width) > abs(gesture.translation.height) {
-                            withAnimation(.easeInOut) {
-                                handleSwipe(gesture)
-                            }
+                            handleSwipe(gesture)
                         }
                         withAnimation(.easeInOut) {
                             offset = .zero

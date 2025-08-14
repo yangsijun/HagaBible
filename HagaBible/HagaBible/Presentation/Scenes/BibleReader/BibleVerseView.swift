@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct BibleVerseView: View {
-    var verseNumber: Int
-    var verseText: String
+    let verseNumber: Int
+    let verseText: String
     
     private var font: UIFont
     private var alignment: NSTextAlignment

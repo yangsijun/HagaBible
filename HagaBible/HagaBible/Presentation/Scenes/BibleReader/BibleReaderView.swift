@@ -49,19 +49,11 @@ struct BibleReaderView: View {
                     .swipeGesture(
                         onLeftSwipe: {
                             viewModel.goToPreviousChapter()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                withAnimation(.linear(duration: 0.3)) {
-                                    proxy.scrollTo(0, anchor: .top)
-                                }
-                            }
+                            viewModel.bibleNavigationUpdateTrigger.toggle()
                         },
                         onRightSwipe: {
                             viewModel.goToNextChapter()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                withAnimation(.linear(duration: 0.3)) {
-                                    proxy.scrollTo(0, anchor: .top)
-                                }
-                            }
+                            viewModel.bibleNavigationUpdateTrigger.toggle()
                         }
                     )
                     .onChange(of: viewModel.bibleNavigationUpdateTrigger, initial: false) {
