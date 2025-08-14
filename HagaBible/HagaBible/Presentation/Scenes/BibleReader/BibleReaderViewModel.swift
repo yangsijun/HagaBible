@@ -18,6 +18,7 @@ class BibleReaderViewModel {
     var bibleVersion: BibleVersion?
     var bibleBook: BibleBook?
     var bibleChapter: BibleChapter?
+    var bibleVerse: BibleVerse?
     
     var availableVersions: [BibleVersion] = []
     var bibleBookList: [BibleBook] = []
@@ -39,6 +40,11 @@ class BibleReaderViewModel {
             fetchBibleChapter()
         }
     }
+    var verseNum: Int {
+        didSet {
+            fetchBibleVerse()
+        }
+    }
     
     var navigatedVerseNum: Int?
     
@@ -58,17 +64,19 @@ class BibleReaderViewModel {
         lineBreakMode: .byCharWrapping
     )
     
-    init(bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1) {
+    init(bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1, verse: Int = 1) {
         self.bibleRepository = bibleRepository
         
         self.versionCode = versionCode
         self.bookCode = bookCode
         self.chapterNum = chapter
+        self.verseNum = verse
         
         fetchAvailableVersions()
         fetchBibleVersion()
         fetchBibleBook()
         fetchBibleChapter()
+        fetchBibleVerse()
     }
     
     func fetchAvailableVersions() {
@@ -130,6 +138,10 @@ class BibleReaderViewModel {
             print("Error fetching verses: \(error)")
             #endif
         }
+    }
+    
+    func fetchBibleVerse() {
+        bibleVerse = bibleVerseList.first(where: { $0.verse == verseNum })
     }
     
     func goToPreviousChapter() {

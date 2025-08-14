@@ -16,38 +16,62 @@ struct BibleNavigationView: View {
     @State var selectedChapter: BibleChapter?
     @State var selectedVerse: BibleVerse?
     
+    var pickerVersionList: [BibleVersion] {
+        viewModel.availableVersions
+    }
+    var pickerBookList: [BibleBook] {
+        viewModel.getBibleBookListByVersion(of: selectedVersion ?? pickerVersionList.first!)
+    }
+    var pickerChapterList: [BibleChapter] {
+        viewModel.getBibleChapterListByBook(of: selectedBook ?? pickerBookList.first!)
+    }
+    var pickerVerseList: [BibleVerse] {
+        viewModel.getBibleVerseListByChapter(of: selectedChapter ?? pickerChapterList.first!)
+    }
+    
     var body: some View {
         NavigationStack {
             VStack {
                 HStack(alignment: .top, spacing: 0) {
                     Picker("BookPicker", selection: $selectedBook) {
-                        if let selectedVersion = selectedVersion {
-                            ForEach(viewModel.getBibleBookListByVersion(of: selectedVersion), id: \.self) { book in
-                                Text(book.bookName).tag(book)
-                            }                            
+                        ForEach(pickerBookList, id: \.bookCode) { book in
+                            Text(book.bookName).tag(book)
                         }
                     }
                     .pickerStyle(.wheel)
                     HStack(spacing: 0) {
                         Picker("ChapterPicker", selection: $selectedChapter) {
-                            if let selectedBook = selectedBook {
-                                ForEach(viewModel.getBibleChapterListByBook(of: selectedBook), id: \.self) { chapter in
-                                    Text("\(chapter.chapter)").tag(chapter)
-                                }
+                            ForEach(pickerChapterList, id: \.self) { chapter in
+                                Text("\(chapter.chapter)").tag(chapter)
                             }
                         }
                         .pickerStyle(.wheel)
                         Picker("VersePicker", selection: $selectedVerse) {
-                            if let selectedChapter = selectedChapter {
-                                ForEach(viewModel.getBibleVerseListByChapter(of: selectedChapter), id: \.self) { verse in
-                                    Text("\(verse.verse)").tag(verse)
-                                }
+                            ForEach(pickerVerseList, id: \.self) { verse in
+                                Text("\(verse.verse)").tag(verse)
                             }
                         }
                         .pickerStyle(.wheel)
                     }
                 }
                 .navigationBarTitleDisplayMode(.inline)
+            }
+            .onChange(of: selectedVersion) {
+                selectedBook = pickerBookList.first(where: { $0.bookCode == selectedBook?.bookCode })
+            }
+            .onChange(of: selectedBook) { oldValue, newValue in
+                if oldValue?.bookCode == newValue?.bookCode {
+                    selectedChapter = pickerChapterList.first(where: { $0.chapter == selectedChapter?.chapter })
+                } else {
+                    selectedChapter = pickerChapterList.first
+                }
+            }
+            .onChange(of: selectedChapter) { oldValue, newValue in
+                if oldValue?.chapter == newValue?.chapter {
+                    selectedVerse = pickerVerseList.first(where: { $0.verse == selectedVerse?.verse })
+                } else {
+                    selectedVerse = pickerVerseList.first
+                }
             }
             .toolbarTitleMenu {
                 Picker(selection: $selectedVersion, label: Text("Sorting options")) {
@@ -85,6 +109,7 @@ struct BibleNavigationView: View {
                             viewModel.chapterNum = selectedChapter.chapter
                         }
                         if let selectedVerse = selectedVerse {
+                            viewModel.verseNum = selectedVerse.verse
                             viewModel.navigatedVerseNum = selectedVerse.verse
                         }
                         

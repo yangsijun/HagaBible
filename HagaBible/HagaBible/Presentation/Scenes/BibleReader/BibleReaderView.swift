@@ -78,7 +78,8 @@ struct BibleReaderView: View {
                 BibleNavigationView(
                     selectedVersion: viewModel.bibleVersion,
                     selectedBook: viewModel.bibleBook,
-                    selectedChapter: viewModel.bibleChapter
+                    selectedChapter: viewModel.bibleChapter,
+                    selectedVerse: viewModel.bibleVerse,
                 )
                     .environment(viewModel)
                     .presentationDetents([.small])
