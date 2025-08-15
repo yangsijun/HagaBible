@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BibleVerseListView: View {
     let verses: [BibleVerse]
+    let language: String
     let fontConfiguration: FontConfiguration
     var highlightedVerseNum: Int?
     
@@ -22,8 +23,8 @@ struct BibleVerseListView: View {
                     BibleVerseView(
                         verseNumber: index + 1,
                         verseText: verses[index].verseText ?? "",
-                        font: getUIFontFromFontConfiguration(fontConfiguration),
-                        alignment: getNSAlignmentFromFontConfiguration(fontConfiguration),
+                        font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
+                        alignment: fontConfiguration.alignment[language] ?? .natural,
                         lineSpacing: CGFloat(fontConfiguration.lineSpacing)
                     )
                     .id(index + 1)
@@ -48,7 +49,19 @@ struct BibleVerseListView: View {
     
      BibleVerseListView(
         verses: verses,
-        fontConfiguration: FontConfiguration(type: .serif, style: .regular, size: 17, alignment: .justified),
+        language: "Korean",
+        fontConfiguration: FontConfiguration(
+            type: [
+                "English": .sans,
+                "Korean": .serif,
+            ],
+            style: .regular,
+            size: 17,
+            alignment: [
+                "English": .natural,
+                "Korean": .justified
+            ]
+        ),
         highlightedVerseNum: 1
     )
 }

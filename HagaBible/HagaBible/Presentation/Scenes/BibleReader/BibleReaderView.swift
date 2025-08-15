@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BibleReaderView: View {
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
     @State private var isDraggingHorizontally = false
@@ -22,19 +23,20 @@ struct BibleReaderView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         Group {
-                            if viewModel.bibleVersion?.language == "English" {
+//                            if viewModel.bibleVersion?.language == "English" {
                                 BibleVerseListView(
                                     verses: viewModel.bibleVerseList,
-                                    fontConfiguration: viewModel.fontConfiguration,
+                                    language: viewModel.bibleVersion?.language ?? "English",
+                                    fontConfiguration: fontThemeManager.fontConfiguration,
                                     highlightedVerseNum: viewModel.navigatedVerseNum
                                 )
-                            } else {
-                                BibleVerseListView(
-                                    verses: viewModel.bibleVerseList,
-                                    fontConfiguration: viewModel.fontConfigurationKorean,
-                                    highlightedVerseNum: viewModel.navigatedVerseNum
-                                )
-                            }
+//                            } else {
+//                                BibleVerseListView(
+//                                    verses: viewModel.bibleVerseList,
+//                                    fontConfiguration: fontThemeManager.fontConfigurationKorean,
+//                                    highlightedVerseNum: viewModel.navigatedVerseNum
+//                                )
+//                            }
                         }
                         .onChange(of: viewModel.navigatedVerseNum) {
                             if viewModel.navigatedVerseNum != nil {
@@ -87,8 +89,8 @@ struct BibleReaderView: View {
                     .presentationDetents([.small])
             }
             .sheet(isPresented: $showFontThemeConfig) {
-                FontThemeConfigView()
-                    .environment(viewModel)
+                FontThemeConfigView(language: viewModel.bibleVersion?.language ?? "English")
+                    .environment(fontThemeManager)
                     .presentationDetents([.medium])
             }
         }

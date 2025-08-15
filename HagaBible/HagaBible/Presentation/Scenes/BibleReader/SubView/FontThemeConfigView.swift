@@ -9,16 +9,25 @@ import SwiftUI
 
 struct FontThemeConfigView: View {
     @Environment(\.dismiss) var dismiss
-    @Environment(BibleReaderViewModel.self) private var viewModel: BibleReaderViewModel
+    @Environment(FontThemeManager.self) private var fontThemeManager: FontThemeManager
+    var language: String
     
     var body: some View {
-        @Bindable var viewModel = viewModel
+        @Bindable var fontThemeManager = fontThemeManager
+        let fontTypeBinding = Binding<FontType>(
+            get: {
+                fontThemeManager.fontConfiguration.type[language, default: .sans]
+            },
+            set: { newFontType in
+                fontThemeManager.fontConfiguration.type[language] = newFontType
+            }
+        )
         
         NavigationStack {
             List {
-                FontSizeStepperView(fontSize: $viewModel.fontConfiguration.size)
-                LineSpacingStepperView(lineSpacing: $viewModel.fontConfiguration.lineSpacing)
-                FontTypeConfigView(fontType: $viewModel.fontConfiguration.type)
+                FontSizeStepperView(fontSize: $fontThemeManager.fontConfiguration.size)
+                LineSpacingStepperView(lineSpacing: $fontThemeManager.fontConfiguration.lineSpacing)
+                FontTypeConfigView(fontType: fontTypeBinding)
             }
             .scrollContentBackground(.hidden)
         }
@@ -78,7 +87,7 @@ struct FontTypeConfigView: View {
             Text("present")
         }
         .sheet(isPresented: $isPresented) {
-            FontThemeConfigView()
+            FontThemeConfigView(language: viewModel.bibleVersion?.language ?? "English")
                 .environment(viewModel)
                 .presentationDetents([.medium])
         }

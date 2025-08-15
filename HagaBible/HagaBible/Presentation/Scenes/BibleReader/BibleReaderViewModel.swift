@@ -48,24 +48,6 @@ class BibleReaderViewModel {
     
     var navigatedVerseNum: Int?
     
-    var fontConfiguration: FontConfiguration = FontConfiguration(
-        type: .sans,
-        style: .regular,
-        size: 20,
-        alignment: .natural,
-//        lineBreakMode: .byWordWrapping,
-        lineSpacing: 0
-    )
-    
-    var fontConfigurationKorean: FontConfiguration = FontConfiguration(
-        type: .serif,
-        style: .regular,
-        size: 20,
-        alignment: .justified,
-//        lineBreakMode: .byCharWrapping,
-        lineSpacing: 0
-    )
-    
     init(bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1, verse: Int = 1) {
         self.bibleRepository = bibleRepository
         

@@ -38,5 +38,10 @@ struct HagaBibleApp: App {
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
+        
+        container.register(type: FontThemeManager.self, component: FontThemeManager(
+            fontConfiguration: defaultFontConfiguration,
+            theme: defaultTheme
+        ))
     }
 }
