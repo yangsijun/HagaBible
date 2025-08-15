@@ -17,13 +17,14 @@ struct BibleVerseListView: View {
             Color.clear
                 .frame(height: 0)
                 .id(0)
-            VStack(spacing: 0) {
+            VStack(spacing: CGFloat(fontConfiguration.lineSpacing)) {
                 ForEach(0..<verses.count, id: \.self) { index in
                     BibleVerseView(
                         verseNumber: index + 1,
                         verseText: verses[index].verseText ?? "",
                         font: getUIFontFromFontConfiguration(fontConfiguration),
                         alignment: getNSAlignmentFromFontConfiguration(fontConfiguration),
+                        lineSpacing: CGFloat(fontConfiguration.lineSpacing)
                     )
                     .id(index + 1)
                     .padding(8)
@@ -47,7 +48,7 @@ struct BibleVerseListView: View {
     
      BibleVerseListView(
         verses: verses,
-        fontConfiguration: FontConfiguration(type: .serif, style: .regular, size: 17, alignment: .justified, lineBreakMode: .byCharWrapping),
+        fontConfiguration: FontConfiguration(type: .serif, style: .regular, size: 17, alignment: .justified),
         highlightedVerseNum: 1
     )
 }

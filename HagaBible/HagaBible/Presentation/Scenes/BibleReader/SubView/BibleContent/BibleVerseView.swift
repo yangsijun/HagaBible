@@ -13,7 +13,6 @@ struct BibleVerseView: View {
     
     private var font: UIFont
     private var alignment: NSTextAlignment
-    private var lineHeight: CGFloat?
     private var lineSpacing: CGFloat?
     
     private var verseFontWidth: Font.Width
@@ -23,14 +22,12 @@ struct BibleVerseView: View {
         verseText: String,
         font: UIFont? = nil,
         alignment: NSTextAlignment = .natural,
-        lineHeight: CGFloat? = nil,
         lineSpacing: CGFloat? = nil
     ) {
         self.verseNumber = verseNumber
         self.verseText = verseText
         self.font = font ?? .systemFont(ofSize: 17)
         self.alignment = alignment
-        self.lineHeight = lineHeight
         self.lineSpacing = lineSpacing
         
         if verseNumber < 10 {
@@ -57,10 +54,6 @@ struct BibleVerseView: View {
                         .paragraphStyle: {
                             let style = NSMutableParagraphStyle()
                             style.alignment = alignment
-                            if let lineHeight = lineHeight {
-                                style.minimumLineHeight = lineHeight
-                                style.maximumLineHeight = lineHeight
-                            }
                             if let lineSpacing = lineSpacing {
                                 style.lineSpacing = lineSpacing
                             }

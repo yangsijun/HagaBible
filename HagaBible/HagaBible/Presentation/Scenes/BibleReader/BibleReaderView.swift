@@ -10,6 +10,7 @@ import SwiftUI
 struct BibleReaderView: View {
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var showBibleNavigation: Bool = false
+    @State private var showFontThemeConfig: Bool = false
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     
@@ -71,7 +72,8 @@ struct BibleReaderView: View {
                     bookName: viewModel.bibleBook?.bookName,
                     chapterNum: viewModel.chapterNum,
                     bibleVersion: viewModel.bibleVersion,
-                    showBibleNavigation: $showBibleNavigation
+                    showBibleNavigation: $showBibleNavigation,
+                    showFontThemeConfig: $showFontThemeConfig
                 )
             }
             .sheet(isPresented: $showBibleNavigation) {
@@ -83,6 +85,11 @@ struct BibleReaderView: View {
                 )
                     .environment(viewModel)
                     .presentationDetents([.small])
+            }
+            .sheet(isPresented: $showFontThemeConfig) {
+                FontThemeConfigView()
+                    .environment(viewModel)
+                    .presentationDetents([.medium])
             }
         }
     }

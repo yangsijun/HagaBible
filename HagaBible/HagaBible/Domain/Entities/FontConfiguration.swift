@@ -5,9 +5,9 @@
 //  Created by 양시준 on 7/7/25.
 //
 
-enum FontType: String {
-    case sans = "Pretendard-Regular"
-    case serif = "MaruBuriot-Regular"
+enum FontType: String, CaseIterable {
+    case sans = "Pretendard"
+    case serif = "MaruBuriot"
 }
 
 enum FontStyle: String {
@@ -29,7 +29,7 @@ enum LineBreakMode: String {
 struct FontConfiguration {
     var type: FontType = .sans
     var style: FontStyle = .regular
-    var size: Float = 17
+    var size: Int = 20
     var alignment: TextAlignmentType = .natural
-    var lineBreakMode: LineBreakMode = .byWordWrapping
+    var lineSpacing: Int = 0
 }

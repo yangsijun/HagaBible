@@ -12,6 +12,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let chapterNum: Int
     let bibleVersion: BibleVersion?
     @Binding var showBibleNavigation: Bool
+    @Binding var showFontThemeConfig: Bool
     
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
@@ -31,25 +32,18 @@ struct BibleReaderToolbarContent: ToolbarContent {
         }
         ToolbarItem {
             Button(action: {}) {
-                Image(systemName: "headphones")
+                Label("Listen", systemImage: "headphones")
             }
         }
         ToolbarSpacer(.fixed)
         ToolbarItem {
             Menu {
-//                Menu {
-////                                Picker(selection: $selectedVersion, label: Text("Sorting options")) {
-////                                    Text("WEBBE").tag("WEBBE")
-////                                    Text("KJV").tag("KJV")
-////                                    Text("NIV").tag("NIV")
-////                                }
-//                } label: {
-//                    Label("Versions", systemImage: "books.vertical")
-//                }
                 Button(action: {}) {
                     Label("Bookmarks", systemImage: "bookmark")
                 }
-                Button(action: {}) {
+                Button(action: {
+                    showFontThemeConfig.toggle()
+                }) {
                     Label("Font & Themes", systemImage: "textformat.size")
                 }
             } label: {
@@ -68,7 +62,8 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     bookName: "Genesis",
                     chapterNum: 1,
                     bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean"),
-                    showBibleNavigation: .constant(false)
+                    showBibleNavigation: .constant(false),
+                    showFontThemeConfig: .constant(false)
                 )
             }
     }
