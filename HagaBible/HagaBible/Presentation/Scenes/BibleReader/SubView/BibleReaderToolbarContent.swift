@@ -37,15 +37,15 @@ struct BibleReaderToolbarContent: ToolbarContent {
         ToolbarSpacer(.fixed)
         ToolbarItem {
             Menu {
-                Menu {
-//                                Picker(selection: $selectedVersion, label: Text("Sorting options")) {
-//                                    Text("WEBBE").tag("WEBBE")
-//                                    Text("KJV").tag("KJV")
-//                                    Text("NIV").tag("NIV")
-//                                }
-                } label: {
-                    Label("Versions", systemImage: "books.vertical")
-                }
+//                Menu {
+////                                Picker(selection: $selectedVersion, label: Text("Sorting options")) {
+////                                    Text("WEBBE").tag("WEBBE")
+////                                    Text("KJV").tag("KJV")
+////                                    Text("NIV").tag("NIV")
+////                                }
+//                } label: {
+//                    Label("Versions", systemImage: "books.vertical")
+//                }
                 Button(action: {}) {
                     Label("Bookmarks", systemImage: "bookmark")
                 }
