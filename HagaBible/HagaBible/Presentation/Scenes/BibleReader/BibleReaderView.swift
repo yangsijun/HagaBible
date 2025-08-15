@@ -22,22 +22,13 @@ struct BibleReaderView: View {
                     .ignoresSafeArea(.all)
                 ScrollViewReader { proxy in
                     ScrollView {
-                        Group {
-//                            if viewModel.bibleVersion?.language == "English" {
-                                BibleVerseListView(
-                                    verses: viewModel.bibleVerseList,
-                                    language: viewModel.bibleVersion?.language ?? "English",
-                                    fontConfiguration: fontThemeManager.fontConfiguration,
-                                    highlightedVerseNum: viewModel.navigatedVerseNum
-                                )
-//                            } else {
-//                                BibleVerseListView(
-//                                    verses: viewModel.bibleVerseList,
-//                                    fontConfiguration: fontThemeManager.fontConfigurationKorean,
-//                                    highlightedVerseNum: viewModel.navigatedVerseNum
-//                                )
-//                            }
-                        }
+                        BibleVerseListView(
+                            verses: viewModel.bibleVerseList,
+                            language: viewModel.bibleVersion?.language ?? "English",
+                            fontConfiguration: fontThemeManager.fontConfiguration,
+                            theme: fontThemeManager.theme,
+                            highlightedVerseNum: viewModel.navigatedVerseNum
+                        )
                         .onChange(of: viewModel.navigatedVerseNum) {
                             if viewModel.navigatedVerseNum != nil {
                                 highlightTask?.cancel()
@@ -48,7 +39,7 @@ struct BibleReaderView: View {
                             }
                         }
                     }
-                    .background(Color(uiColor: .systemBackground))
+                    .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
                     .swipeGesture(
                         onLeftSwipe: {
                             viewModel.goToPreviousChapter()

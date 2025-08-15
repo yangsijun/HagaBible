@@ -28,8 +28,12 @@ struct FontThemeConfigView: View {
                 FontSizeStepperView(fontSize: $fontThemeManager.fontConfiguration.size)
                 LineSpacingStepperView(lineSpacing: $fontThemeManager.fontConfiguration.lineSpacing)
                 FontTypeConfigView(fontType: fontTypeBinding)
+                ThemePickerView(theme: $fontThemeManager.theme)
             }
             .scrollContentBackground(.hidden)
+        }
+        .onAppear {
+            print(fontThemeManager.theme.rawValue)
         }
     }
 }
@@ -78,9 +82,33 @@ struct FontTypeConfigView: View {
     }
 }
 
+struct ThemePickerView: View {
+    @Binding var theme: Theme
+    
+    var body: some View {
+        Picker("Theme", selection: $theme) {
+            ForEach(Theme.allCases, id: \.self) { theme in
+                HStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(uiColor: theme.backgroundColor))
+                        .stroke(Color(uiColor: theme.textColor), lineWidth: 1)
+                        .frame(width: 30, height: 30)
+                        .overlay(
+                            Text("T")
+                                .foregroundStyle(Color(uiColor: theme.textColor))
+                        )
+                    Text(theme.themeName)
+                }
+            }
+        }
+        .pickerStyle(.inline)
+    }
+}
+
 #Preview {
     @Previewable @State var isPresented: Bool = true
     @Previewable @State var viewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    @Previewable @State var fontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     
     NavigationStack {
         Button(action: { isPresented.toggle() }) {
@@ -88,7 +116,7 @@ struct FontTypeConfigView: View {
         }
         .sheet(isPresented: $isPresented) {
             FontThemeConfigView(language: viewModel.bibleVersion?.language ?? "English")
-                .environment(viewModel)
+                .environment(fontThemeManager)
                 .presentationDetents([.medium])
         }
     }

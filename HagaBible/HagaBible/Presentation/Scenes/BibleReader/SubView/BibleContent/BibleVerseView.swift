@@ -12,6 +12,8 @@ struct BibleVerseView: View {
     let verseText: String
     
     private var font: UIFont
+    private var textColor: UIColor
+    private var verseNumberColor: UIColor
     private var alignment: NSTextAlignment
     private var lineSpacing: CGFloat?
     
@@ -21,12 +23,16 @@ struct BibleVerseView: View {
         verseNumber: Int,
         verseText: String,
         font: UIFont? = nil,
+        textColor: UIColor = .label,
+        verseNumberColor: UIColor = .secondaryLabel,
         alignment: NSTextAlignment = .natural,
         lineSpacing: CGFloat? = nil
     ) {
         self.verseNumber = verseNumber
         self.verseText = verseText
         self.font = font ?? .systemFont(ofSize: 17)
+        self.textColor = textColor
+        self.verseNumberColor = verseNumberColor
         self.alignment = alignment
         self.lineSpacing = lineSpacing
         
@@ -45,12 +51,13 @@ struct BibleVerseView: View {
                 .frame(minWidth: 12, minHeight: 22, alignment: .center)
                 .font(.caption)
                 .fontWidth(verseFontWidth)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color(uiColor: verseNumberColor))
             AdvancedText(
                 attributedText: NSMutableAttributedString(
                     string: verseText,
                     attributes: [
                         .font: font,
+                        .foregroundColor: textColor,
                         .paragraphStyle: {
                             let style = NSMutableParagraphStyle()
                             style.alignment = alignment
@@ -101,6 +108,7 @@ struct BibleVerseView: View {
             verseNumber: 14,
             verseText: "하나님이 가라사대 하늘의 궁창에 광명이 있어 주야를 나뉘게 하라 또 그 광명으로 하여 징조와 사시와 일자와 연한이 이루라",
             font: .maruBuri(size: 23),
+            textColor: .red,
             alignment: .justified
         )
         BibleVerseView(verseNumber: 88, verseText: "In the beginning, God created the heavens and the earth.")

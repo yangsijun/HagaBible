@@ -38,7 +38,7 @@ extension DIContainer {
         ))
         container.register(type: FontThemeManager.self, component: FontThemeManager(
             fontConfiguration: defaultFontConfiguration,
-            theme: defaultTheme
+            theme: Theme.system
         ))
     }
 }

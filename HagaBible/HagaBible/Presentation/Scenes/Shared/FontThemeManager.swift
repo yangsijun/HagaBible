@@ -10,8 +10,7 @@ import SwiftUI
 @Observable
 class FontThemeManager {
     var fontConfiguration: FontConfiguration = defaultFontConfiguration
-    
-    var theme: Theme = defaultTheme
+    var theme: Theme = .system
     
     init(fontConfiguration: FontConfiguration, theme: Theme) {
         self.fontConfiguration = fontConfiguration
