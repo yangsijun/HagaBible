@@ -86,6 +86,12 @@ struct BibleReaderView: View {
                     .presentationDetents([.medium])
             }
         }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
     }
 }
 
