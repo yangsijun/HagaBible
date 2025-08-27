@@ -69,6 +69,7 @@ struct BibleReaderView: View {
                     showFontThemeConfig: $showFontThemeConfig
                 )
             }
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showBibleNavigation) {
                 BibleNavigationView(
                     selectedVersion: viewModel.bibleVersion,

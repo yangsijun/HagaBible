@@ -16,41 +16,41 @@ struct BibleReaderToolbarContent: ToolbarContent {
     
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button(action: {
-                showBibleNavigation.toggle()
-            }) {
-                HStack {
-                    Text("\(bookName ?? "") \(chapterNum)\(bibleVersion?.language == "Korean" ? "장" : "")")
-                        .font(.title2)
-                        .bold()
-                    Text("\(bibleVersion?.versionCode ?? "")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 8)
-            }
+            BibleReaderToolbarTitleButton(
+                bookName: bookName,
+                chapterNum: chapterNum,
+                bibleVersion: bibleVersion,
+                showBibleNavigation: $showBibleNavigation
+            )
         }
         ToolbarItem {
-            Button(action: {}) {
+            BibleReaderToolbarIconButton(action: {}) {
                 Label("Listen", systemImage: "headphones")
             }
         }
-        ToolbarSpacer(.fixed)
+        if #available(iOS 26.0, *) {
+            ToolbarSpacer(.fixed)
+        }
         ToolbarItem {
-            Menu {
-                Button(action: {}) {
-                    Label("Bookmarks", systemImage: "bookmark")
-                }
-                Button(action: {
-                    showFontThemeConfig.toggle()
-                }) {
-                    Label("Font & Themes", systemImage: "textformat.size")
-                }
-            } label: {
+            BibleReaderToolbarMenuButton(
+                menuItems: [
+                    MenuItem(title: "Bookmarks", systemImage: "bookmark", action: {}),
+                    MenuItem(title: "Font & Themes", systemImage: "textformat.size", action: {
+                        showFontThemeConfig.toggle()
+                    })
+                ]
+            ) {
                 Image(systemName: "ellipsis")
             }
         }
     }
+}
+
+struct MenuItem: Identifiable {
+    let id = UUID() // 고유 ID
+    let title: String
+    let systemImage: String
+    let action: () -> Void // 버튼을 눌렀을 때 실행될 동작
 }
 
 #Preview {

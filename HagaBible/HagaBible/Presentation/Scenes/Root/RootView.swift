@@ -20,7 +20,18 @@ struct RootView: View {
                 SearchView()
             }
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
+        .applyTabBarMinimizeBehavior()
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func applyTabBarMinimizeBehavior() -> some View {
+        if #available(iOS 26.0, *) {
+            self.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
+        }
     }
 }
 
