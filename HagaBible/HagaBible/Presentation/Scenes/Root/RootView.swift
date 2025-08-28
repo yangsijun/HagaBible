@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct RootView: View {
+    @State private var search: String = ""
+    
     var body: some View {
         TabView {
             Tab("BibleReader", systemImage: "book.fill") {
@@ -16,10 +18,11 @@ struct RootView: View {
             Tab("Recordings", systemImage: "waveform") {
                 RecordingsView()
             }
-            Tab(role: .search) {
+            Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 SearchView()
             }
         }
+        .searchable(text: $search)
         .applyTabBarMinimizeBehavior()
     }
 }
