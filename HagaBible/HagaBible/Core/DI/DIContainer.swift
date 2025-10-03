@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 final class DIContainer {
     static let shared = DIContainer()
@@ -36,6 +37,22 @@ extension DIContainer {
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
+        container.register(type: AudioService.self, component: AudioService())
+        
+        let schema = Schema([Recording.self, RecordingFolder.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        guard let modelContainer = try? ModelContainer(for: schema, configurations: [config]) else {
+            fatalError("ModelContainer 생성에 실패했습니다.")
+        }
+        container.register(type: ModelContainer.self, component: modelContainer)
+        
+        container.register(type: RecordingRepository.self, component: DefaultRecordingRepository())
+        
+        container.register(type: RecordingsViewModel.self, component: RecordingsViewModel(
+            audioService: container.resolve(type: AudioService.self),
+            recordingRepository: container.resolve(type: RecordingRepository.self)
+        ))
+        
         container.register(type: FontThemeManager.self, component: FontThemeManager(
             fontConfiguration: defaultFontConfiguration,
             theme: Theme.system
