@@ -6,10 +6,132 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct RecordingsView: View {
+    @State private var viewModel: RecordingsViewModel = DIContainer.shared.resolve(type: RecordingsViewModel.self)
+    
+    @State private var bibleReference = "요한복음 3장 16절"
+    
+    @State private var isPlayerPresented = false
+    
     var body: some View {
-        Text("RecordingsView")
+        NavigationStack {
+            VStack(spacing: 0) {
+                if viewModel.recordings.isEmpty {
+                    Text("녹음이 없습니다.")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(viewModel.recordings) { recording in
+                            Button(action: {
+                                // TODO: 녹음파일 재생
+                            }) {
+                                VStack(alignment: .leading) {
+                                    Text(recording.title)
+                                        .font(.headline)
+                                }
+                            }
+                            .contextMenu {
+                                ShareLink(
+                                    item: recording.fileURL,
+                                    preview: SharePreview(
+                                        recording.fileURL.lastPathComponent,
+                                        icon: Image(systemName: "waveform")
+                                    )
+                                ) {
+                                  Label("공유하기", systemImage: "square.and.arrow.up")
+                                }
+                            }
+                        }
+                        .onDelete(perform: deleteRecording)
+                    }
+                }
+                VStack {
+                    if viewModel.isRecording {
+                        Text(viewModel.recordingTimeText)
+                            .font(.body)
+                            .padding(.top)
+                        
+                        WaveformView(samples: viewModel.recordingSamples)
+                            .frame(height: 150)
+                            .padding()
+                    }
+                    RecordButton(
+                        isRecording: viewModel.isRecording,
+                        action: toggleRecording
+                    )
+                    .padding()
+                    .animation(.easeInOut, value: viewModel.isRecording)
+                }
+                .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial)
+            }
+            .navigationTitle("Recordings")
+            .toolbar {
+                EditButton()
+            }
+        }
+    }
+    
+    private func toggleRecording() {
+        if viewModel.isRecording {
+            viewModel.stopRecording()
+        } else {
+            viewModel.startRecording()
+        }
+    }
+    
+    private func deleteRecording(at offsets: IndexSet) {
+        print(offsets)
+        for index in offsets {
+            viewModel.deleteRecording(at: index)
+        }
+    }
+}
+
+struct RecordingRow: View {
+    let url: URL
+    let playAction: () -> Void
+    
+    var body: some View {
+        HStack {
+            Text(url.lastPathComponent)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer()
+            Button(action: playAction) {
+                Image(systemName: "play.circle")
+                    .font(.system(size: 24))
+            }
+        }
+    }
+}
+
+struct RecordButton: View {
+    let isRecording: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Circle()
+                .stroke(.white, lineWidth: 4)
+                .overlay(
+                    isRecording ?
+                    AnyView(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(.red)
+                            .padding(14)
+                    ) :
+                    AnyView(
+                        Circle()
+                            .fill(.red)
+                            .padding(4)
+                    )
+                )
+        }
+        .frame(width: 60, height: 60)
+        .shadow(color: Color.gray.opacity(0.4), radius: 8, x: 0, y: 4)
     }
 }
 
