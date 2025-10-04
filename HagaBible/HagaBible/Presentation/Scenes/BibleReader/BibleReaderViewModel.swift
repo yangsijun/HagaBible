@@ -6,19 +6,50 @@
 //
 
 import Observation
+import Foundation
 
 @Observable
 @MainActor
 class BibleReaderViewModel {
+    private let appState: AppState
+    
     var isLoading: Bool = false
     var isLoadingSuccess: Bool?
     
     var bibleRepository: BibleRepository
     
-    var bibleVersion: BibleVersion?
-    var bibleBook: BibleBook?
-    var bibleChapter: BibleChapter?
-    var bibleVerse: BibleVerse?
+    var bibleVersion: BibleVersion? {
+        get {
+            appState.bibleReaderState.bibleVersion
+        }
+        set {
+            appState.bibleReaderState.bibleVersion = newValue
+        }
+    }
+    var bibleBook: BibleBook? {
+        get {
+            appState.bibleReaderState.bibleBook
+        }
+        set {
+            appState.bibleReaderState.bibleBook = newValue
+        }
+    }
+    var bibleChapter: BibleChapter? {
+        get {
+            appState.bibleReaderState.bibleChapter
+        }
+        set {
+            appState.bibleReaderState.bibleChapter = newValue
+        }
+    }
+    var bibleVerse: BibleVerse? {
+        get {
+            appState.bibleReaderState.bibleVerse
+        }
+        set {
+            appState.bibleReaderState.bibleVerse = newValue
+        }
+    }
     
     var availableVersions: [BibleVersion] = []
     var bibleBookList: [BibleBook] = []
@@ -48,7 +79,9 @@ class BibleReaderViewModel {
     
     var navigatedVerseNum: Int?
     
-    init(bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1, verse: Int = 1) {
+    init(appState: AppState, bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1, verse: Int = 1) {
+        self.appState = appState
+        
         self.bibleRepository = bibleRepository
         
         self.versionCode = versionCode

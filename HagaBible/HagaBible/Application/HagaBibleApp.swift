@@ -23,6 +23,8 @@ struct HagaBibleApp: App {
     private func registerDependencies() {
         let container = DIContainer.shared
         
+        container.register(type: AppState.self, component: AppState())
+        
         do {
             let appDatabase = try AppDatabase()
             container.register(type: AppDatabase.self, component: appDatabase)
@@ -37,6 +39,7 @@ struct HagaBibleApp: App {
         ))
 
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
+            appState: container.resolve(type: AppState.self),
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
         
@@ -52,6 +55,7 @@ struct HagaBibleApp: App {
         container.register(type: RecordingRepository.self, component: DefaultRecordingRepository())
             
         container.register(type: RecordingsViewModel.self, component: RecordingsViewModel(
+            appState: container.resolve(type: AppState.self),
             audioService: container.resolve(type: AudioService.self),
             recordingRepository: container.resolve(type: RecordingRepository.self)
         ))

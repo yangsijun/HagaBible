@@ -33,8 +33,11 @@ extension DIContainer {
     static func registerForPreview() {
         let container = DIContainer.shared
         
+        container.register(type: AppState.self, component: AppState())
+        
         container.register(type: BibleRepository.self, component: MockBibleRepository.shared)
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
+            appState: container.resolve(type: AppState.self),
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
         container.register(type: AudioService.self, component: AudioService())
@@ -49,6 +52,7 @@ extension DIContainer {
         container.register(type: RecordingRepository.self, component: DefaultRecordingRepository())
         
         container.register(type: RecordingsViewModel.self, component: RecordingsViewModel(
+            appState: container.resolve(type: AppState.self),
             audioService: container.resolve(type: AudioService.self),
             recordingRepository: container.resolve(type: RecordingRepository.self)
         ))

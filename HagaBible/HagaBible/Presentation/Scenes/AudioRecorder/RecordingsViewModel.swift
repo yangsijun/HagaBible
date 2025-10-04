@@ -11,12 +11,16 @@ import Foundation
 @Observable
 @MainActor
 class RecordingsViewModel {
+    private let appState: AppState
+    
     private let audioService: AudioService
     private let recordingRepository: RecordingRepository
     
     var recordings: [Recording] = []
     
-    init(audioService: AudioService, recordingRepository: RecordingRepository) {
+    init(appState: AppState, audioService: AudioService, recordingRepository: RecordingRepository) {
+        self.appState = appState
+        
         self.audioService = audioService
         self.recordingRepository = recordingRepository
         
