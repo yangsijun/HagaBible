@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct RecordingsView: View {
     @State private var viewModel: RecordingsViewModel = DIContainer.shared.resolve(type: RecordingsViewModel.self)
@@ -34,9 +35,9 @@ struct RecordingsView: View {
                             }
                             .contextMenu {
                                 ShareLink(
-                                    item: recording.fileURL,
+                                    item: ShareableRecording(title: recording.title, fileURL: recording.fileURL),
                                     preview: SharePreview(
-                                        recording.fileURL.lastPathComponent,
+                                        recording.title,
                                         icon: Image(systemName: "waveform")
                                     )
                                 ) {
@@ -83,7 +84,6 @@ struct RecordingsView: View {
     }
     
     private func deleteRecording(at offsets: IndexSet) {
-        print(offsets)
         for index in offsets {
             viewModel.deleteRecording(at: index)
         }
@@ -134,6 +134,31 @@ struct RecordButton: View {
         .shadow(color: Color.gray.opacity(0.4), radius: 8, x: 0, y: 4)
     }
 }
+
+private struct ShareableRecording: Transferable {
+    let title: String
+    let fileURL: URL
+    
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation(
+            exporting: { recording in
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(recording.title)
+                    .appendingPathExtension(recording.fileURL.pathExtension)
+                
+                if FileManager.default.fileExists(atPath: tempURL.path) {
+                    try? FileManager.default.removeItem(at: tempURL)
+                }
+                
+                try FileManager.default.copyItem(at: recording.fileURL, to: tempURL)
+                
+                return tempURL
+            }
+        )
+    }
+}
+
+
 
 #Preview {
     RecordingsView()

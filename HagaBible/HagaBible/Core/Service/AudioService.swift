@@ -159,7 +159,6 @@ class AudioService {
         } else {
             audioSamples.append(0.0)
         }
-        print(normalizedPower)
         
         if audioSamples.count > 50 {
             audioSamples.removeFirst()
