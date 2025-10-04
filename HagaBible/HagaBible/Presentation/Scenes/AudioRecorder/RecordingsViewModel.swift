@@ -50,13 +50,15 @@ class RecordingsViewModel {
     
     func stopRecording() {
         let newRecordingID = UUID()
+        let bibleReferenceText = makeBibleReferenceText()
+        
         audioService.stopRecording { url, duration in
             do {
                 try self.recordingRepository.addRecording(
                     Recording(
                         id: newRecordingID,
-                        title: "새 녹음",
-                        bibleReference: "temp",
+                        title: bibleReferenceText,
+                        bibleReference: bibleReferenceText,
                         transcript: nil,
                         duration: duration,
                         fileURL: url,
@@ -100,5 +102,25 @@ class RecordingsViewModel {
     
     var recordingSamples: [CGFloat] {
         return audioService.audioSamples
+    }
+    
+    func makeBibleReferenceText() -> String {
+        var bibleReferenceText: String = ""
+        
+        let bibleVersion = appState.bibleReaderState.bibleVersion
+        let bibleBook = appState.bibleReaderState.bibleBook
+        let bibleChapter = appState.bibleReaderState.bibleChapter
+        
+        guard let bibleVersion, let bibleBook, let bibleChapter else {
+            return "성경 녹음"
+        }
+        
+        if bibleVersion.language == "Korean" {
+            bibleReferenceText = "\(bibleBook.bookName) \(bibleChapter.chapter)장"
+        } else {
+            bibleReferenceText = "\(bibleBook.bookName) \(bibleChapter.chapter)"
+        }
+        
+        return bibleReferenceText
     }
 }
