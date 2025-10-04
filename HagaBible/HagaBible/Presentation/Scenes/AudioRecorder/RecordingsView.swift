@@ -117,21 +117,14 @@ struct RecordButton: View {
             Circle()
                 .stroke(.white, lineWidth: 4)
                 .overlay(
-                    isRecording ?
-                    AnyView(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(.red)
-                            .padding(14)
-                    ) :
-                    AnyView(
-                        Circle()
-                            .fill(.red)
-                            .padding(4)
-                    )
+                    RoundedRectangle(cornerRadius: isRecording ? 4 : 30)
+                        .fill(.red)
+                        .padding(isRecording ? 14 : 4)
                 )
         }
         .frame(width: 60, height: 60)
         .shadow(color: Color.gray.opacity(0.4), radius: 8, x: 0, y: 4)
+        .animation(.easeInOut, value: isRecording)
     }
 }
 
