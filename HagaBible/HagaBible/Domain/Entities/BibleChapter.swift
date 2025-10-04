@@ -5,7 +5,7 @@
 //  Created by 양시준 on 7/11/25.
 //
 
-struct BibleChapter: Equatable, Hashable {
+struct BibleChapter: Equatable, Hashable, Codable {
     let bookCode: String
     let bookOrder: Int
     let chapter: Int

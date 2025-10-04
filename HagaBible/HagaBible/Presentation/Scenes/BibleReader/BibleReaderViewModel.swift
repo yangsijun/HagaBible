@@ -79,15 +79,15 @@ class BibleReaderViewModel {
     
     var navigatedVerseNum: Int?
     
-    init(appState: AppState, bibleRepository: BibleRepository, versionCode: String = "WEBBE", bookCode: String = "GEN", chapter: Int = 1, verse: Int = 1) {
+    init(appState: AppState, bibleRepository: BibleRepository) {
         self.appState = appState
         
         self.bibleRepository = bibleRepository
         
-        self.versionCode = versionCode
-        self.bookCode = bookCode
-        self.chapterNum = chapter
-        self.verseNum = verse
+        self.versionCode = appState.bibleReaderState.bibleVersion?.versionCode ?? "WEBBE"
+        self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? "GEN"
+        self.chapterNum = appState.bibleReaderState.bibleChapter?.chapter ?? 1
+        self.verseNum = appState.bibleReaderState.bibleVerse?.verse ?? 1
         
         fetchAvailableVersions()
         fetchBibleVersion()
