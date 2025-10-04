@@ -41,12 +41,12 @@ class AudioService {
         }
     }
     
-    private func getDocumentsDirectory() -> URL {
-        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    }
+//    private func getDocumentsDirectory() -> URL {
+//        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+//    }
     
     func startRecording() {
-        let audioFilename = getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).m4a")
+        let audioFilename = FileManager.documentsDirectory.appendingPathComponent("\(UUID().uuidString).m4a")
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 44100,
@@ -109,7 +109,9 @@ class AudioService {
         completion(audioURL, duration)
     }
     
-    func deleteRecording(url: URL) {
+    func deleteRecording(fileName: String) {
+        let url = FileManager.documentsDirectory.appendingPathComponent(fileName)
+        
         if FileManager.default.fileExists(atPath: url.path) {
             print("삭제할 파일을 찾았습니다: \(url.lastPathComponent)")
             print("녹음 파일 삭제 시작")
@@ -125,7 +127,7 @@ class AudioService {
     
     func getAllRecordings() -> [URL] {
         let fileManager = FileManager.default
-        let documentsURL = getDocumentsDirectory()
+        let documentsURL = FileManager.documentsDirectory
         
         guard let fileURLs = try? fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil, options: []) else {
             return []

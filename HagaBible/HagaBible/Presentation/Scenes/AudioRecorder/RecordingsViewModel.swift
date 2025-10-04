@@ -61,12 +61,12 @@ class RecordingsViewModel {
                         bibleReference: bibleReferenceText,
                         transcript: nil,
                         duration: duration,
-                        fileURL: url,
+                        fileName: "\(url.lastPathComponent)",
                         createdAt: .now,
                         updatedAt: .now
                     )
                 )
-                print("Recording에 저장된 url: \(url)")
+                print("Recording에 저장된 fileName: \(url.lastPathComponent)")
             } catch {
                 print("녹음 저장 실패: \(error)")
             }
@@ -77,8 +77,8 @@ class RecordingsViewModel {
     func deleteRecording(_ recording: Recording) {
         do {
             print(audioService.getAllRecordings())
-            print(recording.fileURL)
-            audioService.deleteRecording(url: recording.fileURL)
+            print(recording.fileName)
+            audioService.deleteRecording(fileName: recording.fileName)
             try recordingRepository.deleteRecording(recording)
         } catch {
             print("녹음 삭제 실패: \(error)")

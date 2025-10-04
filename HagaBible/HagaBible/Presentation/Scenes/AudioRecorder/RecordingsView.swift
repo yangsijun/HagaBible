@@ -35,7 +35,7 @@ struct RecordingsView: View {
                             }
                             .contextMenu {
                                 ShareLink(
-                                    item: ShareableRecording(title: recording.title, fileURL: recording.fileURL),
+                                    item: ShareableRecording(title: recording.title, fileName: recording.fileName),
                                     preview: SharePreview(
                                         recording.title,
                                         icon: Image(systemName: "waveform")
@@ -137,7 +137,10 @@ struct RecordButton: View {
 
 private struct ShareableRecording: Transferable {
     let title: String
-    let fileURL: URL
+    let fileName: String
+    var fileURL: URL {
+        FileManager.documentsDirectory.appendingPathComponent(fileName)
+    }
     
     static var transferRepresentation: some TransferRepresentation {
         ProxyRepresentation(

@@ -15,7 +15,7 @@ class Recording: Identifiable {
     var bibleReference: String
     var transcript: String?
     var duration: TimeInterval
-    var fileURL: URL
+    var fileName: String
     var createdAt: Date
     var updatedAt: Date
     
@@ -27,7 +27,7 @@ class Recording: Identifiable {
         bibleReference: String,
         transcript: String? = nil,
         duration: TimeInterval,
-        fileURL: URL,
+        fileName: String,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -36,7 +36,7 @@ class Recording: Identifiable {
         self.bibleReference = bibleReference
         self.transcript = transcript
         self.duration = duration
-        self.fileURL = fileURL
+        self.fileName = fileName
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
