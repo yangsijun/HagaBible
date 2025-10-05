@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 
 struct RecordingsView: View {
     @State private var viewModel: RecordingsViewModel = DIContainer.shared.resolve(type: RecordingsViewModel.self)
+    private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     
     @State private var bibleReference = "요한복음 3장 16절"
     
@@ -47,6 +48,7 @@ struct RecordingsView: View {
                         }
                         .onDelete(perform: deleteRecording)
                     }
+                    .scrollContentBackground(.hidden)
                 }
                 VStack {
                     if viewModel.isRecording {
@@ -68,6 +70,7 @@ struct RecordingsView: View {
                 .frame(maxWidth: .infinity)
                 .background(.ultraThinMaterial)
             }
+            .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
             .navigationTitle("Recordings")
             .toolbar {
                 EditButton()
@@ -157,5 +160,6 @@ private struct ShareableRecording: Transferable {
 
 
 #Preview {
-    RecordingsView()
+    DIContainer.registerForPreview()
+    return RecordingsView()
 }
