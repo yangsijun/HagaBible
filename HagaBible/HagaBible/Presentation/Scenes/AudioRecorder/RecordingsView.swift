@@ -52,21 +52,24 @@ struct RecordingsView: View {
                 }
                 VStack {
                     if viewModel.isRecording {
-                        Text(viewModel.recordingTimeText)
-                            .font(.body)
-                            .padding(.top)
-                        
-                        WaveformView(samples: viewModel.recordingSamples)
-                            .frame(height: 150)
-                            .padding()
+                        VStack {
+                            Text(viewModel.recordingTimeText)
+                                .font(.body)
+                                .padding(.top)
+                            
+                            WaveformView(samples: viewModel.recordingSamples)
+                                .frame(height: 150)
+                                .padding()
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                     RecordButton(
                         isRecording: viewModel.isRecording,
                         action: toggleRecording
                     )
                     .padding()
-                    .animation(.easeInOut, value: viewModel.isRecording)
                 }
+                .animation(.easeInOut, value: viewModel.isRecording)
                 .frame(maxWidth: .infinity)
                 .background(.ultraThinMaterial)
             }
@@ -119,6 +122,7 @@ struct RecordButton: View {
         Button(action: action) {
             Circle()
                 .stroke(.white, lineWidth: 4)
+                .fill(Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: isRecording ? 4 : 30)
                         .fill(.red)
@@ -126,7 +130,7 @@ struct RecordButton: View {
                 )
         }
         .frame(width: 60, height: 60)
-        .shadow(color: Color.gray.opacity(0.4), radius: 8, x: 0, y: 4)
+        .glassEffect()
         .animation(.easeInOut, value: isRecording)
     }
 }
