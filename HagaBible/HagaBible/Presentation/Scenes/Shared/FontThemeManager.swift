@@ -20,6 +20,17 @@ class FontThemeManager {
         }
     }
     
+    var colorScheme: ColorScheme? {
+        switch theme {
+        case .system:
+            return nil
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        }
+    }
+    
     init() {
         loadTheme()
         loadFontConfiguration()

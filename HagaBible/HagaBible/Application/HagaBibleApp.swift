@@ -17,6 +17,7 @@ struct HagaBibleApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .preferredColorScheme(DIContainer.shared.resolve(type: FontThemeManager.self).colorScheme)
         }
     }
     
