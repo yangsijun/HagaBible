@@ -67,6 +67,7 @@ struct RecordingsView: View {
                         isRecording: viewModel.isRecording,
                         action: toggleRecording
                     )
+                    .glassEffect()
                     .padding()
                 }
                 .animation(.easeInOut, value: viewModel.isRecording)
@@ -121,7 +122,6 @@ struct RecordButton: View {
     var body: some View {
         Button(action: action) {
             Circle()
-                .stroke(.white, lineWidth: 4)
                 .fill(Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: isRecording ? 4 : 30)
