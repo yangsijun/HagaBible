@@ -4,10 +4,13 @@
   },
   "groups" : [
     {
+      "hidden" : false,
       "layers" : [
         {
           "blend-mode" : "normal",
-          "fill" : "none",
+          "fill" : {
+            "solid" : "display-p3:1.00000,1.00000,1.00000,1.00000"
+          },
           "glass" : true,
           "hidden" : false,
           "image-name" : "book200.png",
@@ -21,9 +24,13 @@
           }
         },
         {
+          "fill" : {
+            "solid" : "display-p3:1.00000,1.00000,1.00000,1.00000"
+          },
+          "hidden" : false,
           "image-name" : "Circle512.png",
           "name" : "Circle512",
-          "opacity" : 0.5,
+          "opacity" : 0.25,
           "position" : {
             "scale" : 1.2,
             "translation-in-points" : [
@@ -34,10 +41,13 @@
         },
         {
           "blend-mode" : "normal",
-          "fill" : "none",
+          "fill" : {
+            "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+          },
+          "hidden" : false,
           "image-name" : "Circle820.png",
           "name" : "Circle820",
-          "opacity" : 0.4,
+          "opacity" : 0.25,
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
