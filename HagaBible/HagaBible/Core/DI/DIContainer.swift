@@ -57,9 +57,6 @@ extension DIContainer {
             recordingRepository: container.resolve(type: RecordingRepository.self)
         ))
         
-        container.register(type: FontThemeManager.self, component: FontThemeManager(
-            fontConfiguration: defaultFontConfiguration,
-            theme: Theme.system
-        ))
+        container.register(type: FontThemeManager.self, component: FontThemeManager())
     }
 }

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-enum Theme: String, CaseIterable {
+enum Theme: String, Codable, CaseIterable {
     case system = "System"
     case light = "Light"
     case dark = "Dark"

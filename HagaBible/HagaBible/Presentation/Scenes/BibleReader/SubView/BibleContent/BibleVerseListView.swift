@@ -27,7 +27,7 @@ struct BibleVerseListView: View {
                         font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
                         textColor: theme.textColor,
                         verseNumberColor: theme.verseNumberColor,
-                        alignment: fontConfiguration.alignment[language] ?? .natural,
+                        alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
                         lineSpacing: CGFloat(fontConfiguration.lineSpacing)
                     )
                     .id(index + 1)

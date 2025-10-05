@@ -11,31 +11,27 @@ import Foundation
 @MainActor
 class AppState {
     var bibleReaderState = BibleReaderState() {
-        didSet(oldValue) {
-            if oldValue != bibleReaderState {
-                saveState()
-            }
+        didSet {
+            saveBibleReaderState()
         }
     }
     
-    private let userDefaultsKey = "appState"
+    private let bibleReaderStateKey = "bibleReaderState"
     
     init() {
-        loadState()
+        loadBibleReaderState()
     }
     
-    private func saveState() {
+    private func saveBibleReaderState() {
         if let encodedData = try? JSONEncoder().encode(bibleReaderState) {
-            UserDefaults.standard.set(encodedData, forKey: userDefaultsKey)
-            print("AppState가 저장되었습니다.")
+            UserDefaults.standard.set(encodedData, forKey: bibleReaderStateKey)
         }
     }
 
-    private func loadState() {
-        if let savedData = UserDefaults.standard.data(forKey: userDefaultsKey),
+    private func loadBibleReaderState() {
+        if let savedData = UserDefaults.standard.data(forKey: bibleReaderStateKey),
            let decodedState = try? JSONDecoder().decode(BibleReaderState.self, from: savedData) {
             self.bibleReaderState = decodedState
-            print("AppState를 불러왔습니다.")
         }
     }
 }
