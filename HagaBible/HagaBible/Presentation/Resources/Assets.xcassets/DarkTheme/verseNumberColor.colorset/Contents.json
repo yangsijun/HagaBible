@@ -2,10 +2,10 @@
   "colors" : [
     {
       "color" : {
-        "color-space" : "extended-srgb",
+        "color-space" : "display-p3",
         "components" : {
           "alpha" : "0.600",
-          "blue" : "0.961",
+          "blue" : "0.922",
           "green" : "0.922",
           "red" : "0.922"
         }
@@ -20,8 +20,13 @@
         }
       ],
       "color" : {
-        "platform" : "ios",
-        "reference" : "secondaryLabelColor"
+        "color-space" : "display-p3",
+        "components" : {
+          "alpha" : "0.600",
+          "blue" : "0.922",
+          "green" : "0.922",
+          "red" : "0.922"
+        }
       },
       "idiom" : "universal"
     }
