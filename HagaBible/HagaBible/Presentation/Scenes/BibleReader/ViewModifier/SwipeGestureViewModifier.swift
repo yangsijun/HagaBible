@@ -35,7 +35,8 @@ struct SwipeGestureViewModifier: ViewModifier {
                 DragGesture()
                     .onChanged { gesture in
                         if abs(gesture.translation.width) > abs(gesture.translation.height) {
-                            offset = gesture.translation
+                            let offsetWidth = min(max(gesture.translation.width, -50), 50)
+                            offset = CGSize(width: offsetWidth, height: 0)
                             isDraggingHorizontally = true
                         } else {
                             withAnimation(.linear(duration: 0.1)) {
