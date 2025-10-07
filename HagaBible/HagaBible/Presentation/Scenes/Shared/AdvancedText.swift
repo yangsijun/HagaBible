@@ -25,11 +25,15 @@ struct AdvancedText: UIViewRepresentable {
         textView.textContainer.lineFragmentPadding = 0
         textView.textContainerInset = .zero
         
+        textView.isSelectable = false
+        textView.isUserInteractionEnabled = false
+        
         return textView
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
         uiView.attributedText = attributedText
+        uiView.isUserInteractionEnabled = false
     }
     
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {

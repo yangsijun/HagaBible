@@ -13,10 +13,12 @@ import Foundation
 class SearchViewModel {
     private let appState: AppState
     private let bibleRepository: BibleRepository
+    private let bibleReaderViewModel: BibleReaderViewModel
     
-    init(appState: AppState, bibleRepository: BibleRepository) {
+    init(appState: AppState, bibleRepository: BibleRepository, bibleReaderViewModel: BibleReaderViewModel) {
         self.appState = appState
         self.bibleRepository = bibleRepository
+        self.bibleReaderViewModel = bibleReaderViewModel
     }
     
     func search(text: String) -> [BibleVerse] {
@@ -44,5 +46,13 @@ class SearchViewModel {
         } catch {
             return ""
         }
+    }
+    
+    func gotoVerse(verse: BibleVerse) {
+        bibleReaderViewModel.bookCode = verse.bookCode
+        bibleReaderViewModel.chapterNum = verse.chapter
+        bibleReaderViewModel.navigatedVerseNum = verse.verse
+        
+        appState.selectedTab = .bibleReader
     }
 }

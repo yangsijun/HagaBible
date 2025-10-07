@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct SearchView: View {
+    @Environment(\.dismissSearch) var dismissSearch
+    
     @Binding var searchText: String
     @State private var viewModel: SearchViewModel = DIContainer.shared.resolve(type: SearchViewModel.self)
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
@@ -20,11 +22,16 @@ struct SearchView: View {
         NavigationStack {
             List {
                 ForEach(viewModel.search(text: searchText).prefix(100), id: \.self) { verse in
-                    SearchResultVerseView(
-                        bibleReferenceText: viewModel.getBibleReferenceString(verse: verse),
-                        verseText: verse.verseText ?? "",
-                        searchText: searchText
-                    )
+                    Button{
+                        viewModel.gotoVerse(verse: verse)
+                        dismissSearch()
+                    } label: {
+                        SearchResultVerseView(
+                            bibleReferenceText: viewModel.getBibleReferenceString(verse: verse),
+                            verseText: verse.verseText ?? "",
+                            searchText: searchText
+                        )
+                    }
                 }
             }
             .scrollContentBackground(.hidden)

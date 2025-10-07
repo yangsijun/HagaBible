@@ -10,6 +10,8 @@ import Foundation
 @Observable
 @MainActor
 class AppState {
+    var selectedTab: TabIdentifier = .bibleReader
+    
     var bibleReaderState = BibleReaderState() {
         didSet {
             saveBibleReaderState()

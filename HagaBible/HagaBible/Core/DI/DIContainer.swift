@@ -59,7 +59,8 @@ extension DIContainer {
         
         container.register(type: SearchViewModel.self, component: SearchViewModel(
             appState: container.resolve(type: AppState.self),
-            bibleRepository: container.resolve(type: BibleRepository.self)
+            bibleRepository: container.resolve(type: BibleRepository.self),
+            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
         ))
         
         container.register(type: FontThemeManager.self, component: FontThemeManager())
