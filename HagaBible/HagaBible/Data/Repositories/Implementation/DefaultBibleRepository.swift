@@ -200,7 +200,7 @@ final class DefaultBibleRepository: BibleRepository {
                 bible_verse
             WHERE
                 version_code = ?
-                AND verse_text LIKE ?
+                AND LOWER(verse_text) LIKE LOWER(?)
             ORDER BY
                 book_order, chapter, verse;
         """

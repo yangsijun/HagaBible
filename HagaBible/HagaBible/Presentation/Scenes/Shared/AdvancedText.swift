@@ -42,7 +42,7 @@ struct AdvancedText: UIViewRepresentable {
 
 extension NSMutableAttributedString {
     func addingAttributes(_ attrs: [NSAttributedString.Key: Any], toSubstring substring: String) -> NSMutableAttributedString {
-        if let range = self.string.range(of: substring) {
+        if let range = self.string.range(of: substring, options: .caseInsensitive) {
             let nsRange = NSRange(range, in: self.string)
             self.addAttributes(attrs, range: nsRange)
         }

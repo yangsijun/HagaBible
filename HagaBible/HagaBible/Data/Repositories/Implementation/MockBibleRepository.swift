@@ -190,7 +190,7 @@ struct MockBibleRepository: BibleRepository {
     func findByVerseTextContaining(versionCode: String, keyword: String) throws -> [BibleVerse] {
         return mockBibleVerses.filter {
             $0.versionCode == versionCode
-            && (($0.verseText?.lowercased().contains(keyword.lowercased())) != nil)
+            && (($0.verseText?.lowercased().contains(keyword.lowercased())) ?? false)
         }
     }
 }

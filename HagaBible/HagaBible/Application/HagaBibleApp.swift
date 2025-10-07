@@ -61,6 +61,11 @@ struct HagaBibleApp: App {
             recordingRepository: container.resolve(type: RecordingRepository.self)
         ))
         
+        container.register(type: SearchViewModel.self, component: SearchViewModel(
+            appState: container.resolve(type: AppState.self),
+            bibleRepository: container.resolve(type: BibleRepository.self)
+        ))
+        
         container.register(type: FontThemeManager.self, component: FontThemeManager())
     }
 }
