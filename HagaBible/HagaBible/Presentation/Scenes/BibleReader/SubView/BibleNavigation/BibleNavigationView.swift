@@ -9,45 +9,34 @@ import SwiftUI
 
 struct BibleNavigationView: View {
     @Environment(\.dismiss) var dismiss
-    @Environment(BibleReaderViewModel.self) private var viewModel: BibleReaderViewModel
+    @Environment(BibleReaderViewModel.self) private var bibleReadeViewModel: BibleReaderViewModel
+    
+    @State private var viewModel: BibleNavigationViewModel = DIContainer.shared.resolve(type: BibleNavigationViewModel.self)
     
     @State var selectedVersion: BibleVersion?
     @State var selectedBook: BibleBook?
     @State var selectedChapter: BibleChapter?
     @State var selectedVerse: BibleVerse?
-    
-    var pickerVersionList: [BibleVersion] {
-        viewModel.availableVersions
-    }
-    var pickerBookList: [BibleBook] {
-        viewModel.getBibleBookListByVersion(of: selectedVersion ?? pickerVersionList.first!)
-    }
-    var pickerChapterList: [BibleChapter] {
-        viewModel.getBibleChapterListByBook(of: selectedBook ?? pickerBookList.first!)
-    }
-    var pickerVerseList: [BibleVerse] {
-        viewModel.getBibleVerseListByChapter(of: selectedChapter ?? pickerChapterList.first!)
-    }
-    
+        
     var body: some View {
         NavigationStack {
             VStack {
                 HStack(alignment: .top, spacing: 0) {
                     Picker("BookPicker", selection: $selectedBook) {
-                        ForEach(pickerBookList, id: \.bookCode) { book in
+                        ForEach(viewModel.bookList, id: \.bookCode) { book in
                             Text(book.bookName).tag(book)
                         }
                     }
                     .pickerStyle(.wheel)
                     HStack(spacing: 0) {
                         Picker("ChapterPicker", selection: $selectedChapter) {
-                            ForEach(pickerChapterList, id: \.self) { chapter in
+                            ForEach(viewModel.chapterList, id: \.self) { chapter in
                                 Text("\(chapter.chapter)").tag(chapter)
                             }
                         }
                         .pickerStyle(.wheel)
                         Picker("VersePicker", selection: $selectedVerse) {
-                            ForEach(pickerVerseList, id: \.self) { verse in
+                            ForEach(viewModel.verseList, id: \.self) { verse in
                                 Text("\(verse.verse)").tag(verse)
                             }
                         }
@@ -56,26 +45,35 @@ struct BibleNavigationView: View {
                 }
                 .navigationBarTitleDisplayMode(.inline)
             }
+            .task {
+                await viewModel.loadVersionList()
+                await viewModel.loadBookList(version: selectedVersion!)
+                await viewModel.loadChapterList(version: selectedVersion!, book: selectedBook!)
+                await viewModel.loadVerseList(version: selectedVersion!, book: selectedBook!, chapter: selectedChapter!)
+            }
             .onChange(of: selectedVersion) {
-                selectedBook = pickerBookList.first(where: { $0.bookCode == selectedBook?.bookCode })
+                Task {
+                    await viewModel.loadBookList(version: selectedVersion!)
+                    selectedBook = viewModel.bookList.first(where: { $0.bookCode == selectedBook?.bookCode })
+                }
             }
             .onChange(of: selectedBook) { oldValue, newValue in
                 if oldValue?.bookCode == newValue?.bookCode {
-                    selectedChapter = pickerChapterList.first(where: { $0.chapter == selectedChapter?.chapter })
+                    selectedChapter = viewModel.chapterList.first(where: { $0.chapter == selectedChapter?.chapter })
                 } else {
-                    selectedChapter = pickerChapterList.first
+                    selectedChapter = viewModel.chapterList.first
                 }
             }
             .onChange(of: selectedChapter) { oldValue, newValue in
                 if oldValue?.chapter == newValue?.chapter {
-                    selectedVerse = pickerVerseList.first(where: { $0.verse == selectedVerse?.verse })
+                    selectedVerse = viewModel.verseList.first(where: { $0.verse == selectedVerse?.verse })
                 } else {
-                    selectedVerse = pickerVerseList.first
+                    selectedVerse = viewModel.verseList.first
                 }
             }
             .toolbarTitleMenu {
                 Picker(selection: $selectedVersion, label: Text("Sorting options")) {
-                    ForEach(viewModel.availableVersions, id: \.versionCode) { version in
+                    ForEach(viewModel.versionList, id: \.versionCode) { version in
                         Text(version.versionName).tag(version)
                     }
                 }
@@ -87,39 +85,39 @@ struct BibleNavigationView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: {
                         if selectedVersion == nil {
-                            selectedVersion = viewModel.availableVersions.first!
+                            selectedVersion = viewModel.versionList.first!
                         }
                         if selectedBook == nil {
-                            selectedBook = viewModel.bibleBookList.first!
+                            selectedBook = viewModel.bookList.first!
                         }
                         if selectedChapter == nil {
-                            selectedChapter = viewModel.getBibleChapterListByBook(of: selectedBook!).first!
+                            selectedChapter = viewModel.chapterList.first!
                         }
                         if selectedVerse == nil {
-                            selectedVerse = viewModel.getBibleVerseListByChapter(of: selectedChapter!).first!
+                            selectedVerse = viewModel.verseList.first!
                         }
                         
                         if let selectedVersion = selectedVersion {
-                            viewModel.versionCode = selectedVersion.versionCode
+                            bibleReadeViewModel.versionCode = selectedVersion.versionCode
                         }
                         if let selectedBook = selectedBook {
-                            viewModel.bookCode = selectedBook.bookCode
+                            bibleReadeViewModel.bookCode = selectedBook.bookCode
                         }
                         if let selectedChapter = selectedChapter {
-                            viewModel.chapterNum = selectedChapter.chapter
+                            bibleReadeViewModel.chapterNum = selectedChapter.chapter
                         }
                         if let selectedVerse = selectedVerse {
-                            viewModel.verseNum = selectedVerse.verse
-                            viewModel.navigatedVerseNum = selectedVerse.verse
+                            bibleReadeViewModel.verseNum = selectedVerse.verse
+                            bibleReadeViewModel.navigatedVerseNum = selectedVerse.verse
                         }
                         
                         dismiss()
                         if let selectedVerse = selectedVerse {
-                            viewModel.navigatedVerseNum = selectedVerse.verse
+                            bibleReadeViewModel.navigatedVerseNum = selectedVerse.verse
                         } else {
-                            viewModel.navigatedVerseNum = 1
+                            bibleReadeViewModel.navigatedVerseNum = 1
                         }
-                        viewModel.bibleNavigationUpdateTrigger.toggle()
+                        bibleReadeViewModel.bibleNavigationUpdateTrigger.toggle()
                     }) {
                         Image(systemName: "checkmark")
                     }

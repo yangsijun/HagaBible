@@ -40,6 +40,11 @@ extension DIContainer {
             appState: container.resolve(type: AppState.self),
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
+        
+        container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
+            bibleRepository: container.resolve(type: BibleRepository.self)
+        ))
+        
         container.register(type: AudioService.self, component: AudioService())
         
         let schema = Schema([Recording.self, RecordingFolder.self])

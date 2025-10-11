@@ -29,18 +29,24 @@ struct HagaBibleApp: App {
         do {
             let appDatabase = try AppDatabase()
             container.register(type: AppDatabase.self, component: appDatabase)
+#if DEBUG
             print("✅ AppDatabase가 성공적으로 등록되었습니다.")
+#endif
         } catch {
             // 데이터베이스 초기화 실패는 복구 불가능한 오류로 간주합니다.
             fatalError("🚨 AppDatabase 초기화에 실패했습니다: \(error)")
         }
         
         container.register(type: BibleRepository.self, component: DefaultBibleRepository(
-            dbQueue: container.resolve(type: AppDatabase.self).dbQueue
+            dbPool: container.resolve(type: AppDatabase.self).dbPool
         ))
 
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             appState: container.resolve(type: AppState.self),
+            bibleRepository: container.resolve(type: BibleRepository.self)
+        ))
+        
+        container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
         

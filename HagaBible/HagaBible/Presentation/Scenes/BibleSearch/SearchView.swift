@@ -12,6 +12,7 @@ struct SearchView: View {
     
     @Binding var searchText: String
     @State private var viewModel: SearchViewModel = DIContainer.shared.resolve(type: SearchViewModel.self)
+    @State private var bibleReferences: [BibleVerse: String] = [:]
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     
     init(searchText: Binding<String>) {
@@ -21,18 +22,28 @@ struct SearchView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(viewModel.search(text: searchText).prefix(100), id: \.self) { verse in
-                    Button{
-                        viewModel.gotoVerse(verse: verse)
-                        dismissSearch()
-                    } label: {
-                        SearchResultVerseView(
-                            bibleReferenceText: viewModel.getBibleReferenceString(verse: verse),
-                            verseText: verse.verseText ?? "",
-                            searchText: searchText
-                        )
+//            ScrollView {
+//                LazyVStack {
+                    ForEach(viewModel.searchResults, id: \.self) { verse in
+                        Button{
+                            viewModel.gotoVerse(verse: verse)
+                            dismissSearch()
+                        } label: {
+                            SearchResultVerseView(
+                                bibleReferenceText: bibleReferences[verse] ?? "",
+                                verseText: verse.verseText ?? "",
+                                searchText: searchText
+                            )
+                            .task {
+                                let ref = await viewModel.getBibleReferenceString(verse: verse)
+                                bibleReferences[verse] = ref
+                            }
+                        }
                     }
                 }
+                .onChange(of: searchText) { _, searchText in
+                    viewModel.search(text: searchText)
+//                }
             }
             .scrollContentBackground(.hidden)
             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))

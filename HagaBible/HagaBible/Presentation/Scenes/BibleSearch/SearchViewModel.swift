@@ -14,6 +14,7 @@ class SearchViewModel {
     private let appState: AppState
     private let bibleRepository: BibleRepository
     private let bibleReaderViewModel: BibleReaderViewModel
+    var searchResults: [BibleVerse] = []
     
     init(appState: AppState, bibleRepository: BibleRepository, bibleReaderViewModel: BibleReaderViewModel) {
         self.appState = appState
@@ -21,27 +22,31 @@ class SearchViewModel {
         self.bibleReaderViewModel = bibleReaderViewModel
     }
     
-    func search(text: String) -> [BibleVerse] {
-        if text.isEmpty {
-            return []
+    func search(text: String) {
+        guard !text.isEmpty else {
+            searchResults = []
+            return
+        }
+        guard let bibleVersion = appState.bibleReaderState.bibleVersion else {
+            searchResults = []
+            return
         }
         
-        var searchResults: [BibleVerse] = []
-        
-        if let bibleVersion = appState.bibleReaderState.bibleVersion {
+        Task {
             do {
-                searchResults = try bibleRepository.findByVerseTextContaining(versionCode: bibleVersion.versionCode, keyword: text)
+                searchResults = try await bibleRepository.findByVerseTextContaining(versionCode: bibleVersion.versionCode, keyword: text)
             } catch {
+#if DEBUG
                 print("Failed to search by text: \(error)")
+#endif
                 searchResults = []
             }
         }
-        return searchResults
     }
     
-    func getBibleReferenceString(verse: BibleVerse) -> String {
+    func getBibleReferenceString(verse: BibleVerse) async -> String {
         do {
-            let bookName = try bibleRepository.fetchBibleBookList(versionCode: verse.versionCode).first(where: { $0.bookCode == verse.bookCode })!.bookName
+            let bookName = try await bibleRepository.fetchBibleBookList(versionCode: verse.versionCode).first(where: { $0.bookCode == verse.bookCode })!.bookName
             return "\(bookName) \(verse.chapter):\(verse.verse)"
         } catch {
             return ""

@@ -89,6 +89,13 @@ struct BibleReaderView: View {
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
         }
+        .task {
+            await viewModel.fetchAvailableVersions()
+            await viewModel.fetchBibleVersion()
+            await viewModel.fetchBibleBook()
+            await viewModel.fetchBibleChapter()
+            viewModel.fetchBibleVerse()
+        }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
         }

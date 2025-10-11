@@ -9,7 +9,9 @@ import Foundation
 import GRDB
 
 final class AppDatabase {
-    let dbQueue: DatabaseQueue
+    let dbPool: DatabasePool
+    private let dbVersionKey = "dbVersion"
+    private let currentDBVersion = "1.1"
 
     init() throws {
         let fileManager = FileManager.default
@@ -17,24 +19,35 @@ final class AppDatabase {
             .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appendingPathComponent("HagaBibleDB.sqlite")
         
-        // Documents에 DB 파일이 없으면 번들에서 복사
-        if !fileManager.fileExists(atPath: dbUrl.path) {
+        let savedVersion = UserDefaults.standard.string(forKey: dbVersionKey)
+        var shouldInitializeDB = false
+        
+        if savedVersion != currentDBVersion {
+            shouldInitializeDB = true
+            
+            if fileManager.fileExists(atPath: dbUrl.path) {
+                try? fileManager.removeItem(at: dbUrl)
+            }
+            
             guard let bundleURL = Bundle.main.url(forResource: "BibleDB", withExtension: "sqlite") else {
                 throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "초기 DB 파일을 찾을 수 없습니다."])
             }
             try fileManager.copyItem(at: bundleURL, to: dbUrl)
         }
 
-        dbQueue = try DatabaseQueue(path: dbUrl.path)
-        try migrator.migrate(dbQueue)
+        dbPool = try DatabasePool(path: dbUrl.path)
+        
+        if shouldInitializeDB {
+            try migrator.migrate(dbPool)
+        }
     }
 
     private var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
 
-        #if DEBUG
+#if DEBUG
         migrator.eraseDatabaseOnSchemaChange = true
-        #endif
+#endif
 
         return migrator
     }
