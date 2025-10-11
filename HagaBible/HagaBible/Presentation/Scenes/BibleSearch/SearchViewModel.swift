@@ -15,7 +15,8 @@ class SearchViewModel {
     private let bibleRepository: BibleRepository
     private let bibleReaderViewModel: BibleReaderViewModel
     var searchResults: [BibleVerse] = []
-    
+    var groupedSearchResults: [BibleBook: [BibleVerse]] = [:]
+        
     init(appState: AppState, bibleRepository: BibleRepository, bibleReaderViewModel: BibleReaderViewModel) {
         self.appState = appState
         self.bibleRepository = bibleRepository
@@ -25,21 +26,29 @@ class SearchViewModel {
     func search(text: String) {
         guard !text.isEmpty else {
             searchResults = []
+            groupedSearchResults = [:]
             return
         }
         guard let bibleVersion = appState.bibleReaderState.bibleVersion else {
             searchResults = []
+            groupedSearchResults = [:]
             return
         }
         
         Task {
             do {
                 searchResults = try await bibleRepository.findByVerseTextContaining(versionCode: bibleVersion.versionCode, keyword: text)
+                let bibleBookList = try await bibleRepository.fetchBibleBookList(versionCode: bibleVersion.versionCode)
+                
+                groupedSearchResults = Dictionary(grouping: searchResults) { verse in
+                    bibleBookList.first(where: { $0.bookCode == verse.bookCode })!
+                }
             } catch {
 #if DEBUG
                 print("Failed to search by text: \(error)")
 #endif
                 searchResults = []
+                groupedSearchResults = [:]
             }
         }
     }

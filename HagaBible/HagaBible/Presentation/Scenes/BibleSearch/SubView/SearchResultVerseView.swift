@@ -16,6 +16,7 @@ struct SearchResultVerseView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(bibleReferenceText)
                 .font(.caption)
+                .foregroundStyle(Color.accent)
             AdvancedText(
                 attributedText: NSMutableAttributedString(
                     string: verseText,
