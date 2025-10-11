@@ -143,7 +143,7 @@ struct BibleNavigationView: View {
 
 #Preview {
     DIContainer.registerForPreview()
-    var viewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    let viewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     
     return NavigationStack {
         Text("")
