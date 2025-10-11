@@ -46,10 +46,19 @@ struct AdvancedText: UIViewRepresentable {
 
 extension NSMutableAttributedString {
     func addingAttributes(_ attrs: [NSAttributedString.Key: Any], toSubstring substring: String) -> NSMutableAttributedString {
-        if let range = self.string.range(of: substring, options: .caseInsensitive) {
-            let nsRange = NSRange(range, in: self.string)
-            self.addAttributes(attrs, range: nsRange)
+        let escapedSubstring = NSRegularExpression.escapedPattern(for: substring)
+        
+        guard let regex = try? NSRegularExpression(pattern: escapedSubstring, options: .caseInsensitive) else {
+            return self
         }
+        
+        let range = NSRange(location: 0, length: self.string.utf16.count)
+        let matches = regex.matches(in: self.string, options: [], range: range)
+        
+        for match in matches {
+            self.addAttributes(attrs, range: match.range)
+        }
+        
         return self
     }
 }
