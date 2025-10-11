@@ -97,13 +97,13 @@ class BibleReaderViewModel {
     }
     
     func fetchAvailableVersions() async {
-            do {
-                availableVersions = try await bibleRepository.fetchBibleVersionList()
-            } catch {
+        do {
+            availableVersions = try await bibleRepository.fetchBibleVersionList()
+        } catch {
 #if DEBUG
-                print("Error fetching available versions: \(error)")
+            print("Error fetching available versions: \(error)")
 #endif
-            }
+        }
     }
     
     func fetchBibleVersion() async {
@@ -114,13 +114,13 @@ class BibleReaderViewModel {
     }
     
     func fetchBibleBookList(versionCode: String) async {
-            do {
-                bibleBookList = try await bibleRepository.fetchBibleBookList(versionCode: versionCode)
-            } catch {
+        do {
+            bibleBookList = try await bibleRepository.fetchBibleBookList(versionCode: versionCode)
+        } catch {
 #if DEBUG
-                print("Error fetching books: \(error)")
+            print("Error fetching books: \(error)")
 #endif
-            }
+        }
     }
     
     func fetchBibleBook() async {
@@ -131,13 +131,13 @@ class BibleReaderViewModel {
     }
     
     func fetchBibleChapterList(versionCode: String, bookCode: String) async {
-            do {
-                bibleChapterList = try await bibleRepository.fetchBibleChapterList(versionCode: versionCode, bookCode: bookCode)
-            } catch {
+        do {
+            bibleChapterList = try await bibleRepository.fetchBibleChapterList(versionCode: versionCode, bookCode: bookCode)
+        } catch {
 #if DEBUG
-                print("Error fetching chapters: \(error)")
+            print("Error fetching chapters: \(error)")
 #endif
-            }
+        }
     }
     
     func fetchBibleChapter() async {
@@ -148,13 +148,13 @@ class BibleReaderViewModel {
     }
     
     func fetchBibleVerseList(versionCode: String, bookCode: String, chapterNum: Int) async {
-            do {
-                bibleVerseList = try await bibleRepository.fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum)
-            } catch {
+        do {
+            bibleVerseList = try await bibleRepository.fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum)
+        } catch {
 #if DEBUG
-                print("Error fetching verses: \(error)")
+            print("Error fetching verses: \(error)")
 #endif
-            }
+        }
     }
     
     func fetchBibleVerse() {
