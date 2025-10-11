@@ -19,7 +19,7 @@ struct BibleVerseListView: View {
             Color.clear
                 .frame(height: 0)
                 .id(0)
-            VStack(spacing: CGFloat(fontConfiguration.lineSpacing)) {
+            LazyVStack(spacing: CGFloat(fontConfiguration.lineSpacing)) {
                 ForEach(0..<verses.count, id: \.self) { index in
                     BibleVerseView(
                         verseNumber: index + 1,
