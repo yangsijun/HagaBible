@@ -148,8 +148,6 @@ class BibleReaderViewModel {
     
     func goToPreviousChapter() {
         if chapterNum > 1 {
-//            self.chapterNum = chapterNum - 1
-//            self.verseNum = 1
             applyBibleSelection(
                 chapterNum: chapterNum - 1,
                 verseNum: 1
@@ -158,9 +156,6 @@ class BibleReaderViewModel {
         }
         if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
             if index == 0 { return }
-//            self.bookCode = bibleBookList[index - 1].bookCode
-//            self.chapterNum = bibleBookList[index - 1].totalChapters
-//            self.verseNum = 1
             applyBibleSelection(
                 bookCode: bibleBookList[index - 1].bookCode,
                 chapterNum: bibleBookList[index - 1].totalChapters,
@@ -171,11 +166,6 @@ class BibleReaderViewModel {
     
     func goToNextChapter() {
         if chapterNum < bibleChapterList.last!.chapter {
-//            self.chapterNum = chapterNum + 1
-//            Task {
-//                await fetchBibleChapter()
-//                self.verseNum = 1
-//            }
             applyBibleSelection(
                 chapterNum: chapterNum + 1,
                 verseNum: 1
@@ -184,9 +174,6 @@ class BibleReaderViewModel {
         }
         if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
             if index == bibleBookList.count - 1 { return }
-//            self.bookCode = bibleBookList[index + 1].bookCode
-//            self.chapterNum = 1
-//            self.verseNum = 1
             applyBibleSelection(
                 bookCode: bibleBookList[index + 1].bookCode,
                 chapterNum: 1,
