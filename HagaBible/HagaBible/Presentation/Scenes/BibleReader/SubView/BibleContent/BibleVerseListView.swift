@@ -14,6 +14,9 @@ struct BibleVerseListView: View {
     var theme: Theme
     var highlightedVerseNum: Int?
     
+    @Binding var selectStartIndex: Int?
+    @Binding var selectEndIndex: Int?
+    
     var body: some View {
         VStack(spacing: 0) {
             Color.clear
@@ -36,9 +39,51 @@ struct BibleVerseListView: View {
                     .background(
                         highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear
                     )
+                    .background(
+                        (
+                            selectStartIndex != nil
+                            && selectEndIndex != nil
+                            && index >= selectStartIndex!
+                            && index <= selectEndIndex!
+                        )
+                        ? Color.accentColor.opacity(0.25)
+                        : .clear
+                    )
+                    .contentShape(.rect)
+                    .onTapGesture {
+                        handleSelectVerse(index)
+                    }
                 }
             }
             .padding(.vertical, 16)
+        }
+    }
+    
+    private func handleSelectVerse(_ index: Int) {
+        guard selectStartIndex != nil, selectEndIndex != nil else {
+            selectStartIndex = index
+            selectEndIndex = index
+            return
+        }
+        if index < selectStartIndex! {
+            selectStartIndex = index
+            return
+        }
+        if index == selectStartIndex! {
+            if index == selectEndIndex! {
+                selectStartIndex = nil
+                selectEndIndex = nil
+            } else {
+                selectStartIndex! += 1
+            }
+            return
+        }
+        if index > selectStartIndex! {
+            if index <= selectEndIndex! {
+                selectEndIndex = index - 1
+            } else {
+                selectEndIndex = index
+            }
         }
     }
 }
@@ -66,6 +111,8 @@ struct BibleVerseListView: View {
             ]
         ),
         theme: Theme.system,
-        highlightedVerseNum: 1
+        highlightedVerseNum: 1,
+        selectStartIndex: .constant(2),
+        selectEndIndex: .constant(2)
     )
 }

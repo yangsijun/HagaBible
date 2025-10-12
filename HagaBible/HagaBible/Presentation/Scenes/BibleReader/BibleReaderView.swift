@@ -15,6 +15,16 @@ struct BibleReaderView: View {
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     
+    @State var selectStartIndex: Int?
+    @State var selectEndIndex: Int?
+    
+    var bookName: String {
+        viewModel.bibleBook?.bookName ?? ""
+    }
+    var chapterNum: Int {
+        viewModel.chapterNum
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -24,7 +34,9 @@ struct BibleReaderView: View {
                         language: viewModel.bibleVersion?.language ?? "English",
                         fontConfiguration: fontThemeManager.fontConfiguration,
                         theme: fontThemeManager.theme,
-                        highlightedVerseNum: viewModel.navigatedVerseNum
+                        highlightedVerseNum: viewModel.navigatedVerseNum,
+                        selectStartIndex: $selectStartIndex,
+                        selectEndIndex: $selectEndIndex
                     )
                     .onChange(of: viewModel.navigatedVerseNum) {
                         if viewModel.navigatedVerseNum != nil {
@@ -49,6 +61,8 @@ struct BibleReaderView: View {
                     }
                 )
                 .onChange(of: viewModel.bibleNavigationUpdateTrigger, initial: false) {
+                    selectStartIndex = nil
+                    selectEndIndex = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         withAnimation(.linear(duration: 0.3)) {
                             proxy.scrollTo((viewModel.navigatedVerseNum ?? 1) - 1, anchor: .top)
@@ -58,6 +72,15 @@ struct BibleReaderView: View {
             }
             .background(Color.gray.opacity(0.2), ignoresSafeAreaEdges: .all)
             .toolbarTitleDisplayMode(.inline)
+            .safeAreaBar(edge: .bottom) {
+                BibleReaderActionBar(
+                    selectStartIndex: $selectStartIndex,
+                    selectEndIndex: $selectEndIndex,
+                    bookName: bookName,
+                    chapterNum: chapterNum,
+                    bibleVerseList: viewModel.bibleVerseList
+                )
+            }
             .toolbar {
                 BibleReaderToolbarContent(
                     bookName: viewModel.bibleBook?.bookName,
