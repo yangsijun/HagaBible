@@ -40,17 +40,17 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     })
                 ]
             ) {
-                Image(systemName: "ellipsis")
+                Label("Other", systemImage: "ellipsis")
             }
         }
     }
 }
 
 struct MenuItem: Identifiable {
-    let id = UUID() // 고유 ID
+    let id = UUID()
     let title: String
     let systemImage: String
-    let action: () -> Void // 버튼을 눌렀을 때 실행될 동작
+    let action: () -> Void
 }
 
 #Preview {
