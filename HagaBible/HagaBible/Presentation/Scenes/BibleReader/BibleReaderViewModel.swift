@@ -56,32 +56,10 @@ class BibleReaderViewModel {
     var bibleChapterList: [BibleChapter] = []
     var bibleVerseList: [BibleVerse] = []
     
-    var versionCode: String {
-        didSet {
-            Task {
-                await fetchBibleVersion()
-            }
-        }
-    }
-    var bookCode: String {
-        didSet {
-            Task {
-                await fetchBibleBook()
-            }
-        }
-    }
-    var chapterNum: Int {
-        didSet {
-            Task {
-                await fetchBibleChapter()
-            }
-        }
-    }
-    var verseNum: Int {
-        didSet {
-            fetchBibleVerse()
-        }
-    }
+    var versionCode: String
+    var bookCode: String
+    var chapterNum: Int
+    var verseNum: Int
     
     var navigatedVerseNum: Int?
     
@@ -94,6 +72,13 @@ class BibleReaderViewModel {
         self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? "GEN"
         self.chapterNum = appState.bibleReaderState.bibleChapter?.chapter ?? 1
         self.verseNum = appState.bibleReaderState.bibleVerse?.verse ?? 1
+        
+        applyBibleSelection(
+            versionCode: versionCode,
+            bookCode: bookCode,
+            chapterNum: chapterNum,
+            verseNum: verseNum
+        )
     }
     
     func fetchAvailableVersions() async {
@@ -163,68 +148,76 @@ class BibleReaderViewModel {
     
     func goToPreviousChapter() {
         if chapterNum > 1 {
-            self.chapterNum = chapterNum - 1
-            self.verseNum = 1
+//            self.chapterNum = chapterNum - 1
+//            self.verseNum = 1
+            applyBibleSelection(
+                chapterNum: chapterNum - 1,
+                verseNum: 1
+            )
             return
         }
         if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
             if index == 0 { return }
-            self.bookCode = bibleBookList[index - 1].bookCode
-            self.chapterNum = bibleBookList[index - 1].totalChapters
-            self.verseNum = 1
+//            self.bookCode = bibleBookList[index - 1].bookCode
+//            self.chapterNum = bibleBookList[index - 1].totalChapters
+//            self.verseNum = 1
+            applyBibleSelection(
+                bookCode: bibleBookList[index - 1].bookCode,
+                chapterNum: bibleBookList[index - 1].totalChapters,
+                verseNum: 1
+            )
         }
     }
     
     func goToNextChapter() {
         if chapterNum < bibleChapterList.last!.chapter {
-            self.chapterNum = chapterNum + 1
-            Task {
-                await fetchBibleChapter()
-                self.verseNum = 1
-            }
+//            self.chapterNum = chapterNum + 1
+//            Task {
+//                await fetchBibleChapter()
+//                self.verseNum = 1
+//            }
+            applyBibleSelection(
+                chapterNum: chapterNum + 1,
+                verseNum: 1
+            )
             return
         }
         if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
             if index == bibleBookList.count - 1 { return }
-            self.bookCode = bibleBookList[index + 1].bookCode
-            self.chapterNum = 1
-            self.verseNum = 1
+//            self.bookCode = bibleBookList[index + 1].bookCode
+//            self.chapterNum = 1
+//            self.verseNum = 1
+            applyBibleSelection(
+                bookCode: bibleBookList[index + 1].bookCode,
+                chapterNum: 1,
+                verseNum: 1
+            )
         }
     }
     
-    func getBibleBookListByVersion(of version: BibleVersion) async -> [BibleBook] {
-        do {
-            let bookList: [BibleBook] = try await bibleRepository.fetchBibleBookList(versionCode: version.versionCode)
-            return bookList
-        } catch {
-#if DEBUG
-            print("Error fetching book list: \(error)")
-#endif
-            return []
-        }
-    }
-    
-    func getBibleChapterListByBook(of book: BibleBook) async -> [BibleChapter] {
-        do {
-            let chapterList: [BibleChapter] = try await bibleRepository.fetchBibleChapterList(versionCode: book.versionCode, bookCode: book.bookCode)
-            return chapterList
-        } catch {
-#if DEBUG
-            print("Error fetching chapter list: \(error)")
-#endif
-            return []
-        }
-    }
-    
-    func getBibleVerseListByChapter(of chapter: BibleChapter) async -> [BibleVerse] {
-        do {
-            let verseList: [BibleVerse] = try await bibleRepository.fetchBibleVerseList(versionCode: chapter.versionCode, bookCode: chapter.bookCode, chapter: chapter.chapter)
-            return verseList
-        } catch {
-#if DEBUG
-            print("Error fetching verse list: \(error)")
-#endif
-            return []
+    func applyBibleSelection(
+        versionCode: String? = nil,
+        bookCode: String? = nil,
+        chapterNum: Int? = nil,
+        verseNum: Int? = nil
+    ) {
+        Task {
+            if let versionCode = versionCode {
+                self.versionCode = versionCode
+                await fetchBibleVersion()
+            }
+            if let bookCode = bookCode {
+                self.bookCode = bookCode
+                await fetchBibleBook()
+            }
+            if let chapterNum = chapterNum {
+                self.chapterNum = chapterNum
+                await fetchBibleChapter()
+            }
+            if let verseNum = verseNum {
+                self.verseNum = verseNum
+                fetchBibleVerse()
+            }
         }
     }
     

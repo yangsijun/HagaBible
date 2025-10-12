@@ -108,20 +108,13 @@ struct BibleNavigationView: View {
                         if selectedVerse == nil {
                             selectedVerse = viewModel.verseList.first!
                         }
-                        
-                        if let selectedVersion = selectedVersion {
-                            bibleReaderViewModel.versionCode = selectedVersion.versionCode
-                        }
-                        if let selectedBook = selectedBook {
-                            bibleReaderViewModel.bookCode = selectedBook.bookCode
-                        }
-                        if let selectedChapter = selectedChapter {
-                            bibleReaderViewModel.chapterNum = selectedChapter.chapter
-                        }
-                        if let selectedVerse = selectedVerse {
-                            bibleReaderViewModel.verseNum = selectedVerse.verse
-                            bibleReaderViewModel.navigatedVerseNum = selectedVerse.verse
-                        }
+                                                
+                        bibleReaderViewModel.applyBibleSelection(
+                            versionCode: selectedVersion?.versionCode,
+                            bookCode: selectedBook?.bookCode,
+                            chapterNum: selectedChapter?.chapter,
+                            verseNum: selectedVerse?.verse
+                        )
                         
                         dismiss()
                         if let selectedVerse = selectedVerse {
