@@ -35,6 +35,7 @@ struct BibleReaderView: View {
                             }
                         }
                     }
+                    .safeAreaPadding(.bottom, 200)
                 }
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
                 .swipeGesture(
