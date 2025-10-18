@@ -10,24 +10,11 @@ import SwiftUI
 struct BibleReaderActionBar: View {
     @Binding var selectStartIndex: Int?
     @Binding var selectEndIndex: Int?
-    var bookName: String
-    var chapterNum: Int
     var bibleVerseList: [BibleVerse] = []
+    var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
+    
     var bibleVersesString: String {
-        let start = selectStartIndex ?? 0
-        let end = selectEndIndex ?? start
-        
-        let referenceString = start == end
-        ? "[\(bookName) \(chapterNum):\(start + 1)]"
-        : "[\(bookName) \(chapterNum):\(start + 1)-\(end + 1)]"
-        
-        let verseLines: [String] = Array(start...end).map { idx in
-            "\(idx + 1) \(bibleVerseList[idx].verseText ?? "")"
-        }
-        let lines = [referenceString] + verseLines
-        let text = lines.joined(separator: "\n")
-        
-        return text
+        bibleActionService.makeVerseStringFromVerseList(bibleVerseList, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
     }
     
     var body: some View {
@@ -81,5 +68,5 @@ struct BibleReaderActionBar: View {
         BibleVerse(bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: 2, verseText: "땅이 혼돈하고 공허하며 흑암이 깊음 위에 있고 하나님의 신은 수면에 운행하시니라", versionCode: "KRV"),
         BibleVerse(bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: 3, verseText: "하나님이 가라사대 빛이 있으라 하시매 빛이 있었고", versionCode: "KRV"),
     ]
-    BibleReaderActionBar(selectStartIndex: .constant(0), selectEndIndex: .constant(2), bookName: "창세기", chapterNum: 1, bibleVerseList: bibleVerseList)
+    BibleReaderActionBar(selectStartIndex: .constant(0), selectEndIndex: .constant(2), bibleVerseList: bibleVerseList)
 }

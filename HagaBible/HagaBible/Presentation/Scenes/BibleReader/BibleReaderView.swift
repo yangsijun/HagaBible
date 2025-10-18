@@ -18,20 +18,11 @@ struct BibleReaderView: View {
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
     
-    var bookName: String {
-        viewModel.bibleBook?.bookName ?? ""
-    }
-    var chapterNum: Int {
-        viewModel.chapterNum
-    }
-    
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
                     BibleVerseListView(
-                        bookName: bookName,
-                        chapterNum: chapterNum,
                         verses: viewModel.bibleVerseList,
                         language: viewModel.bibleVersion?.language ?? "English",
                         fontConfiguration: fontThemeManager.fontConfiguration,
@@ -78,8 +69,6 @@ struct BibleReaderView: View {
                 BibleReaderActionBar(
                     selectStartIndex: $selectStartIndex,
                     selectEndIndex: $selectEndIndex,
-                    bookName: bookName,
-                    chapterNum: chapterNum,
                     bibleVerseList: viewModel.bibleVerseList
                 )
             }

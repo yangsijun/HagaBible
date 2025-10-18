@@ -40,6 +40,8 @@ struct HagaBibleApp: App {
         container.register(type: BibleRepository.self, component: DefaultBibleRepository(
             dbPool: container.resolve(type: AppDatabase.self).dbPool
         ))
+        
+        container.register(type: BibleActionService.self, component: BibleActionService())
 
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             appState: container.resolve(type: AppState.self),

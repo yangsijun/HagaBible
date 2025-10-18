@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct BibleVerseListView: View {
-    let bookName: String
-    let chapterNum: Int
     let verses: [BibleVerse]
     let language: String
     var fontConfiguration: FontConfiguration
     var theme: Theme
     var highlightedVerseNum: Int?
+    
+    var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
     
     @Binding var selectStartIndex: Int?
     @Binding var selectEndIndex: Int?
@@ -54,17 +54,7 @@ struct BibleVerseListView: View {
                     .contentShape(.rect)
                     .contextMenu {
                         Button(action: {
-                            let start = selectStartIndex ?? index
-                            let end = selectEndIndex ?? index
-
-                            let referenceString = start == end
-                                ? "[\(bookName) \(chapterNum):\(start + 1)]"
-                                : "[\(bookName) \(chapterNum):\(start + 1)-\(end + 1)]"
-
-                            let text = ([referenceString] + (start...end)
-                                .map { idx in
-                                    "\(idx + 1) \(verses[idx].verseText ?? "")"
-                                }).joined(separator: "\n")
+                            let text = bibleActionService.makeVerseStringFromVerseList(verses, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
                             UIPasteboard.general.string = text
 
                             selectStartIndex = nil
@@ -155,8 +145,6 @@ struct BibleVerseListView: View {
     ]
     
      BibleVerseListView(
-        bookName: "Genesis",
-        chapterNum: 1,
         verses: verses,
         language: "Korean",
         fontConfiguration: FontConfiguration(

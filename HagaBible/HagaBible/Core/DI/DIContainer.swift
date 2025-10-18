@@ -36,6 +36,9 @@ extension DIContainer {
         container.register(type: AppState.self, component: AppState())
         
         container.register(type: BibleRepository.self, component: MockBibleRepository.shared)
+        
+        container.register(type: BibleActionService.self, component: BibleActionService())
+        
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             appState: container.resolve(type: AppState.self),
             bibleRepository: container.resolve(type: BibleRepository.self)
