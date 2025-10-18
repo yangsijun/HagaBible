@@ -62,6 +62,11 @@ struct BibleVerseListView: View {
                         }) {
                             Label("클립보드에 복사", systemImage: "doc.on.doc")
                         }
+                        ShareLink(
+                            item: bibleActionService.makeVerseStringFromVerseList(verses, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
+                        ) {
+                            Label("공유하기", systemImage: "square.and.arrow.up")
+                        }
                     } preview: {
                         if let start = selectStartIndex, let end = selectEndIndex, start <= index && index <= end {
                             NavigationStack {
