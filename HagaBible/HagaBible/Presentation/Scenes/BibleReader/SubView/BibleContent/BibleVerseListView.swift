@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct BibleVerseListView: View {
+    let bookName: String
+    let chapterNum: Int
     let verses: [BibleVerse]
     let language: String
     var fontConfiguration: FontConfiguration
@@ -50,6 +52,63 @@ struct BibleVerseListView: View {
                         : .clear
                     )
                     .contentShape(.rect)
+                    .contextMenu {
+                        Button(action: {
+                            let start = selectStartIndex ?? index
+                            let end = selectEndIndex ?? index
+
+                            let referenceString = start == end
+                                ? "[\(bookName) \(chapterNum):\(start + 1)]"
+                                : "[\(bookName) \(chapterNum):\(start + 1)-\(end + 1)]"
+
+                            let text = ([referenceString] + (start...end)
+                                .map { idx in
+                                    "\(idx + 1) \(verses[idx].verseText ?? "")"
+                                }).joined(separator: "\n")
+                            UIPasteboard.general.string = text
+
+                            selectStartIndex = nil
+                            selectEndIndex = nil
+                        }) {
+                            Label("클립보드에 복사", systemImage: "doc.on.doc")
+                        }
+                    } preview: {
+                        if let start = selectStartIndex, let end = selectEndIndex, start <= index && index <= end {
+                            NavigationStack {
+                                VStack(spacing: 0) {
+                                    ForEach(start...end, id: \.self) { idx in
+                                        BibleVerseView(
+                                            verseNumber: idx + 1,
+                                            verseText: verses[idx].verseText ?? "",
+                                            font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
+                                            textColor: theme.textColor,
+                                            verseNumberColor: theme.verseNumberColor,
+                                            alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
+                                            lineSpacing: CGFloat(fontConfiguration.lineSpacing)
+                                        )
+                                        .padding(8)
+                                        .padding(.horizontal, 8)
+                                        .background(Color.accentColor.opacity(0.25))
+                                    }
+                                }
+                            }
+                        } else {
+                            NavigationStack {
+                                BibleVerseView(
+                                    verseNumber: index + 1,
+                                    verseText: verses[index].verseText ?? "",
+                                    font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
+                                    textColor: theme.textColor,
+                                    verseNumberColor: theme.verseNumberColor,
+                                    alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
+                                    lineSpacing: CGFloat(fontConfiguration.lineSpacing)
+                                )
+                                .padding(8)
+                                .padding(.horizontal, 8)
+                                .background(Color.accentColor.opacity(0.25))
+                            }
+                        }
+                    }
                     .onTapGesture {
                         handleSelectVerse(index)
                     }
@@ -96,6 +155,8 @@ struct BibleVerseListView: View {
     ]
     
      BibleVerseListView(
+        bookName: "Genesis",
+        chapterNum: 1,
         verses: verses,
         language: "Korean",
         fontConfiguration: FontConfiguration(

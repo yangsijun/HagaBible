@@ -30,6 +30,8 @@ struct BibleReaderView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     BibleVerseListView(
+                        bookName: bookName,
+                        chapterNum: chapterNum,
                         verses: viewModel.bibleVerseList,
                         language: viewModel.bibleVersion?.language ?? "English",
                         fontConfiguration: fontThemeManager.fontConfiguration,
