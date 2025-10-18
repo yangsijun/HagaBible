@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BibleReaderToolbarContent: ToolbarContent {
-    let bookName: String?
+    let bibleBook: BibleBook?
     let chapterNum: Int
     let bibleVersion: BibleVersion?
     @Binding var showBibleNavigation: Bool
@@ -17,7 +17,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             BibleReaderToolbarTitleButton(
-                bookName: bookName,
+                bibleBook: bibleBook,
                 chapterNum: chapterNum,
                 bibleVersion: bibleVersion,
                 showBibleNavigation: $showBibleNavigation
@@ -59,7 +59,7 @@ struct MenuItem: Identifiable {
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 BibleReaderToolbarContent(
-                    bookName: "Genesis",
+                    bibleBook: .init(bookCode: "GRN", bookName: "창세기", bookOrder: 1, totalChapters: 50, versionCode: "KRV"),
                     chapterNum: 1,
                     bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean"),
                     showBibleNavigation: .constant(false),

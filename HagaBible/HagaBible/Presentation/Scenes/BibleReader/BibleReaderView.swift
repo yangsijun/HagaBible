@@ -74,7 +74,7 @@ struct BibleReaderView: View {
             }
             .toolbar {
                 BibleReaderToolbarContent(
-                    bookName: viewModel.bibleBook?.bookName,
+                    bibleBook: viewModel.bibleBook,
                     chapterNum: viewModel.chapterNum,
                     bibleVersion: viewModel.bibleVersion,
                     showBibleNavigation: $showBibleNavigation,

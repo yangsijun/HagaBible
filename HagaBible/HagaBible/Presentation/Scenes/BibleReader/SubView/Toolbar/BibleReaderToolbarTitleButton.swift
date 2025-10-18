@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct BibleReaderToolbarTitleButton: View {
-    let bookName: String?
+    let bibleBook: BibleBook?
     let chapterNum: Int
     let bibleVersion: BibleVersion?
+    
+    var chapterCounterNoun: String {
+        getChapterCounterNoun(bookCode: bibleBook?.bookCode ?? "", versionLanguage: bibleVersion?.language ?? "")
+    }
+    
     @Binding var showBibleNavigation: Bool
     
     var body: some View {
@@ -19,7 +24,7 @@ struct BibleReaderToolbarTitleButton: View {
                 showBibleNavigation.toggle()
             }) {
                 HStack {
-                    Text("\(bookName ?? "") \(chapterNum)\(bibleVersion?.language == "Korean" ? "장" : "")")
+                    Text("\(bibleBook?.bookName ?? "") \(chapterNum)\(chapterCounterNoun)")
                         .font(.title2)
                         .bold()
                     Text("\(bibleVersion?.versionCode ?? "")")
@@ -34,7 +39,7 @@ struct BibleReaderToolbarTitleButton: View {
                 showBibleNavigation.toggle()
             }) {
                 HStack {
-                    Text("\(bookName ?? "") \(chapterNum)\(bibleVersion?.language == "Korean" ? "장" : "")")
+                    Text("\(bibleBook?.bookName ?? "") \(chapterNum)\(chapterCounterNoun)")
                         .font(.title2)
                         .bold()
                     Text("\(bibleVersion?.versionCode ?? "")")
@@ -52,7 +57,7 @@ struct BibleReaderToolbarTitleButton: View {
 #Preview {
     ZStack {
         BibleReaderToolbarTitleButton(
-            bookName: "Genesis",
+            bibleBook: .init(bookCode: "GEN", bookName: "창세기", bookOrder: 1, totalChapters: 50, versionCode: "KRV"),
             chapterNum: 1,
             bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean"),
             showBibleNavigation: .constant(false)

@@ -115,11 +115,8 @@ class RecordingsViewModel {
             return "성경 녹음"
         }
         
-        if bibleVersion.language == "Korean" {
-            bibleReferenceText = "\(bibleBook.bookName) \(bibleChapter.chapter)장"
-        } else {
-            bibleReferenceText = "\(bibleBook.bookName) \(bibleChapter.chapter)"
-        }
+        bibleReferenceText = "\(bibleBook.bookName) \(bibleChapter.chapter)"
+        bibleReferenceText += getChapterCounterNoun(bookCode: bibleBook.bookCode, versionLanguage: bibleVersion.language)
         
         return bibleReferenceText
     }
