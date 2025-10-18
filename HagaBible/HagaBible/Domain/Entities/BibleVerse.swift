@@ -7,6 +7,7 @@
 
 struct BibleVerse: Equatable, Hashable, Codable {
     let bookCode: String
+    let bookName: String
     let bookOrder: Int
     let chapter: Int
     let verse: Int

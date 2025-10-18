@@ -10,6 +10,7 @@ import GRDB
 
 struct BibleVerseRecord: Codable, FetchableRecord, PersistableRecord {
     let bookCode: String
+    let bookName: String
     let bookOrder: Int
     let chapter: Int
     let verse: Int
@@ -18,6 +19,7 @@ struct BibleVerseRecord: Codable, FetchableRecord, PersistableRecord {
     
     private enum CodingKeys: String, CodingKey {
         case bookCode = "book_code"
+        case bookName = "book_name"
         case bookOrder = "book_order"
         case chapter = "chapter"
         case verse = "verse"

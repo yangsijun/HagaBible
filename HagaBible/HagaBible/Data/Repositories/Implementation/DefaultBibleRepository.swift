@@ -131,6 +131,7 @@ final class DefaultBibleRepository: BibleRepository {
             return bibleVerseRecordList.map {
                 BibleVerse(
                     bookCode: $0.bookCode,
+                    bookName: $0.bookName,
                     bookOrder: $0.bookOrder,
                     chapter: $0.chapter,
                     verse: $0.verse,
@@ -145,6 +146,7 @@ final class DefaultBibleRepository: BibleRepository {
         let sql = """
             SELECT
                 book_code,
+                book_name,
                 book_order,
                 chapter,
                 verse,
@@ -167,6 +169,7 @@ final class DefaultBibleRepository: BibleRepository {
             return bibleVerseRecord.map {
                 BibleVerse(
                     bookCode: $0.bookCode,
+                    bookName: $0.bookName,
                     bookOrder: $0.bookOrder,
                     chapter: $0.chapter,
                     verse: $0.verse,
@@ -181,6 +184,7 @@ final class DefaultBibleRepository: BibleRepository {
         let sql = """
             SELECT
                 book_code,
+                book_name,
                 book_order,
                 chapter,
                 verse,
@@ -201,6 +205,7 @@ final class DefaultBibleRepository: BibleRepository {
             return bibleVerseRecordList.map {
                 BibleVerse(
                     bookCode: $0.bookCode,
+                    bookName: $0.bookName,
                     bookOrder: $0.bookOrder,
                     chapter: $0.chapter,
                     verse: $0.verse,

@@ -11,7 +11,7 @@ import GRDB
 final class AppDatabase {
     let dbPool: DatabasePool
     private let dbVersionKey = "dbVersion"
-    private let currentDBVersion = "1.1"
+    private let currentDBVersion = "1.2"
 
     init() throws {
         let fileManager = FileManager.default
