@@ -39,7 +39,7 @@ struct RecordingsView: View {
                                     item: ShareableRecording(title: recording.title, fileName: recording.fileName),
                                     preview: SharePreview(
                                         recording.title,
-                                        icon: Image(systemName: "waveform")
+                                        icon: Image(uiImage: UIImage(systemName: "waveform")!)
                                     )
                                 ) {
                                   Label("공유하기", systemImage: "square.and.arrow.up")
