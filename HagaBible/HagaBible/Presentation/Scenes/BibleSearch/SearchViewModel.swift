@@ -119,5 +119,7 @@ class SearchViewModel {
         bibleReaderViewModel.navigatedVerseNum = verse.verse
         
         appState.selectedTab = .bibleReader
+        
+        bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
     }
 }
