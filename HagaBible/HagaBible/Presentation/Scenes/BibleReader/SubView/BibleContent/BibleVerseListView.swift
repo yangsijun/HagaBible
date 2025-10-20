@@ -54,16 +54,14 @@ struct BibleVerseListView: View {
                     .contentShape(.rect)
                     .contextMenu {
                         Button(action: {
-                            let text = bibleActionService.makeVerseStringFromVerseList(verses, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
-                            UIPasteboard.general.string = text
-
+                            UIPasteboard.general.string = getVerseTextsFromContextMenuIndex(index)
                             selectStartIndex = nil
                             selectEndIndex = nil
                         }) {
                             Label("클립보드에 복사", systemImage: "doc.on.doc")
                         }
                         ShareLink(
-                            item: bibleActionService.makeVerseStringFromVerseList(verses, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
+                            item: getVerseTextsFromContextMenuIndex(index)
                         ) {
                             Label("공유하기", systemImage: "square.and.arrow.up")
                         }
@@ -111,6 +109,20 @@ struct BibleVerseListView: View {
             }
             .padding(.vertical, 16)
         }
+    }
+    
+    private func getVerseTextsFromContextMenuIndex(_ index: Int) -> String {
+        let (start, end) = getSelectIndexFromContextMenuIndex(index)
+        return bibleActionService.makeVerseStringFromVerseList(verses, start: start, end: end)
+    }
+    
+    private func getSelectIndexFromContextMenuIndex(_ index: Int) -> (Int, Int) {
+        if let selectStartIndex = selectStartIndex, let selectEndIndex = selectEndIndex {
+            if index >= selectStartIndex && index <= selectEndIndex {
+                return (selectStartIndex, selectEndIndex)
+            }
+        }
+        return (index, index)
     }
     
     private func handleSelectVerse(_ index: Int) {
