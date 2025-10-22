@@ -83,14 +83,22 @@ struct BibleReaderView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showBibleNavigation) {
-                BibleNavigationView(
+//                BibleNavigationView(
+//                    selectedVersion: viewModel.bibleVersion,
+//                    selectedBook: viewModel.bibleBook,
+//                    selectedChapter: viewModel.bibleChapter,
+//                    selectedVerse: viewModel.bibleVerse,
+//                )
+//                    .environment(viewModel)
+//                    .presentationDetents([.small])
+                BibleNavigation2View(
                     selectedVersion: viewModel.bibleVersion,
                     selectedBook: viewModel.bibleBook,
                     selectedChapter: viewModel.bibleChapter,
                     selectedVerse: viewModel.bibleVerse,
                 )
                     .environment(viewModel)
-                    .presentationDetents([.small])
+                    .presentationDetents([.large])
             }
             .sheet(isPresented: $showFontThemeConfig) {
                 FontThemeConfigView(language: viewModel.bibleVersion?.language ?? "English")

@@ -16,3 +16,11 @@ func getChapterCounterNoun(bookCode: String, versionLanguage: String) -> String 
     
     return "장"
 }
+
+func getVerseCounterNoun(versionLanguage: String) -> String {
+    if versionLanguage != "Korean" {
+        return ""
+    }
+    
+    return "절"
+}
