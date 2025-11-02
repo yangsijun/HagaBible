@@ -114,11 +114,16 @@ class SearchViewModel {
     }
     
     func gotoVerse(verse: BibleVerse) {
-        bibleReaderViewModel.bookCode = verse.bookCode
-        bibleReaderViewModel.chapterNum = verse.chapter
-        bibleReaderViewModel.navigatedVerseNum = verse.verse
+        bibleReaderViewModel.applyBibleSelection(
+            versionCode: verse.versionCode,
+            bookCode: verse.bookCode,
+            chapterNum: verse.chapter,
+            verseNum: verse.verse
+        )
         
-        appState.selectedTab = .bibleReader
+        bibleReaderViewModel.navigatedVerseNum = verse.verse
+
+        appState.selectedTab = .bibleReader        
         
         bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
     }
