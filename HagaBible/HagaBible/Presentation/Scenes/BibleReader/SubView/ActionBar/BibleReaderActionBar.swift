@@ -19,38 +19,10 @@ struct BibleReaderActionBar: View {
     
     var body: some View {
         if selectStartIndex != nil || selectEndIndex != nil {
-            HStack {
-                Spacer()
-                Button(action: {
-                    copyVerseTextToClipboard()
-                }) {
-                    Circle()
-                        .foregroundStyle(.clear)
-                        .overlay(
-                            Image(systemName: "doc.on.doc")
-                        )
-                        .glassEffect(in: .circle)
-                }
-                .buttonStyle(.plain)
-                .frame(width: 44, height: 44)
-                .clipShape(.circle)
-                
-                ShareLink(
-                    item: bibleVersesString
-                ) {
-                    Circle()
-                        .foregroundStyle(.clear)
-                        .overlay(
-                            Image(systemName: "square.and.arrow.up")
-                        )
-                        .glassEffect(in: .circle)
-                }
-                .buttonStyle(.plain)
-                .frame(width: 44, height: 44)
-                .clipShape(.circle)
+            ActionBar {
+                ActionBarButton(action: { copyVerseTextToClipboard() }, systemImage: "doc.on.doc")
+                ActionBarShareLink(item: bibleVersesString)
             }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 8)
         }
     }
     
