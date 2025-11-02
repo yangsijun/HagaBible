@@ -77,6 +77,7 @@ struct SearchView: View {
                         }
                     }
                 }
+                .padding(.bottom, 50)
             }
             .onChange(of: searchText) { _, searchText in
                 viewModel.findBibleReference(text: searchText)
