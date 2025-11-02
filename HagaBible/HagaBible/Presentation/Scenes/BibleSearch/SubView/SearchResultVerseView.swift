@@ -10,7 +10,7 @@ import SwiftUI
 struct SearchResultVerseView: View {
     var bibleReferenceText: String
     var verseText: String
-    var searchText: String
+    var highlightedText: String = ""
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -25,8 +25,8 @@ struct SearchResultVerseView: View {
                         .foregroundColor: UIColor.label
                     ]
                 )
-                .addingAttributes([.backgroundColor: UIColor.accent.withAlphaComponent(0.5)], toSubstring: searchText)
-                .addingAttributes([.foregroundColor: UIColor.label], toSubstring: searchText)
+                .addingAttributes([.backgroundColor: UIColor.accent.withAlphaComponent(0.5)], toSubstring: highlightedText)
+                .addingAttributes([.foregroundColor: UIColor.label], toSubstring: highlightedText)
             )
             .frame(maxWidth: .infinity, alignment: .leading)
             .multilineTextAlignment(.leading)
@@ -39,6 +39,6 @@ struct SearchResultVerseView: View {
     SearchResultVerseView(
         bibleReferenceText: "Genesis 1:1",
         verseText: "In the beginning, God created the heavens and the earth.",
-        searchText: "beginning"
+        highlightedText: "beginning"
     )
 }

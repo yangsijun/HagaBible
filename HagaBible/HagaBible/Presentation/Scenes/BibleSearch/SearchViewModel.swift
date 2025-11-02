@@ -21,14 +21,6 @@ class SearchViewModel {
     
     var searchResults: [BibleVerse] = []
     var groupedSearchResults: [BibleBook: [BibleVerse]] = [:]
-//    var searchHistories: [SearchHistory] {
-//        do {
-//            print("fetch")
-//            return try searchHistoryRepository.fetchSearchHistories()
-//        } catch {
-//            return []
-//        }
-//    }
     var searchHistories: [SearchHistory] = []
         
     init(
