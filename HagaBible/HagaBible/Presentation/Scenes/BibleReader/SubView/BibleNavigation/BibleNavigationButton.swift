@@ -12,12 +12,14 @@ struct BibleNavigationButton<L: View, T: Equatable>: View {
     let label: (() -> L)
     let value: T
     let additionalAction: (() -> Void)?
+    let doubleTapAction: (() -> Void)?
     
-    init(label: @escaping (() -> L), value: T, selection: Binding<T?>, additionalAction: (() -> Void)? = nil) {
+    init(label: @escaping (() -> L), value: T, selection: Binding<T?>, additionalAction: (() -> Void)? = nil, doubleTapAction: (() -> Void)? = nil) {
         _selection = selection
         self.label = label
         self.value = value
         self.additionalAction = additionalAction
+        self.doubleTapAction = doubleTapAction
     }
     
     var body: some View {
@@ -30,6 +32,15 @@ struct BibleNavigationButton<L: View, T: Equatable>: View {
             label()
                 .frame(maxWidth: .infinity)
         }
+        .highPriorityGesture(
+            TapGesture(count: 2)
+                .onEnded {
+                    selection = value
+                    if let doubleTapAction = doubleTapAction {
+                        doubleTapAction()
+                    }
+                }
+        )
         .foregroundStyle(.primary)
         .background(
             value == selection.self ? Color.gray.opacity(0.2) : Color.clear

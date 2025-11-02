@@ -15,6 +15,7 @@ struct BibleNavigationColumnView<T: Hashable & Equatable, N: StringProtocol>: Vi
     var columnTitleAlignment: Alignment = .center
     var itemAlignment: Alignment = .center
     var additionalAction: (() -> Void)?
+    var doubleTapAction: (() -> Void)?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +49,11 @@ struct BibleNavigationColumnView<T: Hashable & Equatable, N: StringProtocol>: Vi
                                     selection: $selectedItem,
                                     additionalAction: {
                                         if let action = additionalAction {
+                                            action()
+                                        }
+                                    },
+                                    doubleTapAction: {
+                                        if let action = doubleTapAction {
                                             action()
                                         }
                                     }

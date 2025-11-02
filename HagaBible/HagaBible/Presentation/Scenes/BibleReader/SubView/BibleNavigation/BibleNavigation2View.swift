@@ -28,7 +28,22 @@ struct BibleNavigation2View: View {
                         selectedItem: $selectedBook,
                         getDesciption: { $0.bookName },
                         columnTitleAlignment: .leading,
-                        itemAlignment: .leading
+                        itemAlignment: .leading,
+                        doubleTapAction: {
+                            if let selectedVersion = selectedVersion, let selectedBook = selectedBook {
+                                bibleReaderViewModel.applyBibleSelection(
+                                    versionCode: selectedVersion.versionCode,
+                                    bookCode: selectedBook.bookCode,
+                                    chapterNum: 1,
+                                    verseNum: 1
+                                )
+                                
+                                dismiss()
+                                
+                                bibleReaderViewModel.navigatedVerseNum = 1
+                                bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+                            }
+                        }
                     )
                     .gridCellColumns(2)
                     BibleNavigationColumnView(
@@ -41,6 +56,21 @@ struct BibleNavigation2View: View {
                                 return "\($0.chapter) \(counterNoun)"
                             }
                             return "\($0.chapter)"
+                        },
+                        doubleTapAction: {
+                            if let selectedVersion = selectedVersion, let selectedBook = selectedBook, let selectedChapter = selectedChapter {
+                                bibleReaderViewModel.applyBibleSelection(
+                                    versionCode: selectedVersion.versionCode,
+                                    bookCode: selectedBook.bookCode,
+                                    chapterNum: selectedChapter.chapter,
+                                    verseNum: 1
+                                )
+                                
+                                dismiss()
+                                
+                                bibleReaderViewModel.navigatedVerseNum = 1
+                                bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+                            }
                         }
                     )
                     BibleNavigationColumnView(
