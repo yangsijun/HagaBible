@@ -144,6 +144,16 @@ class SearchViewModel {
         bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
     }
     
+    func addSearchHistory(from verse: BibleVerse) {
+        do {
+            try searchHistoryRepository.addSearchHistory(SearchHistory(verse: verse))
+        } catch {
+#if DEBUG
+            print("Failed to add search history: \(error)")
+#endif
+        }
+    }
+
     func loadSearchHistory() {
         do {
             print("fetch")
@@ -165,12 +175,12 @@ class SearchViewModel {
         }
     }
     
-    func addSearchHistory(from verse: BibleVerse) {
+    func clearSearchHistory() {
         do {
-            try searchHistoryRepository.addSearchHistory(SearchHistory(verse: verse))
+            try searchHistoryRepository.deleteAllSearchHistories()
         } catch {
 #if DEBUG
-            print("Failed to add search history: \(error)")
+            print("Failed to delete all search histories: \(error)")
 #endif
         }
     }
