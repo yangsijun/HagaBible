@@ -63,7 +63,7 @@ extension DIContainer {
         
         container.register(type: AudioService.self, component: AudioService())
         
-        let schema = Schema([Recording.self, RecordingFolder.self])
+        let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         guard let modelContainer = try? ModelContainer(for: schema, configurations: [config]) else {
             fatalError("ModelContainer 생성에 실패했습니다.")
@@ -78,10 +78,13 @@ extension DIContainer {
             recordingRepository: container.resolve(type: RecordingRepository.self)
         ))
         
+        container.register(type: SearchHistoryRepository.self, component: DefaultSearchHistoryRepository())
+        
         container.register(type: SearchViewModel.self, component: SearchViewModel(
             appState: container.resolve(type: AppState.self),
             bibleRepository: container.resolve(type: BibleRepository.self),
-            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
+            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self),
+            searchHistoryRepository: container.resolve(type: SearchHistoryRepository.self)
         ))
         
         container.register(type: FontThemeManager.self, component: FontThemeManager())
@@ -107,7 +110,7 @@ extension DIContainer {
         
         container.register(type: AudioService.self, component: AudioService())
         
-        let schema = Schema([Recording.self, RecordingFolder.self])
+        let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         guard let modelContainer = try? ModelContainer(for: schema, configurations: [config]) else {
             fatalError("ModelContainer 생성에 실패했습니다.")
@@ -122,10 +125,13 @@ extension DIContainer {
             recordingRepository: container.resolve(type: RecordingRepository.self)
         ))
         
+        container.register(type: SearchHistoryRepository.self, component: DefaultSearchHistoryRepository())
+        
         container.register(type: SearchViewModel.self, component: SearchViewModel(
             appState: container.resolve(type: AppState.self),
             bibleRepository: container.resolve(type: BibleRepository.self),
-            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
+            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self),
+            searchHistoryRepository: container.resolve(type: SearchHistoryRepository.self)
         ))
         
         container.register(type: FontThemeManager.self, component: FontThemeManager())

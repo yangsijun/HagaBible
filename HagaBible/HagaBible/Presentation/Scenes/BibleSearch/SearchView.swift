@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SearchView: View {
     @Environment(\.dismissSearch) var dismissSearch
@@ -24,70 +25,104 @@ struct SearchView: View {
         NavigationStack {
             VStack {
                 List {
-                    if let verse = viewModel.bibleReferenceVerse {
-                        Section(header: Text("Bible Reference")) {
-                            Button{
-                                viewModel.gotoVerse(verse: verse)
-                                dismissSearch()
-                            } label: {
-                                SearchResultVerseView(
-                                    bibleReferenceText: viewModel.bibleReferenceText ?? "",
-                                    verseText: verse.verseText ?? "",
-                                    searchText: searchText
-                                )
-                            }
-                        }
-                    }
-                    if !viewModel.groupedSearchResults.isEmpty {
-                        Section(header: Text("Search Results")) {
-                            ForEach(viewModel.groupedSearchResults.keys.sorted(by: { $0.bookOrder < $1.bookOrder }), id: \.self) { book in
-                                DisclosureGroup(
-                                    isExpanded: Binding(
-                                        get: { expandedBooks.contains(book.bookName) },
-                                        set: { isExpanded in
-                                            if isExpanded {
-                                                expandedBooks.insert(book.bookName)
-                                            } else {
-                                                expandedBooks.remove(book.bookName)
-                                            }
-                                        }
-                                    )
-                                ) {
-                                    ForEach(viewModel.groupedSearchResults[book] ?? [], id: \.self) { verse in
-                                        Button{
-                                            viewModel.gotoVerse(verse: verse)
-                                            dismissSearch()
+                    if searchText.isEmpty {
+                        if !viewModel.searchHistories.isEmpty {
+                            Section(header: Text("Search Histories")) {
+                                ForEach(viewModel.searchHistories) { searchHistory in
+                                    Button{
+                                        viewModel.gotoVerse(verse: searchHistory.verse)
+                                        dismissSearch()
+                                    } label: {
+                                        SearchResultVerseView(
+                                            bibleReferenceText: "\(searchHistory.verse.bookName) \(searchHistory.verse.chapter):\(searchHistory.verse.verse)",
+                                            verseText: searchHistory.verse.verseText ?? "",
+                                            searchText: searchText
+                                        )
+                                    }
+                                    .swipeActions(edge: .trailing) {
+                                        Button(role: .destructive) {
+                                            viewModel.deleteSearchHistory(searchHistory)
+                                            viewModel.loadSearchHistory()
                                         } label: {
-                                            SearchResultVerseView(
-                                                bibleReferenceText: "\(book.bookName) \(verse.chapter):\(verse.verse)",
-                                                verseText: verse.verseText ?? "",
-                                                searchText: searchText
-                                            )
+                                            Label("삭제", systemImage: "trash")
                                         }
                                     }
+                                }
+                            }
+                        }
+                    } else {
+                        if let verse = viewModel.bibleReferenceVerse {
+                            Section(header: Text("Bible Reference")) {
+                                Button{
+                                    viewModel.gotoVerse(verse: verse)
+                                    viewModel.addSearchHistory(from: verse)
+                                    dismissSearch()
                                 } label: {
-                                    HStack {
-                                        Text(book.bookName)
-                                        Text(viewModel.groupedSearchResults[book]?.count.description ?? "")
-                                            .font(.caption)
-                                            .foregroundStyle(Color(UIColor.secondaryLabel))
+                                    SearchResultVerseView(
+                                        bibleReferenceText: viewModel.bibleReferenceText ?? "",
+                                        verseText: verse.verseText ?? "",
+                                        searchText: searchText
+                                    )
+                                }
+                            }
+                        }
+                        if !viewModel.groupedSearchResults.isEmpty {
+                            Section(header: Text("Search Results")) {
+                                ForEach(viewModel.groupedSearchResults.keys.sorted(by: { $0.bookOrder < $1.bookOrder }), id: \.self) { book in
+                                    DisclosureGroup(
+                                        isExpanded: Binding(
+                                            get: { expandedBooks.contains(book.bookName) },
+                                            set: { isExpanded in
+                                                if isExpanded {
+                                                    expandedBooks.insert(book.bookName)
+                                                } else {
+                                                    expandedBooks.remove(book.bookName)
+                                                }
+                                            }
+                                        )
+                                    ) {
+                                        ForEach(viewModel.groupedSearchResults[book] ?? [], id: \.self) { verse in
+                                            Button{
+                                                viewModel.gotoVerse(verse: verse)
+                                                viewModel.addSearchHistory(from: verse)
+                                                dismissSearch()
+                                            } label: {
+                                                SearchResultVerseView(
+                                                    bibleReferenceText: "\(book.bookName) \(verse.chapter):\(verse.verse)",
+                                                    verseText: verse.verseText ?? "",
+                                                    searchText: searchText
+                                                )
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(book.bookName)
+                                            Text(viewModel.groupedSearchResults[book]?.count.description ?? "")
+                                                .font(.caption)
+                                                .foregroundStyle(Color(UIColor.secondaryLabel))
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                    Section {
+                        EmptyView()
+                    } footer: {
+                        Color.clear.frame(height: 50)
+                    }
                 }
-                .padding(.bottom, 50)
             }
-            .onChange(of: searchText) { _, searchText in
+            .onChange(of: searchText, initial: false) { _, searchText in
                 viewModel.findBibleReference(text: searchText)
                 viewModel.search(text: searchText)
             }
             .scrollContentBackground(.hidden)
             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+            .navigationBarHidden(true)
         }
         .onAppear {
-            viewModel.search(text: searchText)
+            viewModel.loadSearchHistory()
         }
     }
 }

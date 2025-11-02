@@ -14,17 +14,33 @@ class SearchViewModel {
     private let appState: AppState
     private let bibleRepository: BibleRepository
     private let bibleReaderViewModel: BibleReaderViewModel
+    private let searchHistoryRepository: SearchHistoryRepository
     
     var bibleReferenceText: String? = nil
     var bibleReferenceVerse: BibleVerse? = nil
     
     var searchResults: [BibleVerse] = []
     var groupedSearchResults: [BibleBook: [BibleVerse]] = [:]
+//    var searchHistories: [SearchHistory] {
+//        do {
+//            print("fetch")
+//            return try searchHistoryRepository.fetchSearchHistories()
+//        } catch {
+//            return []
+//        }
+//    }
+    var searchHistories: [SearchHistory] = []
         
-    init(appState: AppState, bibleRepository: BibleRepository, bibleReaderViewModel: BibleReaderViewModel) {
+    init(
+        appState: AppState,
+        bibleRepository: BibleRepository,
+        bibleReaderViewModel: BibleReaderViewModel,
+        searchHistoryRepository: SearchHistoryRepository
+    ) {
         self.appState = appState
         self.bibleRepository = bibleRepository
         self.bibleReaderViewModel = bibleReaderViewModel
+        self.searchHistoryRepository = searchHistoryRepository
     }
     
     private func parseBibleReference(_ input: String) -> (book: String, chapter: Int?, verse: Int?) {
@@ -126,5 +142,36 @@ class SearchViewModel {
         appState.selectedTab = .bibleReader        
         
         bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+    }
+    
+    func loadSearchHistory() {
+        do {
+            print("fetch")
+            searchHistories = try searchHistoryRepository.fetchSearchHistories()
+        } catch {
+#if DEBUG
+            print("Failed to fetch search histories: \(error)")
+#endif
+        }
+    }
+    
+    func deleteSearchHistory(_ searchHistory: SearchHistory) {
+        do {
+            try searchHistoryRepository.deleteSearchHistory(searchHistory)
+        } catch {
+#if DEBUG
+            print("Failed to delete search history: \(error)")
+#endif
+        }
+    }
+    
+    func addSearchHistory(from verse: BibleVerse) {
+        do {
+            try searchHistoryRepository.addSearchHistory(SearchHistory(verse: verse))
+        } catch {
+#if DEBUG
+            print("Failed to add search history: \(error)")
+#endif
+        }
     }
 }
