@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ActionBar<ActionItems: View>: View {
+    @Environment(\.tabBarPlacement) var tabBarPlacement
     @ViewBuilder var actionItems: ActionItems
     
     init(@ViewBuilder _ actionItems: () -> ActionItems) where ActionItems: View {
@@ -20,7 +21,10 @@ struct ActionBar<ActionItems: View>: View {
             actionItems
         }
         .padding(.horizontal, 30)
-        .padding(.vertical, 8)
+        .padding(
+            .vertical,
+            tabBarPlacement == .bottomBar ? 8 : 30
+        )
     }
 }
 
