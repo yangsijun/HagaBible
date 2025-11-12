@@ -22,9 +22,9 @@ struct RootView: View {
             }
             Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
                 SearchView(searchText: $search)
+                    .searchable(text: $search)
             }
         }
-        .searchable(text: $search)
         .applyTabBarMinimizeBehavior()
     }
 }
