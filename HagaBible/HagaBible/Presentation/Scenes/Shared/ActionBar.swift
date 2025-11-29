@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ActionBar<ActionItems: View>: View {
     @Environment(\.tabBarPlacement) var tabBarPlacement
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.verticalSizeClass) var verticalSizeClass
     @ViewBuilder var actionItems: ActionItems
     
     init(@ViewBuilder _ actionItems: () -> ActionItems) where ActionItems: View {
@@ -20,10 +22,13 @@ struct ActionBar<ActionItems: View>: View {
             Spacer()
             actionItems
         }
-        .padding(.horizontal, 30)
+        .padding(
+            .horizontal,
+            (horizontalSizeClass == .compact && verticalSizeClass == .regular) ? 30 : 38 // Portrait iPhone <-> Landscape
+        )
         .padding(
             .vertical,
-            tabBarPlacement == .bottomBar ? 8 : 30
+            tabBarPlacement == .bottomBar ? 8 : 38
         )
     }
 }

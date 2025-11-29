@@ -50,32 +50,35 @@ struct RecordingsView: View {
                     }
                     .scrollContentBackground(.hidden)
                 }
-                VStack {
-                    if viewModel.isRecording {
-                        VStack {
-                            Text(viewModel.recordingTimeText)
-                                .font(.body)
-                                .padding(.top)
-                            
-                            WaveformView(samples: viewModel.recordingSamples)
-                                .frame(height: 150)
-                                .padding()
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                    RecordButton(
-                        isRecording: viewModel.isRecording,
-                        action: toggleRecording
-                    )
-                    .glassEffect()
-                    .padding()
-                }
-                .animation(.easeInOut, value: viewModel.isRecording)
-                .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
             }
             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+            .safeAreaBar(edge: .bottom, alignment: .center) {
+                HStack {
+                    VStack(spacing: 8) {
+                        if viewModel.isRecording {
+                            VStack(spacing: 4) {
+                                Text(viewModel.recordingTimeText)
+                                    .font(.body)
+                                WaveformView(samples: viewModel.recordingSamples)
+                                    .frame(height: 150)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 32)
+                            .padding(.bottom, 8)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                        RecordButton(
+                            isRecording: viewModel.isRecording,
+                            action: toggleRecording
+                        )
+                        .glassEffect()
+                        .padding()
+                    }
+                    .animation(.easeInOut, value: viewModel.isRecording)
+                }
+            }
             .navigationTitle("Recordings")
+            .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 EditButton()
             }

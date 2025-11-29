@@ -65,12 +65,13 @@ struct BibleReaderView: View {
             }
             .background(Color.gray.opacity(0.2), ignoresSafeAreaEdges: .all)
             .toolbarTitleDisplayMode(.inline)
-            .safeAreaBar(edge: .bottom) {
+            .safeAreaInset(edge: .bottom, alignment: .trailing) {
                 BibleReaderActionBar(
                     selectStartIndex: $selectStartIndex,
                     selectEndIndex: $selectEndIndex,
                     bibleVerseList: viewModel.bibleVerseList
                 )
+                .ignoresSafeArea(edges: .horizontal)
             }
             .toolbar {
                 BibleReaderToolbarContent(

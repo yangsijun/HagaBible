@@ -45,12 +45,13 @@ struct SearchView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
-            .navigationBarHidden(true)
             .safeAreaBar(edge: .bottom) {
                 if !isSearching && searchText.isEmpty && !viewModel.searchHistories.isEmpty {
                     SearchHistoryActionBar()
+                        .ignoresSafeArea(edges: .horizontal)
                 }
             }
+            .toolbarTitleDisplayMode(.inline)
         }
         .onAppear {
             viewModel.loadSearchHistory()
