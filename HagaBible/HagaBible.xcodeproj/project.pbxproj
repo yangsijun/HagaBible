@@ -7,14 +7,58 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ED3B587A2F05265000F17293 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED3B58792F05264F00F17293 /* WidgetKit.framework */; };
+		ED3B587C2F05265000F17293 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED3B587B2F05265000F17293 /* SwiftUI.framework */; };
+		ED3B58892F05265000F17293 /* HagaBibleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EDADAA8D2E1F365000CFCBE0 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = EDADAA8C2E1F365000CFCBE0 /* GRDB */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		ED3B58872F05265000F17293 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ED6A82022E15339A003E0D6E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ED3B58762F05264F00F17293;
+			remoteInfo = HagaBibleWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		ED3B588E2F05265000F17293 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				ED3B58892F05265000F17293 /* HagaBibleWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HagaBibleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED3B58792F05264F00F17293 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		ED3B587B2F05265000F17293 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		ED6A820A2E15339A003E0D6E /* HagaBible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HagaBible.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		ED3B588D2F05265000F17293 /* Exceptions for "HagaBibleWidget" folder in "HagaBibleWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */;
+		};
+		ED3B58902F054EEA00F17293 /* Exceptions for "HagaBibleWidget" folder in "HagaBible" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HagaBibleWidgetControl.swift,
+			);
+			target = ED6A82092E15339A003E0D6E /* HagaBible */;
+		};
 		ED6B04D42E1A6EFA008FDEE0 /* Exceptions for "HagaBible" folder in "HagaBible" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			assetTagsByRelativePath = {
@@ -33,6 +77,15 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		ED3B587D2F05265000F17293 /* HagaBibleWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				ED3B58902F054EEA00F17293 /* Exceptions for "HagaBibleWidget" folder in "HagaBible" target */,
+				ED3B588D2F05265000F17293 /* Exceptions for "HagaBibleWidget" folder in "HagaBibleWidgetExtension" target */,
+			);
+			path = HagaBibleWidget;
+			sourceTree = "<group>";
+		};
 		ED6A820C2E15339A003E0D6E /* HagaBible */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -44,6 +97,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		ED3B58742F05264F00F17293 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED3B587C2F05265000F17293 /* SwiftUI.framework in Frameworks */,
+				ED3B587A2F05265000F17293 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED6A82072E15339A003E0D6E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,10 +117,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		ED3B58782F05264F00F17293 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				ED3B58792F05264F00F17293 /* WidgetKit.framework */,
+				ED3B587B2F05265000F17293 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		ED6A82012E15339A003E0D6E = {
 			isa = PBXGroup;
 			children = (
 				ED6A820C2E15339A003E0D6E /* HagaBible */,
+				ED3B587D2F05265000F17293 /* HagaBibleWidget */,
+				ED3B58782F05264F00F17293 /* Frameworks */,
 				ED6A820B2E15339A003E0D6E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +140,7 @@
 			isa = PBXGroup;
 			children = (
 				ED6A820A2E15339A003E0D6E /* HagaBible.app */,
+				ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +148,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ED3B588A2F05265000F17293 /* Build configuration list for PBXNativeTarget "HagaBibleWidgetExtension" */;
+			buildPhases = (
+				ED3B58732F05264F00F17293 /* Sources */,
+				ED3B58742F05264F00F17293 /* Frameworks */,
+				ED3B58752F05264F00F17293 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				ED3B587D2F05265000F17293 /* HagaBibleWidget */,
+			);
+			name = HagaBibleWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = HagaBibleWidgetExtension;
+			productReference = ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		ED6A82092E15339A003E0D6E /* HagaBible */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = ED6A82152E15339A003E0D6E /* Build configuration list for PBXNativeTarget "HagaBible" */;
@@ -81,10 +177,12 @@
 				ED6A82062E15339A003E0D6E /* Sources */,
 				ED6A82072E15339A003E0D6E /* Frameworks */,
 				ED6A82082E15339A003E0D6E /* Resources */,
+				ED3B588E2F05265000F17293 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				ED3B58882F05265000F17293 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				ED6A820C2E15339A003E0D6E /* HagaBible */,
@@ -115,6 +213,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					ED3B58762F05264F00F17293 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					ED6A82092E15339A003E0D6E = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -138,11 +239,19 @@
 			projectRoot = "";
 			targets = (
 				ED6A82092E15339A003E0D6E /* HagaBible */,
+				ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		ED3B58752F05264F00F17293 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED6A82082E15339A003E0D6E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -153,6 +262,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		ED3B58732F05264F00F17293 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED6A82062E15339A003E0D6E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -162,7 +278,77 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		ED3B58882F05265000F17293 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */;
+			targetProxy = ED3B58872F05265000F17293 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		ED3B588B2F05265000F17293 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9ZMW52M7L5;
+				ENABLE_ON_DEMAND_RESOURCES = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HagaBibleWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HagaBibleWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible.HagaBibleWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		ED3B588C2F05265000F17293 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9ZMW52M7L5;
+				ENABLE_ON_DEMAND_RESOURCES = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HagaBibleWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HagaBibleWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible.HagaBibleWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		ED6A82132E15339A003E0D6E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -311,7 +497,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -348,7 +534,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -363,6 +549,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		ED3B588A2F05265000F17293 /* Build configuration list for PBXNativeTarget "HagaBibleWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ED3B588B2F05265000F17293 /* Debug */,
+				ED3B588C2F05265000F17293 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		ED6A82052E15339A003E0D6E /* Build configuration list for PBXProject "HagaBible" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
