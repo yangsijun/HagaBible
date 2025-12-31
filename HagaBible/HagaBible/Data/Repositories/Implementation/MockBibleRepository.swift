@@ -127,10 +127,10 @@ struct MockBibleRepository: BibleRepository {
     
     func fetchBibleVersionList() throws -> [BibleVersion] {
         return [
-            BibleVersion(versionCode: "KJV", versionName: "King James Version", language: "English"),
-            BibleVersion(versionCode: "WEB", versionName: "World English Bible", language: "English"),
-            BibleVersion(versionCode: "WEBBE", versionName: "World English Bible British Edition", language: "English"),
-            BibleVersion(versionCode: "KRV", versionName: "개역한글", language: "Korean"),
+            BibleVersion(versionCode: "KJV", versionName: "King James Version", language: "English", isDownloaded: false),
+            BibleVersion(versionCode: "WEB", versionName: "World English Bible", language: "English", isDownloaded: true),
+            BibleVersion(versionCode: "WEBBE", versionName: "World English Bible British Edition", language: "English", isDownloaded: false),
+            BibleVersion(versionCode: "KRV", versionName: "개역한글", language: "Korean", isDownloaded: true),
         ]
     }
     

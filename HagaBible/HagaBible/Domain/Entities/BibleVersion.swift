@@ -9,4 +9,5 @@ struct BibleVersion: Equatable, Hashable, Codable {
     let versionCode: String
     let versionName: String
     let language: String
+    var isDownloaded: Bool
 }

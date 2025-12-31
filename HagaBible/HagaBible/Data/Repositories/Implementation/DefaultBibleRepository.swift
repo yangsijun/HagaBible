@@ -9,11 +9,7 @@ import Foundation
 import GRDB
 
 final class DefaultBibleRepository: BibleRepository {
-    private let dbPool: DatabasePool
-    
-    init(dbPool: DatabasePool) {
-        self.dbPool = dbPool
-    }
+    private let fileDataSource: FileSystemDataSource = DIContainer.shared.resolve(type: FileSystemDataSource.self)
     
     func fetchBibleVersionList() async throws -> [BibleVersion] {
         let sql = """
@@ -25,14 +21,21 @@ final class DefaultBibleRepository: BibleRepository {
                 language, version_code;
         """
         
-        return try await dbPool.read { db in
-            let bibleVersionRecordList = try BibleVersionRecord.fetchAll(db, sql: sql, arguments: [])
-            
-            return bibleVersionRecordList.map {
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return []
+        }
+        
+        let bibleVersionRecordList: [BibleVersionRecord] = try await dbPool.read { db in
+            try BibleVersionRecord.fetchAll(db, sql: sql, arguments: [])
+        }
+
+        return await MainActor.run { [fileDataSource] in
+            bibleVersionRecordList.map { record in
                 BibleVersion(
-                    versionCode: $0.versionCode,
-                    versionName: $0.versionName,
-                    language: $0.language
+                    versionCode: record.versionCode,
+                    versionName: record.versionName,
+                    language: record.language,
+                    isDownloaded: fileDataSource.fileExists(filename: "Bible_\(record.versionCode).sqlite")
                 )
             }
         }
@@ -47,7 +50,7 @@ final class DefaultBibleRepository: BibleRepository {
                 MAX(chapter) as total_chapters,
                 version_code
             FROM
-                bible_verse
+                \(versionCode).bible_verse
             WHERE
                 version_code = ?
             GROUP BY
@@ -55,6 +58,10 @@ final class DefaultBibleRepository: BibleRepository {
             ORDER BY
                 book_order;
         """
+        
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return []
+        }
         
         return try await dbPool.read { db in
             let bibleBookRecordList = try BibleBookRecord.fetchAll(db, sql: sql, arguments: [versionCode])
@@ -80,7 +87,7 @@ final class DefaultBibleRepository: BibleRepository {
                 MAX(verse) AS total_verses,
                 version_code
             FROM
-                bible_verse
+                \(versionCode).bible_verse
             WHERE
                 version_code = ?
                 AND book_code = ?
@@ -89,6 +96,10 @@ final class DefaultBibleRepository: BibleRepository {
             ORDER BY
                 book_order, chapter;
         """
+        
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return []
+        }
         
         return try await dbPool.read { db in
             let bibleChapterRecordList = try BibleChapterRecord.fetchAll(db, sql: sql, arguments: [versionCode, bookCode])
@@ -116,7 +127,7 @@ final class DefaultBibleRepository: BibleRepository {
                 verse_text,
                 version_code
             FROM
-                bible_verse
+                \(versionCode).bible_verse
             WHERE
                 version_code = ?
                 AND book_code = ?
@@ -124,6 +135,10 @@ final class DefaultBibleRepository: BibleRepository {
             ORDER BY
                 book_order, chapter, verse;
         """
+        
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return []
+        }
         
         return try await dbPool.read { db in
             let bibleVerseRecordList = try BibleVerseRecord.fetchAll(db, sql: sql, arguments: [versionCode, bookCode, chapter])
@@ -163,6 +178,10 @@ final class DefaultBibleRepository: BibleRepository {
                 book_order, chapter, verse;
         """
         
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return nil
+        }
+        
         return try await dbPool.read { db in
             let bibleVerseRecord = try BibleVerseRecord.fetchOne(db, sql: sql, arguments: [versionCode, bookCode, chapter, verse])
             
@@ -199,6 +218,10 @@ final class DefaultBibleRepository: BibleRepository {
                 book_order, chapter, verse;
         """
         
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return []
+        }
+        
         return try await dbPool.read { db in
             let bibleVerseRecordList = try BibleVerseRecord.fetchAll(db, sql: sql, arguments: [versionCode, "%\(keyword)%"])
             
@@ -216,3 +239,4 @@ final class DefaultBibleRepository: BibleRepository {
         }
     }
 }
+

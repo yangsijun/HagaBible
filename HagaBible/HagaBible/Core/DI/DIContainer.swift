@@ -36,18 +36,25 @@ extension DIContainer {
         container.register(type: AppState.self, component: AppState())
         
         do {
-            let appDatabase = try AppDatabase()
-            container.register(type: AppDatabase.self, component: appDatabase)
+            let bibleDatabaseService = try BibleDatabaseService()
+            container.register(type: BibleDatabaseService.self, component: bibleDatabaseService)
 #if DEBUG
-            print("✅ AppDatabase가 성공적으로 등록되었습니다.")
+            print("BibleDatabase가 성공적으로 등록되었습니다.")
 #endif
         } catch {
             // 데이터베이스 초기화 실패는 복구 불가능한 오류로 간주합니다.
-            fatalError("🚨 AppDatabase 초기화에 실패했습니다: \(error)")
+            fatalError("BibleDatabase 초기화에 실패했습니다: \(error)")
         }
         
+        container.register(type: ODRDataSource.self, component: ODRDataSource())
+        container.register(type: FileSystemDataSource.self, component: FileSystemDataSource())
+        container.register(type: BibleFileRepository.self, component: DefaultBibleFileRepository())
+        
+//        guard let dbPool = container.resolve(type: BibleDatabaseService.self).dbPool else {
+//            fatalError("BibleDatabaseService에서 dbPool을 얻지 못했습니다.")
+//        }
         container.register(type: BibleRepository.self, component: DefaultBibleRepository(
-            dbPool: container.resolve(type: AppDatabase.self).dbPool
+//            dbPool: dbPool
         ))
         
         container.register(type: BibleActionService.self, component: BibleActionService())
