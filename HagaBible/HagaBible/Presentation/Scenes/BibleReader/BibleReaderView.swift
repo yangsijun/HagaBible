@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct BibleReaderView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass: UserInterfaceSizeClass?
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     @State private var showBibleNavigation: Bool = false
@@ -104,7 +105,11 @@ struct BibleReaderView: View {
             .sheet(isPresented: $showFontThemeConfig) {
                 FontThemeConfigView(language: viewModel.bibleVersion?.language ?? "English")
                     .environment(fontThemeManager)
-                    .presentationDetents([.medium])
+                    .presentationDetents(horizontalSizeClass == .compact ? [.medium] : [.large])
+                    .if(horizontalSizeClass != .compact) { view in
+                        view
+                            .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+                    }
             }
         }
         .onAppear {

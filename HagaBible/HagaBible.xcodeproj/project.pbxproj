@@ -17,6 +17,14 @@
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		ED6B04D42E1A6EFA008FDEE0 /* Exceptions for "HagaBible" folder in "HagaBible" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			assetTagsByRelativePath = {
+				Data/Local/GRDB/SQLite/Bible_KJV.sqlite = (Bible_KJV, );
+				Data/Local/GRDB/SQLite/Bible_KRV.sqlite = (Bible_KRV, );
+				Data/Local/GRDB/SQLite/Bible_NIV.sqlite = (Bible_NIV, );
+				Data/Local/GRDB/SQLite/Bible_NKRV.sqlite = (Bible_NKRV, );
+				Data/Local/GRDB/SQLite/Bible_WEB.sqlite = (Bible_WEB, );
+				Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite = (Bible_WEBBE, );
+			};
 			membershipExceptions = (
 				Info.plist,
 			);
@@ -96,6 +104,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					Bible_KJV,
+					Bible_KRV,
+					Bible_NIV,
+					Bible_NKRV,
+					Bible_WEB,
+					Bible_WEBBE,
+				);
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
@@ -183,6 +199,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 9ZMW52M7L5;
+				ENABLE_ON_DEMAND_RESOURCES = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -248,6 +265,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 9ZMW52M7L5;
 				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_ON_DEMAND_RESOURCES = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
