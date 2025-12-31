@@ -59,7 +59,7 @@ struct BibleReaderToolbarTitleButton: View {
         BibleReaderToolbarTitleButton(
             bibleBook: .init(bookCode: "GEN", bookName: "창세기", bookOrder: 1, totalChapters: 50, versionCode: "KRV"),
             chapterNum: 1,
-            bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean"),
+            bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean", isDownloaded: true),
             showBibleNavigation: .constant(false)
         )
     }

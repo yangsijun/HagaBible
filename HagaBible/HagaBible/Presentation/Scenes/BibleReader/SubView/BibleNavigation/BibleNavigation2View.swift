@@ -18,6 +18,11 @@ struct BibleNavigation2View: View {
     @State var selectedChapter: BibleChapter?
     @State var selectedVerse: BibleVerse?
     
+    @State var showVersionManageView: Bool = false
+    @State var showDownloadConfirmation: Bool = false
+    @State var pendingDownloadVersion: BibleVersion?
+    @State var isDownloading: Bool = false
+
     var body: some View {
         NavigationStack {
             Grid(horizontalSpacing: 0, verticalSpacing: 0) {
@@ -101,10 +106,21 @@ struct BibleNavigation2View: View {
                     }
                 }
             }
-            .onChange(of: selectedVersion) {
-                Task {
-                    await viewModel.loadBookList(version: selectedVersion!)
-                    selectedBook = nil
+            .onChange(of: selectedVersion) { oldValue, newValue in
+                guard let newVersion = newValue else { return }
+
+                if newVersion.isDownloaded == false {
+                    // Download required - show confirmation popup
+                    pendingDownloadVersion = newVersion
+                    showDownloadConfirmation = true
+                    // Revert to previous version until download is confirmed
+                    selectedVersion = oldValue
+                } else {
+                    // Already downloaded - load immediately
+                    Task {
+                        await viewModel.loadBookList(version: newVersion)
+                        selectedBook = nil
+                    }
                 }
             }
             .onChange(of: selectedBook) { oldValue, newValue in
@@ -160,50 +176,87 @@ struct BibleNavigation2View: View {
             .toolbarTitleMenu {
                 Picker(selection: $selectedVersion, label: Text("Sorting options")) {
                     ForEach(viewModel.versionList, id: \.versionCode) { version in
-                        Text(version.versionName).tag(version)
+                        HStack {
+                            Text(version.versionName)
+                            if version.isDownloaded == false {
+                                Image(systemName: "square.and.arrow.down")
+                            }
+                        }
+                        .tag(version)
                     }
+                }
+                Button {
+                    showVersionManageView = true
+                } label: {
+                    Label("Manage Versions", systemImage: "books.vertical")
+                }
+            }
+            .sheet(isPresented: $showVersionManageView, onDismiss: {
+                // Check if the currently selected version has been deleted
+                if let current = selectedVersion {
+                    let updatedVersion = viewModel.versionList.first { $0.versionCode == current.versionCode }
+                    if updatedVersion == nil || updatedVersion?.isDownloaded == false {
+                        // Deleted - switch to another downloaded version
+                        selectedVersion = viewModel.versionList.first { $0.isDownloaded }
+                        selectedBook = nil
+                        selectedChapter = nil
+                        selectedVerse = nil
+                    }
+                }
+            }) {
+                BibleVersionManageView()
+                    .environment(viewModel)
+            }
+            .alert("Download Bible Version", isPresented: $showDownloadConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    pendingDownloadVersion = nil
+                }
+                Button("Download") {
+                    guard let version = pendingDownloadVersion else { return }
+                    Task {
+                        await downloadAndSelectVersion(version)
+                    }
+                }
+            } message: {
+                if let version = pendingDownloadVersion {
+                    Text("\(version.versionName) is not downloaded yet. Download now?")
+                }
+            }
+            .overlay {
+                if isDownloading {
+                    ProgressView("Downloading...")
+                        .padding()
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .title) {
                     Text(selectedVersion?.versionName ?? "Version")
                 }
-//                ToolbarItem(placement: .confirmationAction) {
-//                    Button(action: {
-//                        if selectedVersion == nil {
-//                            selectedVersion = viewModel.versionList.first!
-//                        }
-//                        if selectedBook == nil {
-//                            selectedBook = viewModel.bookList.first!
-//                        }
-//                        if selectedChapter == nil {
-//                            selectedChapter = viewModel.chapterList.first!
-//                        }
-//                        if selectedVerse == nil {
-//                            selectedVerse = viewModel.verseList.first!
-//                        }
-//                        
-//                        bibleReaderViewModel.applyBibleSelection(
-//                            versionCode: selectedVersion?.versionCode,
-//                            bookCode: selectedBook?.bookCode,
-//                            chapterNum: selectedChapter?.chapter,
-//                            verseNum: selectedVerse?.verse
-//                        )
-//                        
-//                        dismiss()
-//                        if let selectedVerse = selectedVerse {
-//                            bibleReaderViewModel.navigatedVerseNum = selectedVerse.verse
-//                        } else {
-//                            bibleReaderViewModel.navigatedVerseNum = 1
-//                        }
-//                        bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-//                    }) {
-//                        Image(systemName: "checkmark")
-//                    }
-//                    .buttonStyle(.borderedProminent)
-//                    .tint(.orange)
-//                }
             }
+        }
+    }
+
+    private func downloadAndSelectVersion(_ version: BibleVersion) async {
+        isDownloading = true
+        defer {
+            isDownloading = false
+            pendingDownloadVersion = nil
+        }
+
+        do {
+            let bibleFileRepository = DIContainer.shared.resolve(type: BibleFileRepository.self)
+            try await bibleFileRepository.downloadAndInstall(version: version)
+
+            // Refresh version list
+            await viewModel.loadVersionList()
+
+            // Select the updated version
+            if let updatedVersion = viewModel.versionList.first(where: { $0.versionCode == version.versionCode }) {
+                selectedVersion = updatedVersion
+            }
+        } catch {
+            print("Failed to download bible: \(error)")
         }
     }
 }
