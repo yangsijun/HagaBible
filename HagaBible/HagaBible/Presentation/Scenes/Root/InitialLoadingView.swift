@@ -13,14 +13,14 @@ struct InitialLoadingView: View {
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
-
-            Image(systemName: "book.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-
-            Text("HagaBible")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            VStack(spacing: 12) {
+                Image(systemName: "book.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.secondary)
+                Text("HagaBible")
+                    .font(.title)
+                    .fontWeight(.bold)
+            }
 
             VStack(spacing: 12) {
                 ProgressView()
