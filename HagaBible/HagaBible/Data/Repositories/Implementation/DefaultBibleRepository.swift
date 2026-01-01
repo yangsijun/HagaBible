@@ -168,7 +168,7 @@ final class DefaultBibleRepository: BibleRepository {
                 verse_text,
                 version_code
             FROM
-                bible_verse
+                \(versionCode).bible_verse
             WHERE
                 version_code = ?
                 AND book_code = ?
@@ -210,7 +210,7 @@ final class DefaultBibleRepository: BibleRepository {
                 verse_text,
                 version_code
             FROM
-                bible_verse
+                \(versionCode).bible_verse
             WHERE
                 version_code = ?
                 AND LOWER(verse_text) LIKE LOWER(?)
