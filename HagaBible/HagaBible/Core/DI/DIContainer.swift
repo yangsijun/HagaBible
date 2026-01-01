@@ -68,7 +68,8 @@ extension DIContainer {
         ))
         
         container.register(type: AudioService.self, component: AudioService())
-        
+        container.register(type: TTSService.self, component: TTSService())
+
         let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         guard let modelContainer = try? ModelContainer(for: schema, configurations: [config]) else {
@@ -115,7 +116,8 @@ extension DIContainer {
         ))
         
         container.register(type: AudioService.self, component: AudioService())
-        
+        container.register(type: TTSService.self, component: TTSService())
+
         let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         guard let modelContainer = try? ModelContainer(for: schema, configurations: [config]) else {
