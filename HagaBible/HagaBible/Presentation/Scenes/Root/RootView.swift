@@ -13,14 +13,14 @@ struct RootView: View {
     @State private var appState = DIContainer.shared.resolve(type: AppState.self)
     @State private var search: String = ""
 
-    @State private var isInitializing: Bool = true
+    @State private var showLoadingView: Bool = false
     @State private var downloadProgress: String = ""
 
     private let defaultVersions = ["WEBBE", "NKRV"]
 
     var body: some View {
         Group {
-            if isInitializing {
+            if showLoadingView {
                 InitialLoadingView(progressText: downloadProgress)
             } else {
                 mainContent
@@ -55,6 +55,14 @@ struct RootView: View {
         let bibleFileRepository = DIContainer.shared.resolve(type: BibleFileRepository.self)
         let bibleRepository = DIContainer.shared.resolve(type: BibleRepository.self)
 
+        // Delayed loading indicator - only shows after 200ms if still working
+        let showLoadingAfterDelayTask = Task {
+            try? await Task.sleep(for: .milliseconds(200))
+            if !Task.isCancelled {
+                showLoadingView = true
+            }
+        }
+
         // Check which versions need to be downloaded
         var versionsToDownload: [BibleVersion] = []
 
@@ -69,11 +77,13 @@ struct RootView: View {
             }
         } catch {
             Logger.repository.error("Failed to fetch version list: \(error.localizedDescription)")
+            showLoadingAfterDelayTask.cancel()
+            return
         }
 
         // Skip if no downloads are needed
         if versionsToDownload.isEmpty {
-            isInitializing = false
+            showLoadingAfterDelayTask.cancel()
             return
         }
 
@@ -88,7 +98,8 @@ struct RootView: View {
             }
         }
 
-        isInitializing = false
+        showLoadingAfterDelayTask.cancel()
+        showLoadingView = false
     }
 }
 
