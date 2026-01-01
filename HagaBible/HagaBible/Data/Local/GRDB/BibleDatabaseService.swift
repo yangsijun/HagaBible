@@ -14,7 +14,11 @@ final class BibleDatabaseService {
     private let lock = NSLock()
     
     private let dbVersionKey = "dbVersion"
-    private let currentDBVersion = "1.4"
+    private let currentDBVersion = "1.5"
+
+    // ODR Bible file schema version - increment when Bible_*.sqlite schema changes
+    static let odrSchemaVersion = "1.1"
+    private let odrSchemaVersionKeyPrefix = "odrSchemaVersion_"
     
     private var mainDatabaseURL: URL {
         try! FileManager.default
@@ -26,9 +30,32 @@ final class BibleDatabaseService {
         do {
             try setupMainDatabaseFile() // 1. 메인 파일 준비
             try reloadDatabasePool()    // 2. Pool 연결 (Attach 포함)
+            try validateDatabase()      // 3. DB 무결성 검사
         } catch {
-            print("Database Initialization Error: \(error)")
-            throw error
+            // DB 손상 시 재설치 시도
+            print("Database Initialization Error: \(error). Attempting recovery...")
+            dbPool = nil  // 기존 연결 해제
+            // WAL, SHM 파일도 함께 삭제 (HagaBibleDB.sqlite-wal, HagaBibleDB.sqlite-shm)
+            let dbPath = mainDatabaseURL.path
+            try? FileManager.default.removeItem(atPath: dbPath)
+            try? FileManager.default.removeItem(atPath: dbPath + "-wal")
+            try? FileManager.default.removeItem(atPath: dbPath + "-shm")
+            UserDefaults.standard.removeObject(forKey: dbVersionKey)
+            try setupMainDatabaseFile()
+            try reloadDatabasePool()
+            try validateDatabase()
+            print("Database recovery successful.")
+        }
+    }
+
+    /// DB 무결성 검사 - 손상된 DB 조기 감지
+    private func validateDatabase() throws {
+        guard let pool = dbPool else {
+            throw NSError(domain: "DatabaseError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Database pool is nil"])
+        }
+        // 간단한 쿼리로 DB 무결성 확인
+        _ = try pool.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM bible_version")
         }
     }
     
@@ -37,38 +64,54 @@ final class BibleDatabaseService {
     private func setupMainDatabaseFile() throws {
         let fileManager = FileManager.default
         let dbUrl = mainDatabaseURL
-        
+
         let savedVersion = UserDefaults.standard.string(forKey: dbVersionKey)
         var shouldReplaceDB = false
-        
+
+        print("[DB Setup] Saved version: \(savedVersion ?? "nil"), Current version: \(currentDBVersion)")
+        print("[DB Setup] DB path: \(dbUrl.path)")
+        print("[DB Setup] File exists: \(fileManager.fileExists(atPath: dbUrl.path))")
+
         // 버전이 다르면 교체 플래그 설정
         if savedVersion != currentDBVersion {
             shouldReplaceDB = true
         }
-        
+
         // 파일이 아예 없어도 복사해야 함
         if !fileManager.fileExists(atPath: dbUrl.path) {
             shouldReplaceDB = true
         }
-        
+
         if shouldReplaceDB {
-            print("DB 버전 변경 또는 파일 없음. 초기화 진행...")
-            
-            // 기존 파일 제거
-            if fileManager.fileExists(atPath: dbUrl.path) {
-                try fileManager.removeItem(at: dbUrl)
+            print("[DB Setup] Replacing DB...")
+
+            // 기존 파일 제거 (WAL, SHM 포함)
+            let dbPath = dbUrl.path
+            if fileManager.fileExists(atPath: dbPath) {
+                try? fileManager.removeItem(atPath: dbPath)
+                try? fileManager.removeItem(atPath: dbPath + "-wal")
+                try? fileManager.removeItem(atPath: dbPath + "-shm")
+                print("[DB Setup] Removed existing file and WAL/SHM")
             }
-            
+
             // 번들에서 복사
             guard let bundleURL = Bundle.main.url(forResource: "BibleDB", withExtension: "sqlite") else {
-                // 번들에 파일이 없다면, 빈 DB라도 생성하도록 로직을 유연하게 가져갈 수도 있음
-                // 여기서는 User 요구사항대로 Error throw
                 throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Bundle에서 초기 BibleDB.sqlite를 찾을 수 없습니다."])
             }
+
+            let bundleFileSize = (try? fileManager.attributesOfItem(atPath: bundleURL.path)[.size] as? Int) ?? 0
+            print("[DB Setup] Bundle file: \(bundleURL.path), size: \(bundleFileSize) bytes")
+
             try fileManager.copyItem(at: bundleURL, to: dbUrl)
-            
+
+            let copiedFileSize = (try? fileManager.attributesOfItem(atPath: dbUrl.path)[.size] as? Int) ?? 0
+            print("[DB Setup] Copied file size: \(copiedFileSize) bytes")
+
             // 버전 갱신 저장
             UserDefaults.standard.set(currentDBVersion, forKey: dbVersionKey)
+            print("[DB Setup] Version updated to \(currentDBVersion)")
+        } else {
+            print("[DB Setup] Using existing DB file")
         }
     }
     
@@ -77,10 +120,13 @@ final class BibleDatabaseService {
     func reloadDatabasePool() throws {
         lock.lock()
         defer { lock.unlock() }
-        
+
         // 기존 연결 해제
         dbPool = nil
-        
+
+        // 스키마 버전이 맞지 않는 파일 삭제
+        removeOutdatedBibleFiles()
+
         // A. 다운로드된 외부 성경 파일 스캔
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -157,5 +203,45 @@ final class BibleDatabaseService {
 #endif
 
         return migrator
+    }
+
+    // MARK: - ODR Schema Version Management
+
+    /// Saves the current ODR schema version for a downloaded Bible file
+    func saveODRSchemaVersion(for versionCode: String) {
+        let key = odrSchemaVersionKeyPrefix + versionCode
+        UserDefaults.standard.set(Self.odrSchemaVersion, forKey: key)
+    }
+
+    /// Removes the stored ODR schema version for a Bible file
+    func removeODRSchemaVersion(for versionCode: String) {
+        let key = odrSchemaVersionKeyPrefix + versionCode
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+
+    /// Checks and removes outdated Bible files that don't match the current schema version
+    private func removeOutdatedBibleFiles() {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+
+        guard let fileURLs = try? fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil) else {
+            return
+        }
+
+        for url in fileURLs where url.pathExtension == "sqlite" {
+            let filename = url.deletingPathExtension().lastPathComponent
+            if filename.starts(with: "Bible_") {
+                let versionCode = filename.replacingOccurrences(of: "Bible_", with: "")
+                let key = odrSchemaVersionKeyPrefix + versionCode
+                let savedVersion = UserDefaults.standard.string(forKey: key)
+
+                // If no version stored or version mismatch, delete the file
+                if savedVersion != Self.odrSchemaVersion {
+                    try? fileManager.removeItem(at: url)
+                    UserDefaults.standard.removeObject(forKey: key)
+                    print("Removed outdated Bible file: \(filename) (stored version: \(savedVersion ?? "none"), current: \(Self.odrSchemaVersion))")
+                }
+            }
+        }
     }
 }
