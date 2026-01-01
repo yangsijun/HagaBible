@@ -5,8 +5,9 @@
 //  Created by 양시준 on 9/2/25.
 //
 
-import Observation
 import Foundation
+import Observation
+import OSLog
 
 @Observable
 @MainActor
@@ -30,9 +31,9 @@ class RecordingsViewModel {
     func fetchRecordings() {
         do {
             recordings = try recordingRepository.fetchRecordings()
-            print(audioService.getAllRecordings())
+            Logger.audio.debug("All recordings: \(self.audioService.getAllRecordings())")
         } catch {
-            print("Failed to fetch recordings: \(error)")
+            Logger.audio.error("Failed to fetch recordings: \(error.localizedDescription)")
         }
     }
     
@@ -66,9 +67,9 @@ class RecordingsViewModel {
                         updatedAt: .now
                     )
                 )
-                print("Recording에 저장된 fileName: \(url.lastPathComponent)")
+                Logger.audio.info("Recording saved with fileName: \(url.lastPathComponent)")
             } catch {
-                print("녹음 저장 실패: \(error)")
+                Logger.audio.error("Failed to save recording: \(error.localizedDescription)")
             }
         }
         fetchRecordings()
@@ -76,19 +77,19 @@ class RecordingsViewModel {
     
     func deleteRecording(_ recording: Recording) {
         do {
-            print(audioService.getAllRecordings())
-            print(recording.fileName)
+            Logger.audio.debug("All recordings before delete: \(self.audioService.getAllRecordings())")
+            Logger.audio.debug("Deleting recording: \(recording.fileName)")
             audioService.deleteRecording(fileName: recording.fileName)
             try recordingRepository.deleteRecording(recording)
         } catch {
-            print("녹음 삭제 실패: \(error)")
+            Logger.audio.error("Failed to delete recording: \(error.localizedDescription)")
         }
         fetchRecordings()
     }
     
     func deleteRecording(at index: Int) {
         let recording = self.recordings[index]
-        print(recording.title)
+        Logger.audio.debug("Deleting recording at index \(index): \(recording.title)")
         self.deleteRecording(recording)
     }
     

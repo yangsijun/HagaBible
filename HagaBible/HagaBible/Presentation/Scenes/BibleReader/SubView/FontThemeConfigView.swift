@@ -32,9 +32,6 @@ struct FontThemeConfigView: View {
             }
             .scrollContentBackground(.hidden)
         }
-        .onAppear {
-            print(fontThemeManager.theme.rawValue)
-        }
     }
 }
 

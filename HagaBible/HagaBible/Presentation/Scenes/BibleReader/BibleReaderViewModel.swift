@@ -5,8 +5,9 @@
 //  Created by 양시준 on 7/4/25.
 //
 
-import Observation
 import Foundation
+import Observation
+import OSLog
 
 @Observable
 @MainActor
@@ -85,9 +86,7 @@ class BibleReaderViewModel {
         do {
             availableVersions = try await bibleRepository.fetchBibleVersionList()
         } catch {
-#if DEBUG
-            print("Error fetching available versions: \(error)")
-#endif
+            Logger.repository.error("Error fetching available versions: \(error.localizedDescription)")
         }
     }
     
@@ -102,9 +101,7 @@ class BibleReaderViewModel {
         do {
             bibleBookList = try await bibleRepository.fetchBibleBookList(versionCode: versionCode)
         } catch {
-#if DEBUG
-            print("Error fetching books: \(error)")
-#endif
+            Logger.repository.error("Error fetching books: \(error.localizedDescription)")
         }
     }
     
@@ -119,9 +116,7 @@ class BibleReaderViewModel {
         do {
             bibleChapterList = try await bibleRepository.fetchBibleChapterList(versionCode: versionCode, bookCode: bookCode)
         } catch {
-#if DEBUG
-            print("Error fetching chapters: \(error)")
-#endif
+            Logger.repository.error("Error fetching chapters: \(error.localizedDescription)")
         }
     }
     
@@ -136,9 +131,7 @@ class BibleReaderViewModel {
         do {
             bibleVerseList = try await bibleRepository.fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum)
         } catch {
-#if DEBUG
-            print("Error fetching verses: \(error)")
-#endif
+            Logger.repository.error("Error fetching verses: \(error.localizedDescription)")
         }
     }
     

@@ -7,6 +7,7 @@
 
 import Foundation
 import GRDB
+import OSLog
 
 final class BibleDatabaseService {
     private(set) var dbPool: DatabasePool?
@@ -33,7 +34,7 @@ final class BibleDatabaseService {
             try validateDatabase()      // 3. DB 무결성 검사
         } catch {
             // DB 손상 시 재설치 시도
-            print("Database Initialization Error: \(error). Attempting recovery...")
+            Logger.database.error("Database initialisation error: \(error.localizedDescription). Attempting recovery...")
             dbPool = nil  // 기존 연결 해제
             // WAL, SHM 파일도 함께 삭제 (HagaBibleDB.sqlite-wal, HagaBibleDB.sqlite-shm)
             let dbPath = mainDatabaseURL.path
@@ -44,7 +45,7 @@ final class BibleDatabaseService {
             try setupMainDatabaseFile()
             try reloadDatabasePool()
             try validateDatabase()
-            print("Database recovery successful.")
+            Logger.database.info("Database recovery successful")
         }
     }
 
@@ -68,9 +69,9 @@ final class BibleDatabaseService {
         let savedVersion = UserDefaults.standard.string(forKey: dbVersionKey)
         var shouldReplaceDB = false
 
-        print("[DB Setup] Saved version: \(savedVersion ?? "nil"), Current version: \(currentDBVersion)")
-        print("[DB Setup] DB path: \(dbUrl.path)")
-        print("[DB Setup] File exists: \(fileManager.fileExists(atPath: dbUrl.path))")
+        Logger.database.debug("Saved version: \(savedVersion ?? "nil", privacy: .public), current version: \(self.currentDBVersion)")
+        Logger.database.debug("DB path: \(dbUrl.path, privacy: .public)")
+        Logger.database.debug("File exists: \(fileManager.fileExists(atPath: dbUrl.path))")
 
         // 버전이 다르면 교체 플래그 설정
         if savedVersion != currentDBVersion {
@@ -83,7 +84,7 @@ final class BibleDatabaseService {
         }
 
         if shouldReplaceDB {
-            print("[DB Setup] Replacing DB...")
+            Logger.database.info("Replacing database...")
 
             // 기존 파일 제거 (WAL, SHM 포함)
             let dbPath = dbUrl.path
@@ -91,7 +92,7 @@ final class BibleDatabaseService {
                 try? fileManager.removeItem(atPath: dbPath)
                 try? fileManager.removeItem(atPath: dbPath + "-wal")
                 try? fileManager.removeItem(atPath: dbPath + "-shm")
-                print("[DB Setup] Removed existing file and WAL/SHM")
+                Logger.database.debug("Removed existing file and WAL/SHM")
             }
 
             // 번들에서 복사
@@ -100,18 +101,18 @@ final class BibleDatabaseService {
             }
 
             let bundleFileSize = (try? fileManager.attributesOfItem(atPath: bundleURL.path)[.size] as? Int) ?? 0
-            print("[DB Setup] Bundle file: \(bundleURL.path), size: \(bundleFileSize) bytes")
+            Logger.database.debug("Bundle file size: \(bundleFileSize) bytes")
 
             try fileManager.copyItem(at: bundleURL, to: dbUrl)
 
             let copiedFileSize = (try? fileManager.attributesOfItem(atPath: dbUrl.path)[.size] as? Int) ?? 0
-            print("[DB Setup] Copied file size: \(copiedFileSize) bytes")
+            Logger.database.debug("Copied file size: \(copiedFileSize) bytes")
 
             // 버전 갱신 저장
             UserDefaults.standard.set(currentDBVersion, forKey: dbVersionKey)
-            print("[DB Setup] Version updated to \(currentDBVersion)")
+            Logger.database.info("Database version updated to \(self.currentDBVersion)")
         } else {
-            print("[DB Setup] Using existing DB file")
+            Logger.database.debug("Using existing database file")
         }
     }
     
@@ -163,37 +164,8 @@ final class BibleDatabaseService {
         // Attach된 DB는 읽기 전용이므로 마이그레이션 제외
         try migrator.migrate(pool)
         
-        print("DatabasePool Reloaded. Attached: \(attachedConfigs.map { $0.alias })")
+        Logger.database.info("Database pool reloaded. Attached: \(attachedConfigs.map { $0.alias })")
     }
-    
-//    init() throws {
-//        let fileManager = FileManager.default
-//        let dbUrl = try fileManager
-//            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-//            .appendingPathComponent("HagaBibleDB.sqlite")
-//        
-//        let savedVersion = UserDefaults.standard.string(forKey: dbVersionKey)
-//        var shouldInitializeDB = false
-//        
-//        if savedVersion != currentDBVersion {
-//            shouldInitializeDB = true
-//            
-//            if fileManager.fileExists(atPath: dbUrl.path) {
-//                try? fileManager.removeItem(at: dbUrl)
-//            }
-//            
-//            guard let bundleURL = Bundle.main.url(forResource: "BibleDB", withExtension: "sqlite") else {
-//                throw NSError(domain: "DatabaseError", code: 1, userInfo: [NSLocalizedDescriptionKey: "초기 DB 파일을 찾을 수 없습니다."])
-//            }
-//            try fileManager.copyItem(at: bundleURL, to: dbUrl)
-//        }
-//
-//        dbPool = try DatabasePool(path: dbUrl.path)
-//        
-//        if shouldInitializeDB {
-//            try migrator.migrate(dbPool)
-//        }
-//    }
 
     private var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -239,7 +211,7 @@ final class BibleDatabaseService {
                 if savedVersion != Self.odrSchemaVersion {
                     try? fileManager.removeItem(at: url)
                     UserDefaults.standard.removeObject(forKey: key)
-                    print("Removed outdated Bible file: \(filename) (stored version: \(savedVersion ?? "none"), current: \(Self.odrSchemaVersion))")
+                    Logger.database.info("Removed outdated Bible file: \(filename) (stored: \(savedVersion ?? "none"), current: \(Self.odrSchemaVersion))")
                 }
             }
         }

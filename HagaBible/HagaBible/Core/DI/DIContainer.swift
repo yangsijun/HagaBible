@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 import SwiftData
 
 final class DIContainer {
@@ -38,9 +39,7 @@ extension DIContainer {
         do {
             let bibleDatabaseService = try BibleDatabaseService()
             container.register(type: BibleDatabaseService.self, component: bibleDatabaseService)
-#if DEBUG
-            print("BibleDatabase가 성공적으로 등록되었습니다.")
-#endif
+            Logger.database.debug("BibleDatabaseService registered successfully")
         } catch {
             // 데이터베이스 초기화 실패는 복구 불가능한 오류로 간주합니다.
             fatalError("BibleDatabase 초기화에 실패했습니다: \(error)")

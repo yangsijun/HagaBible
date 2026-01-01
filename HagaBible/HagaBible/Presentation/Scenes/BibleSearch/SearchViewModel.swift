@@ -5,8 +5,9 @@
 //  Created by 양시준 on 10/6/25.
 //
 
-import Observation
 import Foundation
+import Observation
+import OSLog
 
 @Observable
 @MainActor
@@ -113,9 +114,7 @@ class SearchViewModel {
                     bibleBookList.first(where: { $0.bookCode == verse.bookCode })!
                 }
             } catch {
-#if DEBUG
-                print("Failed to search by text: \(error)")
-#endif
+                Logger.search.error("Failed to search by text: \(error.localizedDescription)")
                 searchResults = []
                 groupedSearchResults = [:]
             }
@@ -150,20 +149,15 @@ class SearchViewModel {
         do {
             try searchHistoryRepository.addSearchHistory(SearchHistory(verse: verse))
         } catch {
-#if DEBUG
-            print("Failed to add search history: \(error)")
-#endif
+            Logger.search.error("Failed to add search history: \(error.localizedDescription)")
         }
     }
 
     func loadSearchHistory() {
         do {
-            print("fetch")
             searchHistories = try searchHistoryRepository.fetchSearchHistories()
         } catch {
-#if DEBUG
-            print("Failed to fetch search histories: \(error)")
-#endif
+            Logger.search.error("Failed to fetch search histories: \(error.localizedDescription)")
         }
     }
     
@@ -171,19 +165,15 @@ class SearchViewModel {
         do {
             try searchHistoryRepository.deleteSearchHistory(searchHistory)
         } catch {
-#if DEBUG
-            print("Failed to delete search history: \(error)")
-#endif
+            Logger.search.error("Failed to delete search history: \(error.localizedDescription)")
         }
     }
-    
+
     func clearSearchHistory() {
         do {
             try searchHistoryRepository.deleteAllSearchHistories()
         } catch {
-#if DEBUG
-            print("Failed to delete all search histories: \(error)")
-#endif
+            Logger.search.error("Failed to delete all search histories: \(error.localizedDescription)")
         }
     }
 }

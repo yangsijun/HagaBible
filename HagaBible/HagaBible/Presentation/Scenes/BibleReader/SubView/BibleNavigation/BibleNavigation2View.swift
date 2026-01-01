@@ -5,6 +5,7 @@
 //  Created by 양시준 on 7/8/25.
 //
 
+import OSLog
 import SwiftUI
 
 struct BibleNavigation2View: View {
@@ -256,7 +257,7 @@ struct BibleNavigation2View: View {
                 selectedVersion = updatedVersion
             }
         } catch {
-            print("Failed to download bible: \(error)")
+            Logger.repository.error("Failed to download bible: \(error.localizedDescription)")
         }
     }
 }

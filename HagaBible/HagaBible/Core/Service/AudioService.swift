@@ -5,8 +5,9 @@
 //  Created by 양시준 on 8/29/25.
 //
 
-import Foundation
 import AVFoundation
+import Foundation
+import OSLog
 
 enum AudioServiceError: Error {
     case recorderNotAvailable
@@ -34,10 +35,10 @@ class AudioService {
             try recordingSession?.setCategory(.playAndRecord, mode: .default)
             try recordingSession?.setActive(true)
             AVAudioApplication.requestRecordPermission(completionHandler: { isGranted in
-                print("Recording permission isGranted=\(isGranted)")
+                Logger.audio.debug("Recording permission granted: \(isGranted)")
             })
         } catch {
-            print("오디오 세션 설정 실패: \(error.localizedDescription)")
+            Logger.audio.error("Failed to setup audio session: \(error.localizedDescription)")
         }
     }
     
@@ -69,9 +70,9 @@ class AudioService {
                     try? await Task.sleep(for: .milliseconds(100))
                 }
             }
-            print("Recording started with async monitoring.")
+            Logger.audio.debug("Recording started")
         } catch {
-            print("녹음 시작 실패: \(error.localizedDescription)")
+            Logger.audio.error("Failed to start recording: \(error.localizedDescription)")
             isRecording = false
         }
     }
@@ -111,17 +112,16 @@ class AudioService {
     
     func deleteRecording(fileName: String) {
         let url = FileManager.documentsDirectory.appendingPathComponent(fileName)
-        
+
         if FileManager.default.fileExists(atPath: url.path) {
-            print("삭제할 파일을 찾았습니다: \(url.lastPathComponent)")
-            print("녹음 파일 삭제 시작")
+            Logger.audio.debug("Deleting recording file: \(url.lastPathComponent)")
             do {
                 try FileManager.default.removeItem(at: url)
             } catch {
-                print("녹음 파일 삭제 실패: \(error.localizedDescription)")
+                Logger.audio.error("Failed to delete recording: \(error.localizedDescription)")
             }
         } else {
-            print("삭제할 파일을 찾을 수 없습니다. 경로: \(url.path)")
+            Logger.audio.warning("Recording file not found: \(url.path, privacy: .public)")
         }
     }
     

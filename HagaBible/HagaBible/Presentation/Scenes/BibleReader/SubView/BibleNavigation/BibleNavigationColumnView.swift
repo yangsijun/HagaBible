@@ -105,9 +105,7 @@ struct BibleNavigationColumnView<T: Hashable & Equatable, N: StringProtocol>: Vi
                 itemList: verses,
                 selectedItem: $selectedVerse,
                 getDesciption: { "\($0.verse) 절" },
-                additionalAction: {
-                    print("additional action")
-                }
+                additionalAction: {}
             )
         }
     }

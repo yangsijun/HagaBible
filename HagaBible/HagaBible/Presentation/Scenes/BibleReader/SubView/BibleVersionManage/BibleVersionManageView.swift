@@ -5,6 +5,7 @@
 //  Created by 양시준 on 11/30/25.
 //
 
+import OSLog
 import SwiftUI
 
 struct BibleVersionManageView: View {
@@ -105,7 +106,7 @@ struct BibleVersionManageView: View {
             try await bibleFileRepository.downloadAndInstall(version: version)
             await bibleNavigationViewModel.loadVersionList()
         } catch {
-            print("Failed to download bible file: \(error)")
+            Logger.repository.error("Failed to download bible file: \(error.localizedDescription)")
         }
     }
 
@@ -123,7 +124,7 @@ struct BibleVersionManageView: View {
             try await bibleFileRepository.delete(version: version)
             await bibleNavigationViewModel.loadVersionList()
         } catch {
-            print("Failed to delete bible file: \(error)")
+            Logger.repository.error("Failed to delete bible file: \(error.localizedDescription)")
         }
     }
 }

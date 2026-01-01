@@ -5,6 +5,7 @@
 //  Created by 양시준 on 7/2/25.
 //
 
+import OSLog
 import SwiftUI
 
 struct RootView: View {
@@ -67,7 +68,7 @@ struct RootView: View {
                 }
             }
         } catch {
-            print("Failed to fetch version list: \(error)")
+            Logger.repository.error("Failed to fetch version list: \(error.localizedDescription)")
         }
 
         // Skip if no downloads are needed
@@ -83,7 +84,7 @@ struct RootView: View {
             do {
                 try await bibleFileRepository.downloadAndInstall(version: version)
             } catch {
-                print("Failed to download \(version.versionCode): \(error)")
+                Logger.repository.error("Failed to download \(version.versionCode): \(error.localizedDescription)")
             }
         }
 
