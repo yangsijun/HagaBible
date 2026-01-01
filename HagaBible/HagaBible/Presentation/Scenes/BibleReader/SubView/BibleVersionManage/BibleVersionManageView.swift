@@ -127,4 +127,5 @@ struct BibleVersionManageView: View {
             Logger.repository.error("Failed to delete bible file: \(error.localizedDescription)")
         }
     }
+
 }
