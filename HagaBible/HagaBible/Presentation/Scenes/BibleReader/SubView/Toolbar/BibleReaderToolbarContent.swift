@@ -27,7 +27,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
         }
         ToolbarItem {
             BibleReaderToolbarIconButton(action: onListenTapped) {
-                Label("Listen", systemImage: ttsPlaybackState == .playing ? "pause.fill" : "headphones")
+                Label("Listen", systemImage: ttsPlaybackState == .idle ? "headphones" : "headphones.slash")
             }
         }
         if #available(iOS 26.0, *) {
