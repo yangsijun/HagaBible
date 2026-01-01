@@ -193,4 +193,13 @@ struct MockBibleRepository: BibleRepository {
             && (($0.verseText?.lowercased().contains(keyword.lowercased())) ?? false)
         }
     }
+
+    func findBookCodeByAbbreviation(versionCode: String, abbreviation: String) async throws -> String? {
+        let abbreviations: [String: String] = [
+            "창": "GEN", "출": "EXO", "레": "LEV", "민": "NUM", "신": "DEU",
+            "Gen": "GEN", "Gn": "GEN", "Exo": "EXO", "Ex": "EXO", "Lev": "LEV", "Lv": "LEV",
+            "Num": "NUM", "Nm": "NUM", "Deu": "DEU", "Dt": "DEU"
+        ]
+        return abbreviations[abbreviation]
+    }
 }

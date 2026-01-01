@@ -12,4 +12,5 @@ protocol BibleRepository {
     func fetchBibleVerseList(versionCode: String, bookCode: String, chapter: Int) async throws -> [BibleVerse]
     func fetchBibleVerse(versionCode: String, bookCode: String, chapter: Int, verse: Int) async throws -> BibleVerse?
     func findByVerseTextContaining(versionCode: String, keyword: String) async throws -> [BibleVerse]
+    func findBookCodeByAbbreviation(versionCode: String, abbreviation: String) async throws -> String?
 }

@@ -238,5 +238,26 @@ final class DefaultBibleRepository: BibleRepository {
             }
         }
     }
+
+    func findBookCodeByAbbreviation(versionCode: String, abbreviation: String) async throws -> String? {
+        let sql = """
+            SELECT
+                book_code
+            FROM
+                \(versionCode).bible_book_abbreviation
+            WHERE
+                version_code = ?
+                AND LOWER(abbreviation) = LOWER(?)
+            LIMIT 1;
+        """
+
+        guard let dbPool = DIContainer.shared.resolve(type: BibleDatabaseService.self).dbPool else {
+            return nil
+        }
+
+        return try await dbPool.read { db in
+            try String.fetchOne(db, sql: sql, arguments: [versionCode, abbreviation])
+        }
+    }
 }
 

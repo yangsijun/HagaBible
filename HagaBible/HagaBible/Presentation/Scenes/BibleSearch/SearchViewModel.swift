@@ -64,21 +64,31 @@ class SearchViewModel {
             bibleReferenceVerse = nil
             return
         }
-        
+
         let (parsedBookName, parsedChapterNum, parsedVerseNum) = parseBibleReference(text)
-        
-        if let book = bibleReaderViewModel.bibleBookList.first(where: { $0.bookName.lowercased() == parsedBookName.lowercased() }) {
+
+        Task {
+            var book: BibleBook? = bibleReaderViewModel.bibleBookList.first(where: { $0.bookName.lowercased() == parsedBookName.lowercased() })
+
+            // If no exact match, try to find by abbreviation
+            if book == nil {
+                if let bookCode = try? await bibleRepository.findBookCodeByAbbreviation(versionCode: bibleVersion.versionCode, abbreviation: parsedBookName) {
+                    book = bibleReaderViewModel.bibleBookList.first(where: { $0.bookCode == bookCode })
+                }
+            }
+
+            guard let book = book else {
+                bibleReferenceVerse = nil
+                bibleReferenceText = nil
+                return
+            }
+
             let bookName = book.bookName
             let chapterNum = parsedChapterNum ?? 1
             let verseNum = parsedVerseNum ?? 1
-            
-            Task {
-                bibleReferenceVerse = try await bibleRepository.fetchBibleVerse(versionCode: bibleVersion.versionCode, bookCode: book.bookCode, chapter: chapterNum, verse: verseNum)
-                bibleReferenceText = "\(bookName) \(chapterNum):\(verseNum)"
-            }
-        } else {
-            bibleReferenceVerse = nil
-            return
+
+            bibleReferenceVerse = try await bibleRepository.fetchBibleVerse(versionCode: bibleVersion.versionCode, bookCode: book.bookCode, chapter: chapterNum, verse: verseNum)
+            bibleReferenceText = "\(bookName) \(chapterNum):\(verseNum)"
         }
     }
     
