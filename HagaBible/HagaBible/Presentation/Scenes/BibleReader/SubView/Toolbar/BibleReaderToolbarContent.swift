@@ -13,7 +13,9 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let bibleVersion: BibleVersion?
     @Binding var showBibleNavigation: Bool
     @Binding var showFontThemeConfig: Bool
-    
+    let onListenTapped: () -> Void
+    let ttsPlaybackState: TTSPlaybackState
+
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             BibleReaderToolbarTitleButton(
@@ -24,8 +26,8 @@ struct BibleReaderToolbarContent: ToolbarContent {
             )
         }
         ToolbarItem {
-            BibleReaderToolbarIconButton(action: {}) {
-                Label("Listen", systemImage: "headphones")
+            BibleReaderToolbarIconButton(action: onListenTapped) {
+                Label("Listen", systemImage: ttsPlaybackState == .playing ? "pause.fill" : "headphones")
             }
         }
         if #available(iOS 26.0, *) {
@@ -63,7 +65,9 @@ struct MenuItem: Identifiable {
                     chapterNum: 1,
                     bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean", isDownloaded: true),
                     showBibleNavigation: .constant(false),
-                    showFontThemeConfig: .constant(false)
+                    showFontThemeConfig: .constant(false),
+                    onListenTapped: {},
+                    ttsPlaybackState: .idle
                 )
             }
     }

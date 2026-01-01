@@ -13,9 +13,10 @@ struct BibleVerseListView: View {
     var fontConfiguration: FontConfiguration
     var theme: Theme
     var highlightedVerseNum: Int?
-    
+    var ttsCurrentVerseIndex: Int?
+
     var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
-    
+
     @Binding var selectStartIndex: Int?
     @Binding var selectEndIndex: Int?
     
@@ -40,6 +41,9 @@ struct BibleVerseListView: View {
                     .padding(.horizontal, 8)
                     .background(
                         highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear
+                    )
+                    .background(
+                        ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear
                     )
                     .background(
                         (
@@ -178,6 +182,7 @@ struct BibleVerseListView: View {
         ),
         theme: Theme.system,
         highlightedVerseNum: 1,
+        ttsCurrentVerseIndex: nil,
         selectStartIndex: .constant(2),
         selectEndIndex: .constant(2)
     )
