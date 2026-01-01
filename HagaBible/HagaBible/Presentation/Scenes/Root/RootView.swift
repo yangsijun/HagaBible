@@ -11,10 +11,12 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var appState = DIContainer.shared.resolve(type: AppState.self)
+    @State private var ttsService = DIContainer.shared.resolve(type: TTSService.self)
     @State private var search: String = ""
 
     @State private var showLoadingView: Bool = false
     @State private var downloadProgress: String = ""
+    @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
 
     private let defaultVersions = ["WEBBE", "NKRV"]
 
@@ -48,7 +50,19 @@ struct RootView: View {
             }
         }
         .applyTabBarMinimizeBehavior()
+        .applyTTSBottomAccessory(ttsService: ttsService)
         .environment(\.horizontalSizeClass, .compact)
+        .onAppear {
+            ttsService.onChapterFinished = { [viewModel, ttsService] in
+                viewModel.goToNextChapter()
+                viewModel.bibleNavigationUpdateTrigger.toggle()
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let language = viewModel.bibleVersion?.language ?? "Korean"
+                    ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language, forcePlay: true)
+                }
+            }
+        }
     }
 
     private func downloadDefaultVersionsIfNeeded() async {
@@ -122,6 +136,24 @@ extension View {
     func applyTabBarMinimizeBehavior() -> some View {
         if #available(iOS 26.0, *) {
             self.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func applyTTSBottomAccessory(ttsService: TTSService) -> some View {
+        if #available(iOS 26.0, *) {
+            if ttsService.playbackState != .idle {
+                self.tabViewBottomAccessory {
+                    TTSMiniPlayerView(
+                        ttsService: ttsService,
+                        onTap: {}
+                    )
+                }
+            } else {
+                self
+            }
         } else {
             self
         }

@@ -27,6 +27,9 @@ class TTSService: NSObject {
     var koreanVoices: [AVSpeechSynthesisVoice] = []
     var englishVoices: [AVSpeechSynthesisVoice] = []
 
+    /// Callback when chapter finishes - called after delay to trigger next chapter
+    var onChapterFinished: (() -> Void)?
+
     // MARK: - Read-only Properties
     private(set) var verses: [BibleVerse] = []
     private(set) var bookName: String = ""
@@ -46,6 +49,8 @@ class TTSService: NSObject {
     private let synthesizer = AVSpeechSynthesizer()
     private var isRestarting = false
     private var restartTask: Task<Void, Never>?
+    private var nextChapterTask: Task<Void, Never>?
+    private var skipRequestId: UUID?
 
     // MARK: - UserDefaults Keys
     private enum UserDefaultsKeys {
@@ -83,6 +88,49 @@ class TTSService: NSObject {
         Logger.tts.info("Started reading \(self.bookName) \(self.chapterNum) from verse \(self.currentVerseIndex + 1) in \(language)")
     }
 
+    /// Switch to a new chapter without hiding the player (maintains current playback state)
+    /// - Parameter forcePlay: If true, starts playing regardless of current state (used for auto-advance)
+    func switchChapter(verses: [BibleVerse], language: String, forcePlay: Bool = false) {
+        guard !verses.isEmpty else {
+            Logger.tts.warning("Cannot switch chapter: verses list is empty")
+            return
+        }
+
+        let wasPlaying = playbackState == .playing || forcePlay
+
+        // Stop current speech without changing playbackState
+        restartTask?.cancel()
+        restartTask = nil
+        skipRequestId = nil
+        isRestarting = true  // Prevent delegate from interfering
+        synthesizer.stopSpeaking(at: .immediate)
+
+        // Update chapter data
+        self.verses = verses
+        self.currentVerseIndex = 0
+        self.bookName = verses.first?.bookName ?? ""
+        self.chapterNum = verses.first?.chapter ?? 0
+        self.currentLanguage = language
+
+        // Use DispatchQueue to avoid Swift Concurrency issues with AVSpeechSynthesizer
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self = self else { return }
+
+            self.isRestarting = false
+
+            // Continue with same state
+            if wasPlaying {
+                self.playbackState = .playing
+                self.speakCurrentVerse()
+            } else {
+                self.playbackState = .paused
+                self.updateNowPlayingInfo()
+            }
+
+            Logger.tts.info("Switched to \(self.bookName) \(self.chapterNum), wasPlaying: \(wasPlaying)")
+        }
+    }
+
     func pause() {
         synthesizer.pauseSpeaking(at: .word)
         playbackState = .paused
@@ -104,6 +152,9 @@ class TTSService: NSObject {
     func stop() {
         restartTask?.cancel()
         restartTask = nil
+        nextChapterTask?.cancel()
+        nextChapterTask = nil
+        skipRequestId = nil
         isRestarting = false
         synthesizer.stopSpeaking(at: .immediate)
         playbackState = .idle
@@ -142,12 +193,33 @@ class TTSService: NSObject {
 
     func skipToVerse(at index: Int) {
         guard index >= 0, index < verses.count else { return }
+
+        // Cancel any pending skip request
         restartTask?.cancel()
-        isRestarting = false
-        synthesizer.stopSpeaking(at: .immediate)
+        restartTask = nil
+        skipRequestId = nil
+
         currentVerseIndex = index
-        if playbackState == .playing {
-            speakCurrentVerse()
+
+        guard playbackState == .playing else { return }
+
+        // Generate unique ID for this request
+        let requestId = UUID()
+        skipRequestId = requestId
+
+        isRestarting = true
+        synthesizer.stopSpeaking(at: .immediate)
+
+        // Use DispatchQueue instead of Task to avoid concurrency issues with AVSpeechSynthesizer
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self = self else { return }
+
+            // Verify this is still the current request
+            guard self.skipRequestId == requestId else { return }
+
+            self.skipRequestId = nil
+            self.isRestarting = false
+            self.speakCurrentVerse()
         }
     }
 
@@ -190,16 +262,24 @@ class TTSService: NSObject {
     }
 
     private func restartCurrentVerse() {
-        // Cancel any existing restart task
+        // Cancel any existing restart request
         restartTask?.cancel()
+        restartTask = nil
+        skipRequestId = nil
+
+        // Generate unique ID for this request
+        let requestId = UUID()
+        skipRequestId = requestId
 
         isRestarting = true
         synthesizer.stopSpeaking(at: .immediate)
 
-        // Directly restart after a brief delay to ensure clean state
-        restartTask = Task {
-            try? await Task.sleep(for: .milliseconds(150))
-            guard !Task.isCancelled else { return }
+        // Use DispatchQueue instead of Task to avoid concurrency issues
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self = self else { return }
+            guard self.skipRequestId == requestId else { return }
+
+            self.skipRequestId = nil
 
             if self.playbackState == .playing {
                 self.isRestarting = false
@@ -417,8 +497,16 @@ class TTSService: NSObject {
 // MARK: - AVSpeechSynthesizerDelegate
 extension TTSService: AVSpeechSynthesizerDelegate {
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        Task { @MainActor in
-            // If we're restarting current verse, skip auto-advance (Task in restartCurrentVerse will handle it)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            // If already stopped, don't do anything
+            guard self.playbackState != .idle else {
+                Logger.tts.debug("didFinish skipped - already idle")
+                return
+            }
+
+            // If we're restarting current verse, skip auto-advance
             if self.isRestarting {
                 Logger.tts.debug("didFinish skipped - restarting")
                 return
@@ -429,30 +517,54 @@ extension TTSService: AVSpeechSynthesizerDelegate {
                 self.currentVerseIndex += 1
                 self.speakCurrentVerse()
             } else {
-                // Finished all verses
-                self.stop()
-                Logger.tts.info("Finished reading all verses")
+                // Finished all verses - wait 3 seconds then trigger next chapter
+                Logger.tts.info("Finished reading all verses, waiting 3 seconds for next chapter")
+                self.playbackState = .paused
+                self.updateNowPlayingInfo()
+
+                self.nextChapterTask?.cancel()
+                self.nextChapterTask = Task { [weak self] in
+                    do {
+                        try await Task.sleep(for: .seconds(3))
+                    } catch {
+                        // Task was cancelled
+                        return
+                    }
+
+                    guard let self = self else { return }
+                    // Check if still in paused state (user didn't stop manually)
+                    guard self.playbackState == .paused else { return }
+
+                    if let onChapterFinished = self.onChapterFinished {
+                        onChapterFinished()
+                    } else {
+                        self.stop()
+                    }
+                }
             }
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
-        Task { @MainActor in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             self.playbackState = .paused
             self.updateNowPlayingInfo()
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
-        Task { @MainActor in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             self.playbackState = .playing
             self.updateNowPlayingInfo()
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        Task { @MainActor in
-            // Skip if restarting (Task in restartCurrentVerse will handle it)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            // Skip if restarting
             if self.isRestarting {
                 Logger.tts.debug("didCancel skipped - restarting")
                 return
