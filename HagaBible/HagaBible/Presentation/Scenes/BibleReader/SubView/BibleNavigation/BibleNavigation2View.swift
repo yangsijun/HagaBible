@@ -175,17 +175,22 @@ struct BibleNavigation2View: View {
                 }
             }
             .toolbarTitleMenu {
-                Picker(selection: $selectedVersion, label: Text("Sorting options")) {
-                    ForEach(viewModel.versionList, id: \.versionCode) { version in
+                ForEach(viewModel.versionList, id: \.versionCode) { version in
+                    Button {
+                        selectedVersion = version
+                    } label: {
                         HStack {
                             Text(version.versionName)
                             if version.isDownloaded == false {
                                 Image(systemName: "square.and.arrow.down")
                             }
+                            if version.versionCode == selectedVersion?.versionCode {
+                                Image(systemName: "checkmark")
+                            }
                         }
-                        .tag(version)
                     }
                 }
+                Divider()
                 Button {
                     showVersionManageView = true
                 } label: {
