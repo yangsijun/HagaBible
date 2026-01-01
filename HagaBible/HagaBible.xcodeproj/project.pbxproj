@@ -62,12 +62,12 @@
 		ED6B04D42E1A6EFA008FDEE0 /* Exceptions for "HagaBible" folder in "HagaBible" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			assetTagsByRelativePath = {
-				Data/Local/GRDB/SQLite/Bible_KJV.sqlite = (Bible_KJV, );
-				Data/Local/GRDB/SQLite/Bible_KRV.sqlite = (Bible_KRV, );
-				Data/Local/GRDB/SQLite/Bible_NIV.sqlite = (Bible_NIV, );
-				Data/Local/GRDB/SQLite/Bible_NKRV.sqlite = (Bible_NKRV, );
-				Data/Local/GRDB/SQLite/Bible_WEB.sqlite = (Bible_WEB, );
-				Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite = (Bible_WEBBE, );
+				Data/Local/GRDB/SQLite/Bible_KJV.sqlite = (Bible_KJV, Bible_KJV_2, );
+				Data/Local/GRDB/SQLite/Bible_KRV.sqlite = (Bible_KRV, Bible_KRV_2, );
+				Data/Local/GRDB/SQLite/Bible_NIV.sqlite = (Bible_NIV, Bible_NIV_2, );
+				Data/Local/GRDB/SQLite/Bible_NKRV.sqlite = (Bible_NKRV, Bible_NKRV_2, );
+				Data/Local/GRDB/SQLite/Bible_WEB.sqlite = (Bible_WEB, Bible_WEB_2, );
+				Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite = (Bible_WEBBE, Bible_WEBBE_2, );
 			};
 			membershipExceptions = (
 				Info.plist,
@@ -204,11 +204,17 @@
 				BuildIndependentTargetsInParallel = 1;
 				KnownAssetTags = (
 					Bible_KJV,
+					Bible_KJV_2,
 					Bible_KRV,
+					Bible_KRV_2,
 					Bible_NIV,
+					Bible_NIV_2,
 					Bible_NKRV,
+					Bible_NKRV_2,
 					Bible_WEB,
 					Bible_WEBBE,
+					Bible_WEBBE_2,
+					Bible_WEB_2,
 				);
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
@@ -305,7 +311,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible.HagaBibleWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -336,7 +342,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible.HagaBibleWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -497,7 +503,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -534,7 +540,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.sijun.HagaBible;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
