@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BibleReaderView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass: UserInterfaceSizeClass?
+    @State private var appState: AppState = DIContainer.shared.resolve(type: AppState.self)
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     @State private var showBibleNavigation: Bool = false
@@ -121,6 +122,18 @@ struct BibleReaderView: View {
             await viewModel.fetchBibleBook()
             await viewModel.fetchBibleChapter()
             viewModel.fetchBibleVerse()
+        }
+        .onChange(of: appState.initialDownloadCompleted) { _, completed in
+            if completed {
+                // 초기 다운로드 완료 후 데이터 리로드
+                Task {
+                    await viewModel.fetchAvailableVersions()
+                    await viewModel.fetchBibleVersion()
+                    await viewModel.fetchBibleBook()
+                    await viewModel.fetchBibleChapter()
+                    viewModel.fetchBibleVerse()
+                }
+            }
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false

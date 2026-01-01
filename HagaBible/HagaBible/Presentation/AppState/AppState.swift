@@ -11,7 +11,10 @@ import Foundation
 @MainActor
 class AppState {
     var selectedTab: TabIdentifier = .bibleReader
-    
+
+    /// 초기 다운로드 완료 후 BibleReaderView 리로드 트리거
+    var initialDownloadCompleted: Bool = false
+
     var bibleReaderState = BibleReaderState() {
         didSet {
             saveBibleReaderState()

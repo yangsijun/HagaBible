@@ -54,6 +54,7 @@ struct RootView: View {
     private func downloadDefaultVersionsIfNeeded() async {
         let bibleFileRepository = DIContainer.shared.resolve(type: BibleFileRepository.self)
         let bibleRepository = DIContainer.shared.resolve(type: BibleRepository.self)
+        let bibleDatabaseService = DIContainer.shared.resolve(type: BibleDatabaseService.self)
 
         // Delayed loading indicator - only shows after 200ms if still working
         let showLoadingAfterDelayTask = Task {
@@ -69,9 +70,18 @@ struct RootView: View {
         do {
             let allVersions = try await bibleRepository.fetchBibleVersionList()
 
+            // Default versions
             for versionCode in defaultVersions {
                 if let version = allVersions.first(where: { $0.versionCode == versionCode }),
                    !version.isDownloaded {
+                    versionsToDownload.append(version)
+                }
+            }
+
+            // Versions removed due to schema update (need re-download)
+            for versionCode in bibleDatabaseService.removedVersionCodes {
+                if let version = allVersions.first(where: { $0.versionCode == versionCode }),
+                   !versionsToDownload.contains(where: { $0.versionCode == versionCode }) {
                     versionsToDownload.append(version)
                 }
             }
@@ -84,10 +94,11 @@ struct RootView: View {
         // Skip if no downloads are needed
         if versionsToDownload.isEmpty {
             showLoadingAfterDelayTask.cancel()
+            appState.initialDownloadCompleted = true
             return
         }
 
-        // Download default versions
+        // Download versions
         for (index, version) in versionsToDownload.enumerated() {
             downloadProgress = "Downloading \(version.versionName)... (\(index + 1)/\(versionsToDownload.count))"
 
@@ -100,6 +111,9 @@ struct RootView: View {
 
         showLoadingAfterDelayTask.cancel()
         showLoadingView = false
+
+        // 다운로드 완료 후 BibleReaderView 리로드 트리거
+        appState.initialDownloadCompleted = true
     }
 }
 
