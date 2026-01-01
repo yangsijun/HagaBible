@@ -24,4 +24,7 @@ extension Logger {
 
     /// General application logging
     static let app = Logger(subsystem: subsystem, category: "App")
+
+    /// Text-to-Speech logging
+    static let tts = Logger(subsystem: subsystem, category: "TTS")
 }
