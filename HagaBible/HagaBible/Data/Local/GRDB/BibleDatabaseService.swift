@@ -17,9 +17,23 @@ final class BibleDatabaseService {
     private let dbVersionKey = "dbVersion"
     private let currentDBVersion = "1.5"
 
-    // ODR Bible file schema version - increment when Bible_*.sqlite schema changes
-    static let odrSchemaVersion = "1.1"
+    // ODR Bible file schema version - increment when Bible_*.sqlite schema/content changes
+    // Also used as ODR tag suffix to invalidate cache (e.g., Bible_KJV_2)
+    static let odrSchemaVersion = "2"
     private let odrSchemaVersionKeyPrefix = "odrSchemaVersion_"
+
+    /// ODR 태그 생성 (예: Bible_KJV_2)
+    static func odrTag(for versionCode: String) -> String {
+        return "Bible_\(versionCode)_\(odrSchemaVersion)"
+    }
+
+    /// ODR 태그에서 파일 이름 추출 (예: Bible_KJV.sqlite)
+    static func fileName(for versionCode: String) -> String {
+        return "Bible_\(versionCode).sqlite"
+    }
+
+    // Version codes that were removed due to schema update (need re-download)
+    private(set) var removedVersionCodes: [String] = []
     
     private var mainDatabaseURL: URL {
         try! FileManager.default
@@ -211,6 +225,7 @@ final class BibleDatabaseService {
                 if savedVersion != Self.odrSchemaVersion {
                     try? fileManager.removeItem(at: url)
                     UserDefaults.standard.removeObject(forKey: key)
+                    removedVersionCodes.append(versionCode)
                     Logger.database.info("Removed outdated Bible file: \(filename) (stored: \(savedVersion ?? "none"), current: \(Self.odrSchemaVersion))")
                 }
             }

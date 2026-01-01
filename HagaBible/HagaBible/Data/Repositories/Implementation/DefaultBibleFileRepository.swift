@@ -6,28 +6,52 @@
 //
 
 import Foundation
+import OSLog
 
 class DefaultBibleFileRepository: BibleFileRepository {
     private let odrDataSource: ODRDataSource = DIContainer.shared.resolve(type: ODRDataSource.self)
     private let fileDataSource: FileSystemDataSource = DIContainer.shared.resolve(type: FileSystemDataSource.self)
     private let dbService: BibleDatabaseService = DIContainer.shared.resolve(type: BibleDatabaseService.self)
-    
+
+    private let maxRetryCount = 3
+
     func downloadAndInstall(version: BibleVersion) async throws {
-        // 1. ODR 다운로드
-        let tempURL = try await odrDataSource.fetchResource(tag: "Bible_\(version.versionCode)")
+        let tag = BibleDatabaseService.odrTag(for: version.versionCode)
+        let resourceName = "Bible_\(version.versionCode)"
+        let filename = BibleDatabaseService.fileName(for: version.versionCode)
+        var lastError: Error?
 
-        // 2. 파일 이동
-        let filename = "Bible_\(version.versionCode).sqlite"
-        _ = try fileDataSource.moveFileToDocuments(from: tempURL, filename: filename)
+        for attempt in 1...maxRetryCount {
+            do {
+                // 1. ODR 다운로드
+                let tempURL = try await odrDataSource.fetchResource(tag: tag, resourceName: resourceName)
 
-        // 3. ODR 리소스 해제
-        await odrDataSource.releaseResource(tag: "Bible_\(version.versionCode)")
+                // 2. 파일 이동
+                _ = try fileDataSource.moveFileToDocuments(from: tempURL, filename: filename)
 
-        // 4. 스키마 버전 저장
-        dbService.saveODRSchemaVersion(for: version.versionCode)
+                // 3. ODR 리소스 해제
+                await odrDataSource.releaseResource(tag: tag)
 
-        // 5. DB Pool 재로딩 (Attach 반영)
-        try dbService.reloadDatabasePool()
+                // 4. 스키마 버전 저장
+                dbService.saveODRSchemaVersion(for: version.versionCode)
+
+                // 5. DB Pool 재로딩 (Attach 반영)
+                try dbService.reloadDatabasePool()
+
+                return // Success
+            } catch {
+                lastError = error
+                // ODRDataSource.fetchResource already releases on failure
+                Logger.repository.warning("Download attempt \(attempt)/\(self.maxRetryCount) failed for \(version.versionCode): \(error.localizedDescription)")
+
+                if attempt < maxRetryCount {
+                    // Wait before retry (exponential backoff)
+                    try? await Task.sleep(for: .milliseconds(1000 * attempt))
+                }
+            }
+        }
+
+        throw lastError ?? URLError(.unknown)
     }
     
     func delete(version: BibleVersion) async throws {

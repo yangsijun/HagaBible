@@ -6,40 +6,61 @@
 //
 
 import Foundation
+import OSLog
 
 actor ODRDataSource {
     /// 메모리 해제 방지를 위한 요청 저장소
     private var activeRequests: [String: NSBundleResourceRequest] = [:]
-    
+
     /// ODR 다운로드 실행
-    func fetchResource(tag: String) async throws -> URL {
-        // 중복 요청 방지
-        if let existing = activeRequests[tag] {
-            try await existing.beginAccessingResources()
-            return try getBundleURL(tag: tag)
+    /// - Parameters:
+    ///   - tag: ODR 태그 이름 (예: Bible_KJV_2)
+    ///   - resourceName: 실제 파일 이름 (확장자 제외, 예: Bible_KJV)
+    func fetchResource(tag: String, resourceName: String) async throws -> URL {
+        // 기존 요청이 있으면 먼저 해제
+        if activeRequests[tag] != nil {
+            releaseResource(tag: tag)
         }
-        
+
         let request = NSBundleResourceRequest(tags: [tag])
-        activeRequests[tag] = request // Retain
-        
+        request.loadingPriority = NSBundleResourceRequestLoadingPriorityUrgent
+        activeRequests[tag] = request
+
+        // 이미 로컬에 있는지 확인
+        let isAvailable = await withCheckedContinuation { continuation in
+            request.conditionallyBeginAccessingResources { available in
+                continuation.resume(returning: available)
+            }
+        }
+
+        if isAvailable {
+            Logger.repository.debug("ODR resource already available locally: \(tag)")
+            return try getBundleURL(resourceName: resourceName)
+        }
+
+        Logger.repository.debug("Starting ODR download for tag: \(tag)")
+
         do {
             try await request.beginAccessingResources()
-            return try getBundleURL(tag: tag)
+            Logger.repository.debug("ODR download completed for tag: \(tag)")
+            return try getBundleURL(resourceName: resourceName)
         } catch {
+            Logger.repository.error("ODR download failed for tag: \(tag), error: \(error.localizedDescription)")
             releaseResource(tag: tag)
             throw error
         }
     }
-    
+
     /// 리소스 해제 (파일 복사 후 호출)
     func releaseResource(tag: String) {
         guard let request = activeRequests[tag] else { return }
         request.endAccessingResources()
         activeRequests[tag] = nil
+        Logger.repository.debug("Released ODR resource for tag: \(tag)")
     }
-    
-    private func getBundleURL(tag: String) throws -> URL {
-        guard let url = Bundle.main.url(forResource: "\(tag)", withExtension: "sqlite") else {
+
+    private func getBundleURL(resourceName: String) throws -> URL {
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: "sqlite") else {
             throw URLError(.fileDoesNotExist)
         }
         return url
