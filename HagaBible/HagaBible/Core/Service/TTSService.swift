@@ -46,11 +46,13 @@ class TTSService: NSObject {
     }
 
     // MARK: - Private Properties
-    private let synthesizer = AVSpeechSynthesizer()
+    private var synthesizer: AVSpeechSynthesizer
     private var isRestarting = false
     private var restartTask: Task<Void, Never>?
     private var nextChapterTask: Task<Void, Never>?
     private var skipRequestId: UUID?
+    private var isSynthesizerBusy = false  // Prevents concurrent synthesizer operations
+    private let synthesizerLock = NSLock()  // Protects synthesizer access
 
     // MARK: - UserDefaults Keys
     private enum UserDefaultsKeys {
@@ -61,11 +63,19 @@ class TTSService: NSObject {
 
     // MARK: - Initialization
     override init() {
+        self.synthesizer = AVSpeechSynthesizer()
         super.init()
         synthesizer.delegate = self
         loadAvailableVoices()
         loadUserPreferences()
         setupRemoteCommandCenter()
+    }
+
+    /// Recreates the synthesizer to ensure clean state after stop operations
+    private func recreateSynthesizer() {
+        synthesizer.delegate = nil
+        synthesizer = AVSpeechSynthesizer()
+        synthesizer.delegate = self
     }
 
     // MARK: - Public Methods
@@ -74,6 +84,17 @@ class TTSService: NSObject {
             Logger.tts.warning("Cannot start reading: verses list is empty")
             return
         }
+
+        // Reset all state before starting
+        restartTask?.cancel()
+        restartTask = nil
+        nextChapterTask?.cancel()
+        nextChapterTask = nil
+        skipRequestId = nil
+        isRestarting = false
+        isSynthesizerBusy = false
+        synthesizer.stopSpeaking(at: .immediate)
+        recreateSynthesizer()  // Create fresh synthesizer
 
         self.verses = verses
         self.currentVerseIndex = min(startIndex, verses.count - 1)
@@ -95,15 +116,21 @@ class TTSService: NSObject {
             Logger.tts.warning("Cannot switch chapter: verses list is empty")
             return
         }
+        guard !isSynthesizerBusy else { return }  // Prevent concurrent operations
 
         let wasPlaying = playbackState == .playing || forcePlay
 
         // Stop current speech without changing playbackState
         restartTask?.cancel()
         restartTask = nil
+        nextChapterTask?.cancel()
+        nextChapterTask = nil
         skipRequestId = nil
+
+        isSynthesizerBusy = true
         isRestarting = true  // Prevent delegate from interfering
         synthesizer.stopSpeaking(at: .immediate)
+        recreateSynthesizer()  // Create fresh synthesizer
 
         // Update chapter data
         self.verses = verses
@@ -112,33 +139,45 @@ class TTSService: NSObject {
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
 
-        // Use DispatchQueue to avoid Swift Concurrency issues with AVSpeechSynthesizer
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-            guard let self = self else { return }
+        isRestarting = false
+        isSynthesizerBusy = false
 
-            self.isRestarting = false
-
-            // Continue with same state
-            if wasPlaying {
-                self.playbackState = .playing
-                self.speakCurrentVerse()
-            } else {
-                self.playbackState = .paused
-                self.updateNowPlayingInfo()
-            }
-
-            Logger.tts.info("Switched to \(self.bookName) \(self.chapterNum), wasPlaying: \(wasPlaying)")
+        // Continue with same state
+        if wasPlaying {
+            playbackState = .playing
+            speakCurrentVerse()
+        } else {
+            playbackState = .paused
+            updateNowPlayingInfo()
         }
+
+        Logger.tts.info("Switched to \(self.bookName) \(self.chapterNum), wasPlaying: \(wasPlaying)")
     }
 
     func pause() {
-        synthesizer.pauseSpeaking(at: .word)
+        // Cancel any pending operations when pausing
+        let hadPendingOperation = isSynthesizerBusy || isRestarting
+        restartTask?.cancel()
+        restartTask = nil
+        skipRequestId = nil
+        isSynthesizerBusy = false
+        isRestarting = false
+
+        if hadPendingOperation {
+            // If there was a pending operation, recreate synthesizer for safety
+            synthesizer.stopSpeaking(at: .immediate)
+            recreateSynthesizer()
+        } else {
+            synthesizer.pauseSpeaking(at: .word)
+        }
         playbackState = .paused
         updateNowPlayingInfo()
         Logger.tts.debug("Paused at verse \(self.currentVerseIndex + 1)")
     }
 
     func resume() {
+        guard !isSynthesizerBusy else { return }  // Prevent concurrent operations
+
         if synthesizer.isPaused {
             synthesizer.continueSpeaking()
         } else {
@@ -156,7 +195,9 @@ class TTSService: NSObject {
         nextChapterTask = nil
         skipRequestId = nil
         isRestarting = false
+        isSynthesizerBusy = false  // Reset busy state on stop
         synthesizer.stopSpeaking(at: .immediate)
+        recreateSynthesizer()  // Create fresh synthesizer for next use
         playbackState = .idle
         currentVerseIndex = 0
         verses = []
@@ -166,12 +207,22 @@ class TTSService: NSObject {
     }
 
     func skipToNext() {
+        guard !isSynthesizerBusy else { return }  // Prevent concurrent operations
+
         restartTask?.cancel()
-        isRestarting = false
-        synthesizer.stopSpeaking(at: .immediate)
+        restartTask = nil
+        skipRequestId = nil
+
         if currentVerseIndex < verses.count - 1 {
             currentVerseIndex += 1
             if playbackState == .playing {
+                isSynthesizerBusy = true
+                isRestarting = true
+                synthesizer.stopSpeaking(at: .immediate)
+                recreateSynthesizer()  // Create fresh synthesizer
+
+                isRestarting = false
+                isSynthesizerBusy = false
                 speakCurrentVerse()
             }
         } else {
@@ -180,19 +231,30 @@ class TTSService: NSObject {
     }
 
     func skipToPrevious() {
+        guard !isSynthesizerBusy else { return }  // Prevent concurrent operations
+
         restartTask?.cancel()
-        isRestarting = false
-        synthesizer.stopSpeaking(at: .immediate)
+        restartTask = nil
+        skipRequestId = nil
+
         if currentVerseIndex > 0 {
             currentVerseIndex -= 1
         }
         if playbackState == .playing {
+            isSynthesizerBusy = true
+            isRestarting = true
+            synthesizer.stopSpeaking(at: .immediate)
+            recreateSynthesizer()  // Create fresh synthesizer
+
+            isRestarting = false
+            isSynthesizerBusy = false
             speakCurrentVerse()
         }
     }
 
     func skipToVerse(at index: Int) {
         guard index >= 0, index < verses.count else { return }
+        guard !isSynthesizerBusy else { return }  // Prevent concurrent operations
 
         // Cancel any pending skip request
         restartTask?.cancel()
@@ -203,24 +265,14 @@ class TTSService: NSObject {
 
         guard playbackState == .playing else { return }
 
-        // Generate unique ID for this request
-        let requestId = UUID()
-        skipRequestId = requestId
-
+        isSynthesizerBusy = true
         isRestarting = true
         synthesizer.stopSpeaking(at: .immediate)
+        recreateSynthesizer()  // Create fresh synthesizer
 
-        // Use DispatchQueue instead of Task to avoid concurrency issues with AVSpeechSynthesizer
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            guard let self = self else { return }
-
-            // Verify this is still the current request
-            guard self.skipRequestId == requestId else { return }
-
-            self.skipRequestId = nil
-            self.isRestarting = false
-            self.speakCurrentVerse()
-        }
+        isRestarting = false
+        isSynthesizerBusy = false
+        speakCurrentVerse()
     }
 
     func setVoice(_ voice: AVSpeechSynthesisVoice?, for language: String) {
@@ -262,30 +314,24 @@ class TTSService: NSObject {
     }
 
     private func restartCurrentVerse() {
+        guard !isSynthesizerBusy else { return }  // Prevent concurrent operations
+
         // Cancel any existing restart request
         restartTask?.cancel()
         restartTask = nil
         skipRequestId = nil
 
-        // Generate unique ID for this request
-        let requestId = UUID()
-        skipRequestId = requestId
-
+        isSynthesizerBusy = true
         isRestarting = true
         synthesizer.stopSpeaking(at: .immediate)
+        recreateSynthesizer()  // Create fresh synthesizer
 
-        // Use DispatchQueue instead of Task to avoid concurrency issues
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            guard let self = self else { return }
-            guard self.skipRequestId == requestId else { return }
+        isSynthesizerBusy = false
 
-            self.skipRequestId = nil
-
-            if self.playbackState == .playing {
-                self.isRestarting = false
-                self.speakCurrentVerse()
-                Logger.tts.debug("Restarted current verse directly")
-            }
+        if playbackState == .playing {
+            isRestarting = false
+            speakCurrentVerse()
+            Logger.tts.debug("Restarted current verse directly")
         }
     }
 
