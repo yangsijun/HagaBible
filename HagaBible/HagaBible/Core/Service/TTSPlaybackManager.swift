@@ -100,28 +100,32 @@ class TTSPlaybackManager: NSObject {
             return
         }
 
-        // Reset all state before starting
-        restartTask?.cancel()
-        restartTask = nil
-        nextChapterTask?.cancel()
-        nextChapterTask = nil
-        skipRequestId = nil
-        isRestarting = false
-        isSynthesizerBusy = false
-        synthesizer.stop()
-        synthesizer.recreate()
-
+        // 1. 즉시 상태 업데이트 (UI 애니메이션이 블로킹되지 않도록)
         self.verses = verses
         self.currentVerseIndex = min(startIndex, verses.count - 1)
         self.bookName = verses.first?.bookName ?? ""
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
-
-        setupAudioSession()
         playbackState = .playing
-        speakCurrentVerse()
 
         Logger.tts.info("Started reading \(self.bookName) \(self.chapterNum) from verse \(self.currentVerseIndex + 1) in \(language)")
+
+        // 2. 무거운 작업은 다음 런루프에서 실행 (UI 블로킹 방지)
+        Task { @MainActor in
+            // Reset all state before starting
+            restartTask?.cancel()
+            restartTask = nil
+            nextChapterTask?.cancel()
+            nextChapterTask = nil
+            skipRequestId = nil
+            isRestarting = false
+            isSynthesizerBusy = false
+            synthesizer.stop()
+            synthesizer.recreate()
+
+            setupAudioSession()
+            speakCurrentVerse()
+        }
     }
 
     func switchChapter(verses: [BibleVerse], language: String, forcePlay: Bool = false, startIndex: Int = 0) {
@@ -200,21 +204,27 @@ class TTSPlaybackManager: NSObject {
     }
 
     func stop() {
-        restartTask?.cancel()
-        restartTask = nil
-        nextChapterTask?.cancel()
-        nextChapterTask = nil
-        skipRequestId = nil
-        isRestarting = false
-        isSynthesizerBusy = false
-        synthesizer.stop()
-        synthesizer.recreate()
+        // 1. 즉시 상태 업데이트 (UI 애니메이션이 블로킹되지 않도록)
         playbackState = .idle
         currentVerseIndex = 0
         verses = []
-        clearNowPlayingInfo()
-        deactivateAudioSession()
+
         Logger.tts.info("Stopped playback")
+
+        // 2. 무거운 작업은 다음 런루프에서 실행 (UI 블로킹 방지)
+        Task { @MainActor in
+            restartTask?.cancel()
+            restartTask = nil
+            nextChapterTask?.cancel()
+            nextChapterTask = nil
+            skipRequestId = nil
+            isRestarting = false
+            isSynthesizerBusy = false
+            synthesizer.stop()
+            synthesizer.recreate()
+            clearNowPlayingInfo()
+            deactivateAudioSession()
+        }
     }
 
     func skipToNext() {

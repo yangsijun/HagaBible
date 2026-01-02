@@ -14,6 +14,7 @@ class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizer {
     weak var delegate: SpeechSynthesizerDelegate?
 
     private var synthesizer: AVSpeechSynthesizer
+    private var voiceCache: [String: AVSpeechSynthesisVoice] = [:]
 
     var isPaused: Bool { synthesizer.isPaused }
     var isSpeaking: Bool { synthesizer.isSpeaking }
@@ -59,7 +60,17 @@ class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizer {
         guard let config = config else {
             return nil
         }
-        return AVSpeechSynthesisVoice.speechVoices().first { $0.identifier == config.identifier }
+
+        // 캐시된 음성 객체가 있으면 재사용 (메인 스레드 블로킹 방지)
+        if let cached = voiceCache[config.identifier] {
+            return cached
+        }
+
+        let voice = AVSpeechSynthesisVoice(identifier: config.identifier)
+        if let voice = voice {
+            voiceCache[config.identifier] = voice
+        }
+        return voice
     }
 }
 
