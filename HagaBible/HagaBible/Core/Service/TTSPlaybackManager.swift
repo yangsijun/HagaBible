@@ -263,6 +263,27 @@ class TTSPlaybackManager: NSObject {
         }
     }
 
+    func skipToFirst() {
+        guard !isSynthesizerBusy else { return }
+
+        restartTask?.cancel()
+        restartTask = nil
+        skipRequestId = nil
+
+        currentVerseIndex = 0
+
+        if playbackState == .playing {
+            isSynthesizerBusy = true
+            isRestarting = true
+            synthesizer.stop()
+            synthesizer.recreate()
+
+            isRestarting = false
+            isSynthesizerBusy = false
+            speakCurrentVerse()
+        }
+    }
+
     func skipToVerse(at index: Int) {
         guard index >= 0, index < verses.count else { return }
         guard !isSynthesizerBusy else { return }
@@ -312,6 +333,7 @@ class TTSPlaybackManager: NSObject {
         // 현재 재생 중이고 재시작 중이 아닐 때만 현재 절 다시 재생
         if playbackState == .playing && !isRestarting {
             restartCurrentVerse()
+            
         }
     }
 

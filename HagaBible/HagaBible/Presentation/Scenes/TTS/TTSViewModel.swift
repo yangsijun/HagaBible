@@ -119,6 +119,13 @@ class TTSViewModel {
     }
 
     func goToPreviousChapter() {
+        // 1절이 아니면 현재 장의 1절로 이동
+        if ttsManager.currentVerseIndex > 0 {
+            ttsManager.skipToFirst()
+            return
+        }
+
+        // 1절이면 이전 장으로 이동
         bibleReaderViewModel.goToPreviousChapter()
         bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
 
