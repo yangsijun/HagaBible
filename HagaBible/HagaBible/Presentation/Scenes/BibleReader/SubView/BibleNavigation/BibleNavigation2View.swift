@@ -11,8 +11,9 @@ import SwiftUI
 struct BibleNavigation2View: View {
     @Environment(\.dismiss) var dismiss
     @Environment(BibleReaderViewModel.self) private var bibleReaderViewModel: BibleReaderViewModel
-    
+
     @State private var viewModel: BibleNavigationViewModel = DIContainer.shared.resolve(type: BibleNavigationViewModel.self)
+    @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     
     @State var selectedVersion: BibleVersion?
     @State var selectedBook: BibleBook?
@@ -43,11 +44,12 @@ struct BibleNavigation2View: View {
                                     chapterNum: 1,
                                     verseNum: 1
                                 )
-                                
+
                                 dismiss()
-                                
+
                                 bibleReaderViewModel.navigatedVerseNum = 1
                                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+                                switchTTSChapterIfActive()
                             }
                         }
                     )
@@ -71,11 +73,12 @@ struct BibleNavigation2View: View {
                                     chapterNum: selectedChapter.chapter,
                                     verseNum: 1
                                 )
-                                
+
                                 dismiss()
-                                
+
                                 bibleReaderViewModel.navigatedVerseNum = 1
                                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+                                switchTTSChapterIfActive()
                             }
                         }
                     )
@@ -157,22 +160,19 @@ struct BibleNavigation2View: View {
                 if newValue == nil {
                     return
                 }
-                Task {
-                    bibleReaderViewModel.applyBibleSelection(
-                        versionCode: selectedVersion?.versionCode,
-                        bookCode: selectedBook?.bookCode,
-                        chapterNum: selectedChapter?.chapter,
-                        verseNum: selectedVerse?.verse
-                    )
-                    
-                    dismiss()
-                    if let selectedVerse = selectedVerse {
-                        bibleReaderViewModel.navigatedVerseNum = selectedVerse.verse
-                    } else {
-                        bibleReaderViewModel.navigatedVerseNum = 1
-                    }
-                    bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                }
+                bibleReaderViewModel.applyBibleSelection(
+                    versionCode: selectedVersion?.versionCode,
+                    bookCode: selectedBook?.bookCode,
+                    chapterNum: selectedChapter?.chapter,
+                    verseNum: selectedVerse?.verse
+                )
+
+                dismiss()
+
+                let verseNum = selectedVerse?.verse ?? 1
+                bibleReaderViewModel.navigatedVerseNum = verseNum
+                bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+                switchTTSChapterIfActive(startVerseNum: verseNum)
             }
             .toolbarTitleMenu {
                 ForEach(viewModel.versionList, id: \.versionCode) { version in
@@ -240,6 +240,17 @@ struct BibleNavigation2View: View {
                     Text(selectedVersion?.versionName ?? "Version")
                 }
             }
+        }
+    }
+
+    private func switchTTSChapterIfActive(startVerseNum: Int = 1) {
+        guard ttsViewModel.playbackState != .idle else { return }
+
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            let language = bibleReaderViewModel.bibleVersion?.language ?? "Korean"
+            let startIndex = max(0, startVerseNum - 1)
+            ttsViewModel.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language, forcePlay: true, startIndex: startIndex)
         }
     }
 

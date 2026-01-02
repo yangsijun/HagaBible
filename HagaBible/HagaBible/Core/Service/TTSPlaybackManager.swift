@@ -124,7 +124,7 @@ class TTSPlaybackManager: NSObject {
         Logger.tts.info("Started reading \(self.bookName) \(self.chapterNum) from verse \(self.currentVerseIndex + 1) in \(language)")
     }
 
-    func switchChapter(verses: [BibleVerse], language: String, forcePlay: Bool = false) {
+    func switchChapter(verses: [BibleVerse], language: String, forcePlay: Bool = false, startIndex: Int = 0) {
         guard !verses.isEmpty else {
             Logger.tts.warning("Cannot switch chapter: verses list is empty")
             return
@@ -147,7 +147,7 @@ class TTSPlaybackManager: NSObject {
 
         // Update chapter data
         self.verses = verses
-        self.currentVerseIndex = 0
+        self.currentVerseIndex = min(startIndex, verses.count - 1)
         self.bookName = verses.first?.bookName ?? ""
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
@@ -164,7 +164,7 @@ class TTSPlaybackManager: NSObject {
             updateNowPlayingInfo()
         }
 
-        Logger.tts.info("Switched to \(self.bookName) \(self.chapterNum), wasPlaying: \(wasPlaying)")
+        Logger.tts.info("Switched to \(self.bookName) \(self.chapterNum):\(self.currentVerseIndex + 1), wasPlaying: \(wasPlaying)")
     }
 
     func pause() {

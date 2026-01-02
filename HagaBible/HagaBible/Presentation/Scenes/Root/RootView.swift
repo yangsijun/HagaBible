@@ -55,7 +55,7 @@ struct RootView: View {
         .environment(\.horizontalSizeClass, .compact)
         .onAppear {
             ttsViewModel.onChapterFinished = { [ttsViewModel] in
-                ttsViewModel.goToNextChapter()
+                ttsViewModel.goToNextChapter(forcePlay: true)
             }
         }
     }
