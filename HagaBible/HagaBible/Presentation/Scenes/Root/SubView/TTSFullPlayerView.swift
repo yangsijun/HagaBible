@@ -47,12 +47,6 @@ struct TTSFullPlayerView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Drag indicator
-                Capsule()
-                    .fill(.thinMaterial)
-                    .frame(width: 54, height: 5)
-                    .padding(.top, 8)
-
                 Spacer()
 
                 // Artwork area
@@ -67,7 +61,6 @@ struct TTSFullPlayerView: View {
                     }
 
                 Spacer()
-                    .frame(height: 32)
 
                 // Title and info section
                 HStack(alignment: .center) {
@@ -200,10 +193,11 @@ struct TTSFullPlayerView: View {
                 Spacer()
             }
         }
+        .preferredColorScheme(.light)
         .sheet(isPresented: $showSettings) {
             TTSSettingsView(ttsService: ttsService)
         }
-        .presentationDragIndicator(.hidden)
+        .presentationDragIndicator(.visible)
     }
 
     private var displayVerseIndex: Int {

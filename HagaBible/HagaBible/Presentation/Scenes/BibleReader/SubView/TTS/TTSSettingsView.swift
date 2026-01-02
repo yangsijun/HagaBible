@@ -86,8 +86,6 @@ struct TTSSettingsView: View {
                     Text("Reading Speed")
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
             .navigationTitle("TTS Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -151,8 +149,6 @@ private struct VoiceSelectionView: View {
                 Text("More voices can be downloaded in Settings > Accessibility > Spoken Content > Voices")
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
         .navigationTitle("\(language) Voice")
         .navigationBarTitleDisplayMode(.inline)
     }
