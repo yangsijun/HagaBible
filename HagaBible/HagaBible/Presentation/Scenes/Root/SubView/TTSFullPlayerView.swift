@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+import MediaPlayer
+import AVFoundation
+import Combine
 
 struct TTSFullPlayerView: View {
     let ttsService: TTSService
@@ -15,126 +18,192 @@ struct TTSFullPlayerView: View {
     @State private var sliderValue: Double = 0
     @State private var isDragging = false
 
+    // Calm gradient color palettes
+    private let gradientPalettes: [[Color]] = [
+        [Color(red: 0.2, green: 0.3, blue: 0.4), Color(red: 0.1, green: 0.15, blue: 0.2)],      // Deep blue
+        [Color(red: 0.25, green: 0.2, blue: 0.35), Color(red: 0.12, green: 0.1, blue: 0.18)],   // Purple night
+        [Color(red: 0.2, green: 0.35, blue: 0.35), Color(red: 0.1, green: 0.18, blue: 0.18)],   // Teal
+        [Color(red: 0.35, green: 0.25, blue: 0.2), Color(red: 0.18, green: 0.12, blue: 0.1)],   // Warm brown
+        [Color(red: 0.3, green: 0.3, blue: 0.35), Color(red: 0.15, green: 0.15, blue: 0.18)],   // Slate gray
+        [Color(red: 0.2, green: 0.3, blue: 0.3), Color(red: 0.1, green: 0.15, blue: 0.15)],     // Ocean
+        [Color(red: 0.35, green: 0.3, blue: 0.25), Color(red: 0.18, green: 0.15, blue: 0.12)],  // Sand
+        [Color(red: 0.25, green: 0.25, blue: 0.4), Color(red: 0.12, green: 0.12, blue: 0.2)],   // Indigo
+    ]
+
+    private var currentGradient: [Color] {
+        let seed = ttsService.bookName.hashValue ^ ttsService.chapterNum
+        let index = abs(seed) % gradientPalettes.count
+        return gradientPalettes[index]
+    }
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 32) {
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                colors: currentGradient,
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Drag indicator
+                Capsule()
+                    .fill(.thinMaterial)
+                    .frame(width: 54, height: 5)
+                    .padding(.top, 8)
+
                 Spacer()
 
                 // Artwork area
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.regularMaterial)
-                    .frame(maxWidth: 280, maxHeight: 280)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 300, height: 300)
+                    .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 10)
                     .overlay {
                         Image(systemName: "book.fill")
-                            .font(.system(size: 80))
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 100))
+                            .foregroundStyle(.thickMaterial)
                     }
-                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
 
-                // Current verse info
-                VStack(spacing: 8) {
-                    Text("\(ttsService.bookName) \(ttsService.chapterNum)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .contentTransition(.numericText())
-                        .animation(.default, value: displayVerseNumber)
+                Spacer()
+                    .frame(height: 32)
 
-                    Text("\(displayVerseIndex + 1) / \(ttsService.totalVerses) verses")
-                        .foregroundStyle(.secondary)
-                        .contentTransition(.numericText())
-                        .animation(.default, value: displayVerseIndex)
+                // Title and info section
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(ttsService.bookName) \(ttsService.chapterNum)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .contentTransition(.numericText())
+                            .animation(.default, value: ttsService.chapterNum)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.title2)
+                            .foregroundStyle(.thinMaterial)
+                    }
                 }
+                .padding(.horizontal, 24)
 
-                // Draggable verse slider
-                VStack(spacing: 4) {
-                    Slider(
-                        value: $sliderValue,
-                        in: 0...Double(max(ttsService.totalVerses - 1, 1)),
-                        step: 1
-                    ) { editing in
-                        isDragging = editing
-                        if !editing {
-                            ttsService.skipToVerse(at: Int(sliderValue))
+                Spacer()
+                    .frame(height: 24)
+
+                // Progress slider (Apple Music style)
+                VStack(spacing: 8) {
+                    GeometryReader { geometry in
+                        let totalVerses = max(ttsService.totalVerses - 1, 1)
+                        let progress = sliderValue / Double(totalVerses)
+                        let trackHeight: CGFloat = isDragging ? 16 : 8
+
+                        ZStack(alignment: .leading) {
+                            // Background track
+                            Capsule()
+                                .fill(Color.white.opacity(0.3))
+                                .frame(height: trackHeight)
+
+                            // Progress track
+                            Capsule()
+                                .fill(Color.white)
+                                .frame(width: max(0, geometry.size.width * progress), height: trackHeight)
                         }
+                        .frame(height: geometry.size.height)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    isDragging = true
+                                    let newProgress = min(max(0, value.location.x / geometry.size.width), 1)
+                                    let rawValue = newProgress * Double(totalVerses)
+                                    sliderValue = rawValue.rounded() // Snap to integer
+                                }
+                                .onEnded { _ in
+                                    isDragging = false
+                                    ttsService.skipToVerse(at: Int(sliderValue))
+                                }
+                        )
+                        .animation(.easeInOut(duration: 0.15), value: isDragging)
                     }
-                    .padding(.horizontal, 32)
+                    .frame(height: 20)
 
                     HStack {
-                        Text("1")
+                        Text("\(displayVerseIndex + 1)")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.6))
+                            .monospacedDigit()
                         Spacer()
-                        Text("\(ttsService.totalVerses)")
+                        Text("\(ttsService.totalVerses) verses")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.6))
+                            .monospacedDigit()
                     }
-                    .padding(.horizontal, 32)
                 }
+                .padding(.horizontal, 24)
                 .onChange(of: ttsService.currentVerseIndex) { _, newValue in
                     if !isDragging {
-                        sliderValue = Double(newValue)
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            sliderValue = Double(newValue)
+                        }
                     }
                 }
                 .onAppear {
                     sliderValue = Double(ttsService.currentVerseIndex)
                 }
 
+                Spacer()
+                    .frame(height: 24)
+
                 // Playback controls
-                HStack(spacing: 48) {
+                HStack(spacing: 56) {
                     Button {
                         goToPreviousChapter()
                     } label: {
-                        Image(systemName: "backward.end.fill")
-                            .font(.title)
+                        Image(systemName: "backward.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(.thickMaterial)
                     }
 
                     Button {
                         ttsService.togglePlayPause()
                     } label: {
                         Image(systemName: ttsService.playbackState == .playing
-                              ? "pause.circle.fill"
-                              : "play.circle.fill")
-                            .font(.system(size: 72))
+                              ? "pause.fill"
+                              : "play.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.white)
                             .contentTransition(.symbolEffect(.replace.downUp))
                     }
 
                     Button {
                         goToNextChapter()
                     } label: {
-                        Image(systemName: "forward.end.fill")
-                            .font(.title)
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(.thickMaterial)
                     }
                 }
                 .buttonStyle(.plain)
 
                 Spacer()
 
-                // Stop button
-                Button(role: .destructive) {
-                    ttsService.stop()
-                } label: {
-                    Text("Stop Reading")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 32)
-            }
-            .padding()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                }
-            }
-            .sheet(isPresented: $showSettings) {
-                TTSSettingsView(ttsService: ttsService)
+                // Volume slider (Apple Music style)
+                VolumeSliderView()
+                    .padding(.horizontal, 24)
+
+                Spacer()
             }
         }
-        .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showSettings) {
+            TTSSettingsView(ttsService: ttsService)
+        }
+        .presentationDragIndicator(.hidden)
     }
 
     private var displayVerseIndex: Int {
@@ -174,6 +243,110 @@ struct TTSFullPlayerView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             let language = viewModel.bibleVersion?.language ?? "Korean"
             ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language)
+        }
+    }
+}
+
+// MARK: - Custom Volume Slider with System Volume Control
+struct VolumeSliderView: View {
+    @State private var volume: Float = 0.5
+    @State private var isDragging = false
+    @StateObject private var volumeObserver = VolumeObserver()
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "speaker.fill")
+                .font(.footnote)
+                .foregroundStyle(.thinMaterial)
+
+            GeometryReader { geometry in
+                let progress = CGFloat(volume)
+                let trackHeight: CGFloat = isDragging ? 10 : 6
+
+                ZStack(alignment: .leading) {
+                    // Background track
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                        .frame(height: trackHeight)
+
+                    // Volume track
+                    Capsule()
+                        .fill(.thickMaterial)
+                        .frame(width: max(0, geometry.size.width * progress), height: trackHeight)
+                }
+                .frame(height: geometry.size.height)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            isDragging = true
+                            let newVolume = Float(min(max(0, value.location.x / geometry.size.width), 1))
+                            volume = newVolume
+                            SystemVolumeManager.setVolume(newVolume)
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                        }
+                )
+                .animation(.easeInOut(duration: 0.15), value: isDragging)
+            }
+            .frame(height: 20)
+
+            Image(systemName: "speaker.wave.3.fill")
+                .font(.footnote)
+                .foregroundStyle(.thinMaterial)
+        }
+        .onAppear {
+            volume = AVAudioSession.sharedInstance().outputVolume
+        }
+        .onReceive(volumeObserver.$volume) { newVolume in
+            if !isDragging {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    volume = newVolume
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Volume Observer (KVO for system volume changes)
+class VolumeObserver: ObservableObject {
+    @Published var volume: Float = 0.5
+    private var observation: NSKeyValueObservation?
+
+    init() {
+        let audioSession = AVAudioSession.sharedInstance()
+        volume = audioSession.outputVolume
+
+        observation = audioSession.observe(\.outputVolume, options: [.new]) { [weak self] _, change in
+            DispatchQueue.main.async {
+                if let newVolume = change.newValue {
+                    self?.volume = newVolume
+                }
+            }
+        }
+    }
+
+    deinit {
+        observation?.invalidate()
+    }
+}
+
+// MARK: - System Volume Manager
+enum SystemVolumeManager {
+    private static var volumeView: MPVolumeView?
+
+    static func setVolume(_ volume: Float) {
+        if volumeView == nil {
+            volumeView = MPVolumeView(frame: .zero)
+        }
+
+        guard let slider = volumeView?.subviews.first(where: { $0 is UISlider }) as? UISlider else {
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            slider.value = volume
         }
     }
 }
