@@ -50,7 +50,7 @@ struct TTSMiniPlayerView: View {
                     Button {
                         goToNextChapter()
                     } label: {
-                        Image(systemName: "forward.end.fill")
+                        Image(systemName: "forward.fill")
                             .font(.title3)
                             .frame(width: 38, height: 38)
                             .contentShape(.rect)
