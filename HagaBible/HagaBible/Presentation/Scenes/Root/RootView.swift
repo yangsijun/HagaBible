@@ -17,6 +17,7 @@ struct RootView: View {
     @State private var showLoadingView: Bool = false
     @State private var downloadProgress: String = ""
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    @State private var showFullPlayer: Bool = false
 
     private let defaultVersions = ["WEBBE", "NKRV"]
 
@@ -50,7 +51,7 @@ struct RootView: View {
             }
         }
         .applyTabBarMinimizeBehavior()
-        .applyTTSBottomAccessory(ttsService: ttsService)
+        .applyTTSBottomAccessory(ttsService: ttsService, showFullPlayer: $showFullPlayer)
         .environment(\.horizontalSizeClass, .compact)
         .onAppear {
             ttsService.onChapterFinished = { [viewModel, ttsService] in
@@ -142,14 +143,17 @@ extension View {
     }
 
     @ViewBuilder
-    func applyTTSBottomAccessory(ttsService: TTSService) -> some View {
+    func applyTTSBottomAccessory(ttsService: TTSService, showFullPlayer: Binding<Bool>) -> some View {
         if #available(iOS 26.0, *) {
             if ttsService.playbackState != .idle {
                 self.tabViewBottomAccessory {
                     TTSMiniPlayerView(
                         ttsService: ttsService,
-                        onTap: {}
+                        onTap: { showFullPlayer.wrappedValue = true }
                     )
+                }
+                .sheet(isPresented: showFullPlayer) {
+                    TTSFullPlayerView(ttsService: ttsService)
                 }
             } else {
                 self
