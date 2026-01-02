@@ -11,10 +11,9 @@ import AVFoundation
 import Combine
 
 struct TTSFullPlayerView: View {
-    let ttsService: TTSService
+    let ttsViewModel: TTSViewModel
 
     @State private var showSettings = false
-    @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var sliderValue: Double = 0
     @State private var isDragging = false
 
@@ -31,7 +30,7 @@ struct TTSFullPlayerView: View {
     ]
 
     private var currentGradient: [Color] {
-        let seed = ttsService.bookName.hashValue ^ ttsService.chapterNum
+        let seed = ttsViewModel.bookName.hashValue ^ ttsViewModel.chapterNum
         let index = abs(seed) % gradientPalettes.count
         return gradientPalettes[index]
     }
@@ -65,13 +64,13 @@ struct TTSFullPlayerView: View {
                 // Title and info section
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(ttsService.bookName) \(ttsService.chapterNum)")
+                        Text("\(ttsViewModel.bookName) \(ttsViewModel.chapterNum)")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
                             .lineLimit(1)
                             .contentTransition(.numericText())
-                            .animation(.default, value: ttsService.chapterNum)
+                            .animation(.default, value: ttsViewModel.chapterNum)
                     }
 
                     Spacer()
@@ -92,7 +91,7 @@ struct TTSFullPlayerView: View {
                 // Progress slider (Apple Music style)
                 VStack(spacing: 8) {
                     GeometryReader { geometry in
-                        let totalVerses = max(ttsService.totalVerses - 1, 1)
+                        let totalVerses = max(ttsViewModel.totalVerses - 1, 1)
                         let progress = sliderValue / Double(totalVerses)
                         let trackHeight: CGFloat = isDragging ? 16 : 8
 
@@ -119,7 +118,7 @@ struct TTSFullPlayerView: View {
                                 }
                                 .onEnded { _ in
                                     isDragging = false
-                                    ttsService.skipToVerse(at: Int(sliderValue))
+                                    ttsViewModel.skipToVerse(at: Int(sliderValue))
                                 }
                         )
                         .animation(.easeInOut(duration: 0.15), value: isDragging)
@@ -132,14 +131,14 @@ struct TTSFullPlayerView: View {
                             .foregroundStyle(.white.opacity(0.6))
                             .monospacedDigit()
                         Spacer()
-                        Text("\(ttsService.totalVerses) verses")
+                        Text("\(ttsViewModel.totalVerses) verses")
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.6))
                             .monospacedDigit()
                     }
                 }
                 .padding(.horizontal, 24)
-                .onChange(of: ttsService.currentVerseIndex) { _, newValue in
+                .onChange(of: ttsViewModel.currentVerseIndex) { _, newValue in
                     if !isDragging {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             sliderValue = Double(newValue)
@@ -147,7 +146,7 @@ struct TTSFullPlayerView: View {
                     }
                 }
                 .onAppear {
-                    sliderValue = Double(ttsService.currentVerseIndex)
+                    sliderValue = Double(ttsViewModel.currentVerseIndex)
                 }
 
                 Spacer()
@@ -156,7 +155,7 @@ struct TTSFullPlayerView: View {
                 // Playback controls
                 HStack(spacing: 56) {
                     Button {
-                        goToPreviousChapter()
+                        ttsViewModel.goToPreviousChapter()
                     } label: {
                         Image(systemName: "backward.fill")
                             .font(.system(size: 32))
@@ -164,9 +163,9 @@ struct TTSFullPlayerView: View {
                     }
 
                     Button {
-                        ttsService.togglePlayPause()
+                        ttsViewModel.togglePlayPause()
                     } label: {
-                        Image(systemName: ttsService.playbackState == .playing
+                        Image(systemName: ttsViewModel.playbackState == .playing
                               ? "pause.fill"
                               : "play.fill")
                             .font(.system(size: 48))
@@ -175,7 +174,7 @@ struct TTSFullPlayerView: View {
                     }
 
                     Button {
-                        goToNextChapter()
+                        ttsViewModel.goToNextChapter()
                     } label: {
                         Image(systemName: "forward.fill")
                             .font(.system(size: 32))
@@ -195,49 +194,29 @@ struct TTSFullPlayerView: View {
         }
         .preferredColorScheme(.light)
         .sheet(isPresented: $showSettings) {
-            TTSSettingsView(ttsService: ttsService)
+            TTSSettingsView(ttsViewModel: ttsViewModel)
         }
         .presentationDragIndicator(.visible)
     }
 
     private var displayVerseIndex: Int {
-        isDragging ? Int(sliderValue) : ttsService.currentVerseIndex
+        isDragging ? Int(sliderValue) : ttsViewModel.currentVerseIndex
     }
 
     private var displayVerseNumber: Int {
-        guard !ttsService.verses.isEmpty,
-              displayVerseIndex < ttsService.verses.count else {
+        guard !ttsViewModel.verses.isEmpty,
+              displayVerseIndex < ttsViewModel.verses.count else {
             return 1
         }
-        return ttsService.verses[displayVerseIndex].verse
+        return ttsViewModel.verses[displayVerseIndex].verse
     }
 
     private var currentVerseNumber: Int {
-        guard !ttsService.verses.isEmpty,
-              ttsService.currentVerseIndex < ttsService.verses.count else {
+        guard !ttsViewModel.verses.isEmpty,
+              ttsViewModel.currentVerseIndex < ttsViewModel.verses.count else {
             return 1
         }
-        return ttsService.verses[ttsService.currentVerseIndex].verse
-    }
-
-    private func goToPreviousChapter() {
-        viewModel.goToPreviousChapter()
-        viewModel.bibleNavigationUpdateTrigger.toggle()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            let language = viewModel.bibleVersion?.language ?? "Korean"
-            ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language)
-        }
-    }
-
-    private func goToNextChapter() {
-        viewModel.goToNextChapter()
-        viewModel.bibleNavigationUpdateTrigger.toggle()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            let language = viewModel.bibleVersion?.language ?? "Korean"
-            ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language)
-        }
+        return ttsViewModel.verses[ttsViewModel.currentVerseIndex].verse
     }
 }
 
@@ -346,5 +325,6 @@ enum SystemVolumeManager {
 }
 
 #Preview {
-    TTSFullPlayerView(ttsService: TTSService())
+    DIContainer.registerForPreview()
+    return TTSFullPlayerView(ttsViewModel: DIContainer.shared.resolve(type: TTSViewModel.self))
 }

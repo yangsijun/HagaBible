@@ -16,7 +16,7 @@ struct BibleReaderView: View {
     @State private var showFontThemeConfig: Bool = false
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
-    @State private var ttsService: TTSService = DIContainer.shared.resolve(type: TTSService.self)
+    @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -31,7 +31,7 @@ struct BibleReaderView: View {
                         fontConfiguration: fontThemeManager.fontConfiguration,
                         theme: fontThemeManager.theme,
                         highlightedVerseNum: viewModel.navigatedVerseNum,
-                        ttsCurrentVerseIndex: ttsService.playbackState != .idle ? ttsService.currentVerseIndex : nil,
+                        ttsCurrentVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
                         selectStartIndex: $selectStartIndex,
                         selectEndIndex: $selectEndIndex
                     )
@@ -49,26 +49,26 @@ struct BibleReaderView: View {
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
                 .swipeGesture(
                     onLeftSwipe: {
-                        let wasActive = ttsService.playbackState != .idle
+                        let wasActive = ttsViewModel.playbackState != .idle
                         viewModel.goToPreviousChapter()
                         viewModel.bibleNavigationUpdateTrigger.toggle()
                         if wasActive {
                             Task {
                                 try? await Task.sleep(for: .milliseconds(100))
                                 let language = viewModel.bibleVersion?.language ?? "Korean"
-                                ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                                ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
                             }
                         }
                     },
                     onRightSwipe: {
-                        let wasActive = ttsService.playbackState != .idle
+                        let wasActive = ttsViewModel.playbackState != .idle
                         viewModel.goToNextChapter()
                         viewModel.bibleNavigationUpdateTrigger.toggle()
                         if wasActive {
                             Task {
                                 try? await Task.sleep(for: .milliseconds(100))
                                 let language = viewModel.bibleVersion?.language ?? "Korean"
-                                ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                                ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
                             }
                         }
                     }
@@ -82,8 +82,8 @@ struct BibleReaderView: View {
                         }
                     }
                 }
-                .onChange(of: ttsService.currentVerseIndex) { _, newIndex in
-                    if ttsService.playbackState != .idle {
+                .onChange(of: ttsViewModel.currentVerseIndex) { _, newIndex in
+                    if ttsViewModel.playbackState != .idle {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             proxy.scrollTo(newIndex, anchor: .center)
                         }
@@ -108,7 +108,7 @@ struct BibleReaderView: View {
                     showBibleNavigation: $showBibleNavigation,
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
-                    ttsPlaybackState: ttsService.playbackState
+                    ttsPlaybackState: ttsViewModel.playbackState
                 )
             }
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -169,16 +169,16 @@ struct BibleReaderView: View {
 
     // MARK: - TTS Methods
     private func handleListenTapped() {
-        if ttsService.playbackState == .idle {
+        if ttsViewModel.playbackState == .idle {
             // Start from selected verse or beginning
             let startIndex = selectStartIndex ?? 0
             let language = viewModel.bibleVersion?.language ?? "Korean"
-            ttsService.startReading(verses: viewModel.bibleVerseList, language: language, startIndex: startIndex)
+            ttsViewModel.startReading(verses: viewModel.bibleVerseList, language: language, startIndex: startIndex)
             selectStartIndex = nil
             selectEndIndex = nil
         } else {
             // Stop TTS and hide accessory view
-            ttsService.stop()
+            ttsViewModel.stop()
         }
     }
 }

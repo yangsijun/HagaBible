@@ -66,9 +66,26 @@ extension DIContainer {
         container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
-        
+
         container.register(type: AudioService.self, component: AudioService())
-        container.register(type: TTSService.self, component: TTSService())
+
+        // TTS Dependencies
+        let voiceProvider = AVVoiceProvider()
+        container.register(type: VoiceProvider.self, component: voiceProvider)
+        container.register(type: TTSSettingsRepository.self, component: DefaultTTSSettingsRepository())
+        container.register(type: SpeechSynthesizer.self, component: AVSpeechSynthesizerAdapter())
+
+        let ttsManager = TTSPlaybackManager(
+            synthesizer: container.resolve(type: SpeechSynthesizer.self),
+            settingsRepository: container.resolve(type: TTSSettingsRepository.self),
+            voiceProvider: voiceProvider
+        )
+        container.register(type: TTSPlaybackManager.self, component: ttsManager)
+
+        container.register(type: TTSViewModel.self, component: TTSViewModel(
+            ttsManager: ttsManager,
+            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
+        ))
 
         let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
@@ -114,9 +131,26 @@ extension DIContainer {
         container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
-        
+
         container.register(type: AudioService.self, component: AudioService())
-        container.register(type: TTSService.self, component: TTSService())
+
+        // TTS Dependencies
+        let voiceProvider = AVVoiceProvider()
+        container.register(type: VoiceProvider.self, component: voiceProvider)
+        container.register(type: TTSSettingsRepository.self, component: DefaultTTSSettingsRepository())
+        container.register(type: SpeechSynthesizer.self, component: AVSpeechSynthesizerAdapter())
+
+        let ttsManager = TTSPlaybackManager(
+            synthesizer: container.resolve(type: SpeechSynthesizer.self),
+            settingsRepository: container.resolve(type: TTSSettingsRepository.self),
+            voiceProvider: voiceProvider
+        )
+        container.register(type: TTSPlaybackManager.self, component: ttsManager)
+
+        container.register(type: TTSViewModel.self, component: TTSViewModel(
+            ttsManager: ttsManager,
+            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
+        ))
 
         let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)

@@ -9,12 +9,12 @@ import AVFoundation
 import SwiftUI
 
 struct TTSSettingsView: View {
-    let ttsService: TTSService
-    
+    let ttsViewModel: TTSViewModel
+
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
-    
-    init(ttsService: TTSService) {
-        self.ttsService = ttsService
+
+    init(ttsViewModel: TTSViewModel) {
+        self.ttsViewModel = ttsViewModel
         self.fontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     }
 
@@ -25,32 +25,32 @@ struct TTSSettingsView: View {
                 Section {
                     NavigationLink {
                         VoiceSelectionView(
-                            ttsService: ttsService,
+                            ttsViewModel: ttsViewModel,
                             language: "Korean",
-                            voices: ttsService.koreanVoices,
-                            selectedVoice: ttsService.selectedKoreanVoice
+                            voices: ttsViewModel.koreanVoices,
+                            selectedVoice: ttsViewModel.selectedKoreanVoice
                         )
                     } label: {
                         HStack {
                             Text("Korean Voice")
                             Spacer()
-                            Text(ttsService.selectedKoreanVoice?.name ?? "System Default")
+                            Text(ttsViewModel.selectedKoreanVoice?.name ?? "System Default")
                                 .foregroundStyle(.secondary)
                         }
                     }
 
                     NavigationLink {
                         VoiceSelectionView(
-                            ttsService: ttsService,
+                            ttsViewModel: ttsViewModel,
                             language: "English",
-                            voices: ttsService.englishVoices,
-                            selectedVoice: ttsService.selectedEnglishVoice
+                            voices: ttsViewModel.englishVoices,
+                            selectedVoice: ttsViewModel.selectedEnglishVoice
                         )
                     } label: {
                         HStack {
                             Text("English Voice")
                             Spacer()
-                            Text(ttsService.selectedEnglishVoice?.name ?? "System Default")
+                            Text(ttsViewModel.selectedEnglishVoice?.name ?? "System Default")
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -66,8 +66,8 @@ struct TTSSettingsView: View {
 
                         Slider(
                             value: Binding(
-                                get: { Double(ttsService.speechRate) },
-                                set: { ttsService.setSpeechRate(Float($0)) }
+                                get: { Double(ttsViewModel.speechRate) },
+                                set: { ttsViewModel.setSpeechRate(Float($0)) }
                             ),
                             in: Double(AVSpeechUtteranceMinimumSpeechRate)...Double(AVSpeechUtteranceMaximumSpeechRate),
                             step: 0.05
@@ -93,7 +93,7 @@ struct TTSSettingsView: View {
     }
 
     private var speedLabel: String {
-        let rate = ttsService.speechRate
+        let rate = ttsViewModel.speechRate
         let defaultRate = AVSpeechUtteranceDefaultSpeechRate
 
         if rate < defaultRate - 0.1 {
@@ -108,20 +108,20 @@ struct TTSSettingsView: View {
 
 // MARK: - Voice Selection View
 private struct VoiceSelectionView: View {
-    let ttsService: TTSService
+    let ttsViewModel: TTSViewModel
     let language: String
-    let voices: [AVSpeechSynthesisVoice]
-    let selectedVoice: AVSpeechSynthesisVoice?
-    
+    let voices: [TTSVoiceConfig]
+    let selectedVoice: TTSVoiceConfig?
+
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
-    
+
     init(
-        ttsService: TTSService,
+        ttsViewModel: TTSViewModel,
         language: String,
-        voices: [AVSpeechSynthesisVoice],
-        selectedVoice: AVSpeechSynthesisVoice?
+        voices: [TTSVoiceConfig],
+        selectedVoice: TTSVoiceConfig?
     ) {
-        self.ttsService = ttsService
+        self.ttsViewModel = ttsViewModel
         self.language = language
         self.voices = voices
         self.selectedVoice = selectedVoice
@@ -133,16 +133,16 @@ private struct VoiceSelectionView: View {
             Section {
                 // System Default option
                 SystemDefaultVoiceRow(isSelected: selectedVoice == nil) {
-                    ttsService.setVoice(nil, for: language)
+                    ttsViewModel.setVoice(nil, for: language)
                 }
 
-                ForEach(voices, id: \.identifier) { voice in
+                ForEach(voices) { voice in
                     VoiceRow(
                         voice: voice,
                         isSelected: voice.identifier == selectedVoice?.identifier,
-                        showRegion: language == "English" && voice.language == "en-GB"
+                        showRegion: language == "English" && voice.isUKEnglish
                     ) {
-                        ttsService.setVoice(voice, for: language)
+                        ttsViewModel.setVoice(voice, for: language)
                     }
                 }
             } footer: {
@@ -182,7 +182,7 @@ private struct SystemDefaultVoiceRow: View {
 
 // MARK: - Voice Row
 private struct VoiceRow: View {
-    let voice: AVSpeechSynthesisVoice
+    let voice: TTSVoiceConfig
     let isSelected: Bool
     var showRegion: Bool = false
     let onSelect: () -> Void
@@ -202,7 +202,7 @@ private struct VoiceRow: View {
                         }
                     }
 
-                    Text(qualityLabel)
+                    Text(voice.quality.displayName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -218,19 +218,9 @@ private struct VoiceRow: View {
         }
         .buttonStyle(.plain)
     }
-
-    private var qualityLabel: String {
-        switch voice.quality {
-        case .enhanced:
-            return "Enhanced"
-        case .premium:
-            return "Premium"
-        default:
-            return "Default"
-        }
-    }
 }
 
 #Preview {
-    TTSSettingsView(ttsService: TTSService())
+    DIContainer.registerForPreview()
+    return TTSSettingsView(ttsViewModel: DIContainer.shared.resolve(type: TTSViewModel.self))
 }

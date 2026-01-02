@@ -11,7 +11,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var appState = DIContainer.shared.resolve(type: AppState.self)
-    @State private var ttsService = DIContainer.shared.resolve(type: TTSService.self)
+    @State private var ttsViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     @State private var search: String = ""
 
     @State private var showLoadingView: Bool = false
@@ -51,17 +51,11 @@ struct RootView: View {
             }
         }
         .applyTabBarMinimizeBehavior()
-        .applyTTSBottomAccessory(ttsService: ttsService, showFullPlayer: $showFullPlayer)
+        .applyTTSBottomAccessory(ttsViewModel: ttsViewModel, showFullPlayer: $showFullPlayer)
         .environment(\.horizontalSizeClass, .compact)
         .onAppear {
-            ttsService.onChapterFinished = { [viewModel, ttsService] in
-                viewModel.goToNextChapter()
-                viewModel.bibleNavigationUpdateTrigger.toggle()
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    let language = viewModel.bibleVersion?.language ?? "Korean"
-                    ttsService.switchChapter(verses: viewModel.bibleVerseList, language: language, forcePlay: true)
-                }
+            ttsViewModel.onChapterFinished = { [ttsViewModel] in
+                ttsViewModel.goToNextChapter()
             }
         }
     }
@@ -143,17 +137,17 @@ extension View {
     }
 
     @ViewBuilder
-    func applyTTSBottomAccessory(ttsService: TTSService, showFullPlayer: Binding<Bool>) -> some View {
+    func applyTTSBottomAccessory(ttsViewModel: TTSViewModel, showFullPlayer: Binding<Bool>) -> some View {
         if #available(iOS 26.0, *) {
-            if ttsService.playbackState != .idle {
+            if ttsViewModel.playbackState != .idle {
                 self.tabViewBottomAccessory {
                     TTSMiniPlayerView(
-                        ttsService: ttsService,
+                        ttsViewModel: ttsViewModel,
                         onTap: { showFullPlayer.wrappedValue = true }
                     )
                 }
                 .sheet(isPresented: showFullPlayer) {
-                    TTSFullPlayerView(ttsService: ttsService)
+                    TTSFullPlayerView(ttsViewModel: ttsViewModel)
                 }
             } else {
                 self
