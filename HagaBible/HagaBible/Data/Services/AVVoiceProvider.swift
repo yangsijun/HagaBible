@@ -30,6 +30,21 @@ class AVVoiceProvider: VoiceProvider {
         allVoicesMap[identifier]
     }
 
+    func defaultVoice(for language: String) -> TTSVoiceConfig? {
+        let languageCode: String
+        if language == "Korean" {
+            languageCode = "ko-KR"
+        } else {
+            // 사용자의 preferred languages에서 영어 locale 찾기
+            languageCode = Locale.preferredLanguages.first { $0.hasPrefix("en") } ?? "en-US"
+        }
+
+        guard let systemDefault = AVSpeechSynthesisVoice(language: languageCode) else {
+            return nil
+        }
+        return mapToConfig(systemDefault)
+    }
+
     // MARK: - Private Methods
 
     private func loadVoices() {

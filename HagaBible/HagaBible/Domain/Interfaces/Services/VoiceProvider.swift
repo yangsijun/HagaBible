@@ -18,4 +18,9 @@ protocol VoiceProvider {
     /// - Parameter identifier: 음성 식별자
     /// - Returns: 해당 음성 설정 (없으면 nil)
     func voice(for identifier: String) -> TTSVoiceConfig?
+
+    /// 시스템 기본 음성 가져오기
+    /// - Parameter language: "Korean" 또는 "English"
+    /// - Returns: 해당 언어의 시스템 기본 음성 (없으면 nil)
+    func defaultVoice(for language: String) -> TTSVoiceConfig?
 }

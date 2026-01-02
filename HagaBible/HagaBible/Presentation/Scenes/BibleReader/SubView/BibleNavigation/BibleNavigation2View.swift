@@ -49,7 +49,7 @@ struct BibleNavigation2View: View {
 
                                 bibleReaderViewModel.navigatedVerseNum = 1
                                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                                switchTTSChapterIfActive()
+                                switchTTSChapterIfActive(language: selectedVersion.language)
                             }
                         }
                     )
@@ -78,7 +78,7 @@ struct BibleNavigation2View: View {
 
                                 bibleReaderViewModel.navigatedVerseNum = 1
                                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                                switchTTSChapterIfActive()
+                                switchTTSChapterIfActive(language: selectedVersion.language)
                             }
                         }
                     )
@@ -172,7 +172,7 @@ struct BibleNavigation2View: View {
                 let verseNum = selectedVerse?.verse ?? 1
                 bibleReaderViewModel.navigatedVerseNum = verseNum
                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                switchTTSChapterIfActive(startVerseNum: verseNum)
+                switchTTSChapterIfActive(language: selectedVersion?.language ?? "Korean", startVerseNum: verseNum)
             }
             .toolbarTitleMenu {
                 ForEach(viewModel.versionList, id: \.versionCode) { version in
@@ -243,12 +243,20 @@ struct BibleNavigation2View: View {
         }
     }
 
-    private func switchTTSChapterIfActive(startVerseNum: Int = 1) {
+    private func switchTTSChapterIfActive(language: String, startVerseNum: Int = 1) {
         guard ttsViewModel.playbackState != .idle else { return }
 
+        let oldVerses = bibleReaderViewModel.bibleVerseList
+
         Task {
-            try? await Task.sleep(for: .milliseconds(100))
-            let language = bibleReaderViewModel.bibleVersion?.language ?? "Korean"
+            // verses가 실제로 변경될 때까지 대기 (최대 2초)
+            for _ in 0..<20 {
+                try? await Task.sleep(for: .milliseconds(100))
+                if bibleReaderViewModel.bibleVerseList != oldVerses {
+                    break
+                }
+            }
+
             let startIndex = max(0, startVerseNum - 1)
             ttsViewModel.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language, forcePlay: true, startIndex: startIndex)
         }

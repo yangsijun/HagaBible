@@ -49,9 +49,9 @@ class TTSPlaybackManager: NSObject {
 
     var currentVoice: TTSVoiceConfig? {
         if currentLanguage == "Korean" {
-            return selectedKoreanVoice
+            return selectedKoreanVoice ?? voiceProvider.defaultVoice(for: "Korean")
         } else {
-            return selectedEnglishVoice
+            return selectedEnglishVoice ?? voiceProvider.defaultVoice(for: "English")
         }
     }
 
