@@ -95,6 +95,7 @@ struct TTSFullPlayerView: View {
                               ? "pause.circle.fill"
                               : "play.circle.fill")
                             .font(.system(size: 72))
+                            .contentTransition(.symbolEffect(.replace.downUp))
                     }
 
                     Button {

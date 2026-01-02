@@ -15,32 +15,33 @@ struct TTSMiniPlayerView: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Book/chapter:verse info
+        HStack(spacing: 12) {
+            HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(ttsService.bookName) \(ttsService.chapterNum)")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
-
-                    if placement == .expanded {
-                        Text("\(ttsService.currentVerseIndex + 1) / \(ttsService.totalVerses)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    
+                    Text("\(ttsService.currentVerseIndex + 1) / \(ttsService.totalVerses)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-
                 Spacer()
-
+            }
+            .contentShape(.rect)
+            .onTapGesture(perform: onTap)
+            // Control buttons
+            HStack(spacing: 8) {
                 // Play/Pause button
                 Button {
                     ttsService.togglePlayPause()
                 } label: {
                     Image(systemName: ttsService.playbackState == .playing ? "pause.fill" : "play.fill")
                         .font(.title3)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 38, height: 38)
                         .contentShape(.rect)
+                        .contentTransition(.symbolEffect(.replace.downUp))
                 }
                 .buttonStyle(.plain)
 
@@ -51,16 +52,18 @@ struct TTSMiniPlayerView: View {
                     } label: {
                         Image(systemName: "forward.end.fill")
                             .font(.title3)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 38, height: 38)
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+//            .animation(.easeInOut(duration: 0.2), value: isExpanded)
+            
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .id(placement)
     }
 
     private var currentVerseNumber: Int {

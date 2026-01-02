@@ -10,6 +10,13 @@ import SwiftUI
 
 struct TTSSettingsView: View {
     let ttsService: TTSService
+    
+    private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+    
+    init(ttsService: TTSService) {
+        self.ttsService = ttsService
+        self.fontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+    }
 
     var body: some View {
         NavigationStack {
@@ -79,6 +86,8 @@ struct TTSSettingsView: View {
                     Text("Reading Speed")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
             .navigationTitle("TTS Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -105,6 +114,21 @@ private struct VoiceSelectionView: View {
     let language: String
     let voices: [AVSpeechSynthesisVoice]
     let selectedVoice: AVSpeechSynthesisVoice?
+    
+    private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+    
+    init(
+        ttsService: TTSService,
+        language: String,
+        voices: [AVSpeechSynthesisVoice],
+        selectedVoice: AVSpeechSynthesisVoice?
+    ) {
+        self.ttsService = ttsService
+        self.language = language
+        self.voices = voices
+        self.selectedVoice = selectedVoice
+        self.fontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+    }
 
     var body: some View {
         List {
@@ -127,6 +151,8 @@ private struct VoiceSelectionView: View {
                 Text("More voices can be downloaded in Settings > Accessibility > Spoken Content > Voices")
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
         .navigationTitle("\(language) Voice")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -152,6 +178,7 @@ private struct SystemDefaultVoiceRow: View {
                         .foregroundStyle(.accent)
                 }
             }
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
@@ -191,6 +218,7 @@ private struct VoiceRow: View {
                         .foregroundStyle(.accent)
                 }
             }
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
