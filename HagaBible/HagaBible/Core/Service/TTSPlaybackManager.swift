@@ -405,6 +405,12 @@ class TTSPlaybackManager: NSObject {
     // MARK: - Audio Session
 
     private func setupAudioSession() {
+        // AVAudioSession is iOS-only; skip on macOS to avoid blocking TTS
+        guard !PlatformHelper.isRunningOnMac else {
+            Logger.tts.debug("Running on macOS - skipping audio session setup")
+            return
+        }
+
         do {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
@@ -416,6 +422,12 @@ class TTSPlaybackManager: NSObject {
     }
 
     private func deactivateAudioSession() {
+        // AVAudioSession is iOS-only; skip on macOS
+        guard !PlatformHelper.isRunningOnMac else {
+            Logger.tts.debug("Running on macOS - skipping audio session deactivation")
+            return
+        }
+
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
             Logger.tts.debug("Audio session deactivated")
@@ -427,6 +439,12 @@ class TTSPlaybackManager: NSObject {
     // MARK: - Remote Command Center
 
     private func setupRemoteCommandCenter() {
+        // MPRemoteCommandCenter is iOS-only; skip on macOS
+        guard !PlatformHelper.isRunningOnMac else {
+            Logger.tts.debug("Running on macOS - skipping remote command center setup")
+            return
+        }
+
         let commandCenter = MPRemoteCommandCenter.shared()
 
         commandCenter.playCommand.addTarget { [weak self] _ in
@@ -474,6 +492,9 @@ class TTSPlaybackManager: NSObject {
     // MARK: - Now Playing Info
 
     private func updateNowPlayingInfo() {
+        // MPNowPlayingInfoCenter is iOS-only; skip on macOS
+        guard !PlatformHelper.isRunningOnMac else { return }
+
         guard !verses.isEmpty, currentVerseIndex < verses.count else { return }
 
         let verse = verses[currentVerseIndex]
@@ -490,6 +511,9 @@ class TTSPlaybackManager: NSObject {
     }
 
     private func clearNowPlayingInfo() {
+        // MPNowPlayingInfoCenter is iOS-only; skip on macOS
+        guard !PlatformHelper.isRunningOnMac else { return }
+
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 }

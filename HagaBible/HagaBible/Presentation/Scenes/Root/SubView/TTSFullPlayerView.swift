@@ -227,55 +227,68 @@ struct VolumeSliderView: View {
     @StateObject private var volumeObserver = VolumeObserver()
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "speaker.fill")
-                .font(.footnote)
-                .foregroundStyle(.thinMaterial)
-
-            GeometryReader { geometry in
-                let progress = CGFloat(volume)
-                let trackHeight: CGFloat = isDragging ? 10 : 6
-
-                ZStack(alignment: .leading) {
-                    // Background track
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .frame(height: trackHeight)
-
-                    // Volume track
-                    Capsule()
-                        .fill(.thickMaterial)
-                        .frame(width: max(0, geometry.size.width * progress), height: trackHeight)
-                }
-                .frame(height: geometry.size.height)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            isDragging = true
-                            let newVolume = Float(min(max(0, value.location.x / geometry.size.width), 1))
-                            volume = newVolume
-                            SystemVolumeManager.setVolume(newVolume)
-                        }
-                        .onEnded { _ in
-                            isDragging = false
-                        }
-                )
-                .animation(.easeInOut(duration: 0.15), value: isDragging)
+        if PlatformHelper.isRunningOnMac {
+            // macOS: AVAudioSession volume control is not available
+            HStack(spacing: 8) {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.thinMaterial)
+                Text("Use system volume controls")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
             }
-            .frame(height: 20)
+        } else {
+            // iOS: Full volume slider with system integration
+            HStack(spacing: 12) {
+                Image(systemName: "speaker.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.thinMaterial)
 
-            Image(systemName: "speaker.wave.3.fill")
-                .font(.footnote)
-                .foregroundStyle(.thinMaterial)
-        }
-        .onAppear {
-            volume = AVAudioSession.sharedInstance().outputVolume
-        }
-        .onReceive(volumeObserver.$volume) { newVolume in
-            if !isDragging {
-                withAnimation(.easeInOut(duration: 0.1)) {
-                    volume = newVolume
+                GeometryReader { geometry in
+                    let progress = CGFloat(volume)
+                    let trackHeight: CGFloat = isDragging ? 10 : 6
+
+                    ZStack(alignment: .leading) {
+                        // Background track
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .frame(height: trackHeight)
+
+                        // Volume track
+                        Capsule()
+                            .fill(.thickMaterial)
+                            .frame(width: max(0, geometry.size.width * progress), height: trackHeight)
+                    }
+                    .frame(height: geometry.size.height)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                isDragging = true
+                                let newVolume = Float(min(max(0, value.location.x / geometry.size.width), 1))
+                                volume = newVolume
+                                SystemVolumeManager.setVolume(newVolume)
+                            }
+                            .onEnded { _ in
+                                isDragging = false
+                            }
+                    )
+                    .animation(.easeInOut(duration: 0.15), value: isDragging)
+                }
+                .frame(height: 20)
+
+                Image(systemName: "speaker.wave.3.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.thinMaterial)
+            }
+            .onAppear {
+                volume = AVAudioSession.sharedInstance().outputVolume
+            }
+            .onReceive(volumeObserver.$volume) { newVolume in
+                if !isDragging {
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        volume = newVolume
+                    }
                 }
             }
         }
@@ -288,6 +301,9 @@ class VolumeObserver: ObservableObject {
     private var observation: NSKeyValueObservation?
 
     init() {
+        // AVAudioSession volume observation is iOS-only; skip on macOS
+        guard !PlatformHelper.isRunningOnMac else { return }
+
         let audioSession = AVAudioSession.sharedInstance()
         volume = audioSession.outputVolume
 
@@ -310,6 +326,9 @@ enum SystemVolumeManager {
     private static var volumeView: MPVolumeView?
 
     static func setVolume(_ volume: Float) {
+        // MPVolumeView/UISlider are iOS-only; skip on macOS
+        guard !PlatformHelper.isRunningOnMac else { return }
+
         if volumeView == nil {
             volumeView = MPVolumeView(frame: .zero)
         }

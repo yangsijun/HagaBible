@@ -85,7 +85,7 @@ struct BibleReaderView: View {
                 .onChange(of: ttsViewModel.currentVerseIndex) { _, newIndex in
                     if ttsViewModel.playbackState != .idle {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            proxy.scrollTo(newIndex, anchor: .center)
+                            proxy.scrollTo(newIndex, anchor: .top)
                         }
                     }
                 }
