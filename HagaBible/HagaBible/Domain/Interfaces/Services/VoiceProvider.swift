@@ -23,4 +23,7 @@ protocol VoiceProvider {
     /// - Parameter language: "Korean" 또는 "English"
     /// - Returns: 해당 언어의 시스템 기본 음성 (없으면 nil)
     func defaultVoice(for language: String) -> TTSVoiceConfig?
+
+    /// 음성 목록 갱신 (새로 다운로드된 음성 반영)
+    func refreshVoices()
 }

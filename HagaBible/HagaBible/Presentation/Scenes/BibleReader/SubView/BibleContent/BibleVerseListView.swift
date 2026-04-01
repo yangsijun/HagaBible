@@ -27,91 +27,81 @@ struct BibleVerseListView: View {
                 .id(0)
             LazyVStack(spacing: CGFloat(fontConfiguration.lineSpacing)) {
                 ForEach(0..<verses.count, id: \.self) { index in
-                    BibleVerseView(
-                        verseNumber: index + 1,
-                        verseText: verses[index].verseText ?? "",
-                        font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
-                        textColor: theme.textColor,
-                        verseNumberColor: theme.verseNumberColor,
-                        alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
-                        lineSpacing: CGFloat(fontConfiguration.lineSpacing)
-                    )
-                    .id(index + 1)
-                    .padding(8)
-                    .padding(.horizontal, 8)
-                    .background(
-                        highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear
-                    )
-                    .background(
-                        ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear
-                    )
-                    .background(
-                        (
-                            selectStartIndex != nil
-                            && selectEndIndex != nil
-                            && index >= selectStartIndex!
-                            && index <= selectEndIndex!
-                        )
-                        ? Color.accentColor.opacity(0.25)
-                        : .clear
-                    )
-                    .contentShape(.rect)
-                    .contextMenu {
-                        Button(action: {
-                            UIPasteboard.general.string = getVerseTextsFromContextMenuIndex(index)
-                            selectStartIndex = nil
-                            selectEndIndex = nil
-                        }) {
-                            Label("클립보드에 복사", systemImage: "doc.on.doc")
-                        }
-                        ShareLink(
-                            item: getVerseTextsFromContextMenuIndex(index)
-                        ) {
-                            Label("공유하기", systemImage: "square.and.arrow.up")
-                        }
-                    } preview: {
-                        if let start = selectStartIndex, let end = selectEndIndex, start <= index && index <= end {
-                            NavigationStack {
-                                VStack(spacing: 0) {
-                                    ForEach(start...end, id: \.self) { idx in
-                                        BibleVerseView(
-                                            verseNumber: idx + 1,
-                                            verseText: verses[idx].verseText ?? "",
-                                            font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
-                                            textColor: theme.textColor,
-                                            verseNumberColor: theme.verseNumberColor,
-                                            alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
-                                            lineSpacing: CGFloat(fontConfiguration.lineSpacing)
-                                        )
-                                        .padding(8)
-                                        .padding(.horizontal, 8)
-                                        .background(Color.accentColor.opacity(0.25))
-                                    }
-                                }
-                            }
-                        } else {
-                            NavigationStack {
-                                BibleVerseView(
-                                    verseNumber: index + 1,
-                                    verseText: verses[index].verseText ?? "",
-                                    font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
-                                    textColor: theme.textColor,
-                                    verseNumberColor: theme.verseNumberColor,
-                                    alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
-                                    lineSpacing: CGFloat(fontConfiguration.lineSpacing)
-                                )
-                                .padding(8)
-                                .padding(.horizontal, 8)
-                                .background(Color.accentColor.opacity(0.25))
-                            }
-                        }
-                    }
-                    .onTapGesture {
-                        handleSelectVerse(index)
-                    }
+                    verseRow(at: index)
                 }
             }
             .padding(.vertical, 16)
+        }
+    }
+
+    @ViewBuilder
+    private func verseRow(at index: Int) -> some View {
+        makeVerseView(at: index)
+            .id(index + 1)
+            .padding(8)
+            .padding(.horizontal, 8)
+            .background(highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear)
+            .background(ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear)
+            .background(isSelected(index) ? Color.accentColor.opacity(0.25) : .clear)
+            .contentShape(.rect)
+            .contextMenu {
+                Button(action: {
+                    UIPasteboard.general.string = getVerseTextsFromContextMenuIndex(index)
+                    selectStartIndex = nil
+                    selectEndIndex = nil
+                }) {
+                    Label("클립보드에 복사", systemImage: "doc.on.doc")
+                }
+                ShareLink(
+                    item: getVerseTextsFromContextMenuIndex(index)
+                ) {
+                    Label("공유하기", systemImage: "square.and.arrow.up")
+                }
+            } preview: {
+                contextMenuPreview(for: index)
+            }
+            .onTapGesture {
+                handleSelectVerse(index)
+            }
+    }
+
+    private func makeVerseView(at index: Int) -> BibleVerseView {
+        BibleVerseView(
+            verseNumber: index + 1,
+            verseText: verses[index].verseText ?? "",
+            font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
+            textColor: theme.textColor,
+            verseNumberColor: theme.verseNumberColor,
+            alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
+            lineSpacing: CGFloat(fontConfiguration.lineSpacing)
+        )
+    }
+
+    private func isSelected(_ index: Int) -> Bool {
+        guard let start = selectStartIndex, let end = selectEndIndex else { return false }
+        return index >= start && index <= end
+    }
+
+    @ViewBuilder
+    private func contextMenuPreview(for index: Int) -> some View {
+        if let start = selectStartIndex, let end = selectEndIndex, start <= index && index <= end {
+            NavigationStack {
+                VStack(spacing: 0) {
+                    ForEach(start...end, id: \.self) { idx in
+                        makeVerseView(at: idx)
+                            .padding(8)
+                            .padding(.horizontal, 8)
+                            .background(Color.accentColor.opacity(0.25))
+                    }
+                }
+            }
+        } else {
+            NavigationStack {
+                makeVerseView(at: index)
+                    .padding(8)
+                    .padding(.horizontal, 8)
+                    .background(Color.accentColor.opacity(0.25))
+            }
         }
     }
     

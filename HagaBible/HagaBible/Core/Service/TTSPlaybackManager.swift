@@ -70,9 +70,9 @@ class TTSPlaybackManager: NSObject {
     private var isRestarting = false
     private var restartTask: Task<Void, Never>?
     private var nextChapterTask: Task<Void, Never>?
-    private var skipRequestId: UUID?
     private var isSynthesizerBusy = false
-    private let synthesizerLock = NSLock()
+    private var operationGeneration: Int = 0
+    private var isPauseRequested = false
 
     // MARK: - Initialization
 
@@ -90,6 +90,7 @@ class TTSPlaybackManager: NSObject {
 
         self.synthesizer.delegate = self
         setupRemoteCommandCenter()
+        setupInterruptionHandling()
     }
 
     // MARK: - Public Methods
@@ -107,17 +108,20 @@ class TTSPlaybackManager: NSObject {
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
         playbackState = .playing
+        isPauseRequested = false
 
         Logger.tts.info("Started reading \(self.bookName) \(self.chapterNum) from verse \(self.currentVerseIndex + 1) in \(language)")
 
         // 2. 무거운 작업은 다음 런루프에서 실행 (UI 블로킹 방지)
+        operationGeneration += 1
+        let currentGen = operationGeneration
         Task { @MainActor in
+            guard operationGeneration == currentGen else { return }
             // Reset all state before starting
             restartTask?.cancel()
             restartTask = nil
             nextChapterTask?.cancel()
             nextChapterTask = nil
-            skipRequestId = nil
             isRestarting = false
             isSynthesizerBusy = false
             synthesizer.stop()
@@ -142,7 +146,6 @@ class TTSPlaybackManager: NSObject {
         restartTask = nil
         nextChapterTask?.cancel()
         nextChapterTask = nil
-        skipRequestId = nil
 
         isSynthesizerBusy = true
         isRestarting = true
@@ -172,18 +175,19 @@ class TTSPlaybackManager: NSObject {
     }
 
     func pause() {
-        let hadPendingOperation = isSynthesizerBusy || isRestarting
         restartTask?.cancel()
         restartTask = nil
-        skipRequestId = nil
-        isSynthesizerBusy = false
-        isRestarting = false
 
-        if hadPendingOperation {
+        if isSynthesizerBusy || isRestarting {
+            isRestarting = true
             synthesizer.stop()
             synthesizer.recreate()
+            isRestarting = false
+            isSynthesizerBusy = false
+            isPauseRequested = false
         } else {
             synthesizer.pause()
+            isPauseRequested = true
         }
         playbackState = .paused
         updateNowPlayingInfo()
@@ -193,9 +197,24 @@ class TTSPlaybackManager: NSObject {
     func resume() {
         guard !isSynthesizerBusy else { return }
 
+        nextChapterTask?.cancel()
+        nextChapterTask = nil
+
         if synthesizer.isPaused {
+            // 정상 케이스: 일시정지 완료 → 이어서 재생
+            isPauseRequested = false
             synthesizer.resume()
+        } else if isPauseRequested || synthesizer.isSpeaking {
+            // 빠른 토글: 일시정지 요청했지만 아직 완료 안 됨 → 정리 후 절 재시작
+            isPauseRequested = false
+            isRestarting = true
+            synthesizer.stop()
+            synthesizer.recreate()
+            isRestarting = false
+            speakCurrentVerse()
         } else {
+            // 정지 상태에서 재개 → 절 재시작
+            isPauseRequested = false
             speakCurrentVerse()
         }
         playbackState = .playing
@@ -206,18 +225,21 @@ class TTSPlaybackManager: NSObject {
     func stop() {
         // 1. 즉시 상태 업데이트 (UI 애니메이션이 블로킹되지 않도록)
         playbackState = .idle
+        isPauseRequested = false
         currentVerseIndex = 0
         verses = []
 
         Logger.tts.info("Stopped playback")
 
         // 2. 무거운 작업은 다음 런루프에서 실행 (UI 블로킹 방지)
+        operationGeneration += 1
+        let currentGen = operationGeneration
         Task { @MainActor in
+            guard operationGeneration == currentGen else { return }
             restartTask?.cancel()
             restartTask = nil
             nextChapterTask?.cancel()
             nextChapterTask = nil
-            skipRequestId = nil
             isRestarting = false
             isSynthesizerBusy = false
             synthesizer.stop()
@@ -232,7 +254,6 @@ class TTSPlaybackManager: NSObject {
 
         restartTask?.cancel()
         restartTask = nil
-        skipRequestId = nil
 
         if currentVerseIndex < verses.count - 1 {
             currentVerseIndex += 1
@@ -256,7 +277,6 @@ class TTSPlaybackManager: NSObject {
 
         restartTask?.cancel()
         restartTask = nil
-        skipRequestId = nil
 
         if currentVerseIndex > 0 {
             currentVerseIndex -= 1
@@ -278,7 +298,6 @@ class TTSPlaybackManager: NSObject {
 
         restartTask?.cancel()
         restartTask = nil
-        skipRequestId = nil
 
         currentVerseIndex = 0
 
@@ -300,7 +319,6 @@ class TTSPlaybackManager: NSObject {
 
         restartTask?.cancel()
         restartTask = nil
-        skipRequestId = nil
 
         currentVerseIndex = index
 
@@ -358,6 +376,11 @@ class TTSPlaybackManager: NSObject {
         }
     }
 
+    func refreshVoices() {
+        voiceProvider.refreshVoices()
+        synthesizer.clearVoiceCache()
+    }
+
     // MARK: - Private Methods
 
     private func updateSpeechRate(_ rate: Float) {
@@ -369,7 +392,6 @@ class TTSPlaybackManager: NSObject {
 
         restartTask?.cancel()
         restartTask = nil
-        skipRequestId = nil
 
         isSynthesizerBusy = true
         isRestarting = true
@@ -386,20 +408,52 @@ class TTSPlaybackManager: NSObject {
     }
 
     private func speakCurrentVerse() {
-        guard currentVerseIndex < verses.count else {
-            stop()
-            return
-        }
-
-        let verse = verses[currentVerseIndex]
-        guard let text = verse.verseText, !text.isEmpty else {
+        while currentVerseIndex < verses.count {
+            let verse = verses[currentVerseIndex]
+            if let text = verse.verseText, !text.isEmpty {
+                synthesizer.speak(text: text, voice: currentVoice, rate: settings.speechRate)
+                updateNowPlayingInfo()
+                return
+            }
             Logger.tts.warning("Skipping verse \(verse.verse): no text")
-            skipToNext()
-            return
+            currentVerseIndex += 1
         }
+        stop()
+    }
 
-        synthesizer.speak(text: text, voice: currentVoice, rate: settings.speechRate)
-        updateNowPlayingInfo()
+    // MARK: - Audio Interruption Handling
+
+    private func setupInterruptionHandling() {
+        guard !PlatformHelper.isRunningOnMac else { return }
+        NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: nil) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                self?.handleInterruption(notification)
+            }
+        }
+    }
+
+    private func handleInterruption(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+
+        switch type {
+        case .began:
+            if playbackState == .playing {
+                pause()
+                Logger.tts.info("Playback paused due to audio interruption")
+            }
+        case .ended:
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                if options.contains(.shouldResume) && playbackState == .paused {
+                    resume()
+                    Logger.tts.info("Playback resumed after audio interruption")
+                }
+            }
+        @unknown default:
+            break
+        }
     }
 
     // MARK: - Audio Session
@@ -563,13 +617,13 @@ extension TTSPlaybackManager: SpeechSynthesizerDelegate {
     }
 
     func speechDidPause() {
-        playbackState = .paused
-        updateNowPlayingInfo()
+        // playbackState는 pause()에서 이미 즉시 설정됨.
+        // 비동기 콜백에서 다시 설정하면 빠른 토글 시 상태 충돌 발생하므로 변경하지 않음.
     }
 
     func speechDidContinue() {
-        playbackState = .playing
-        updateNowPlayingInfo()
+        // playbackState는 resume()에서 이미 즉시 설정됨.
+        // 비동기 콜백에서 다시 설정하면 빠른 토글 시 상태 충돌 발생하므로 변경하지 않음.
     }
 
     func speechDidCancel() {

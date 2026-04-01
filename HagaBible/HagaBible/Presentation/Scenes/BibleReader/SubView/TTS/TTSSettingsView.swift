@@ -11,7 +11,8 @@ import SwiftUI
 struct TTSSettingsView: View {
     let ttsViewModel: TTSViewModel
 
-    private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+    private var fontThemeManager: FontThemeManager
+    @State private var localRate: Float = 0
 
     init(ttsViewModel: TTSViewModel) {
         self.ttsViewModel = ttsViewModel
@@ -66,12 +67,16 @@ struct TTSSettingsView: View {
 
                         Slider(
                             value: Binding(
-                                get: { Double(ttsViewModel.speechRate) },
-                                set: { ttsViewModel.setSpeechRate(Float($0)) }
+                                get: { Double(localRate) },
+                                set: { localRate = Float($0) }
                             ),
                             in: Double(AVSpeechUtteranceMinimumSpeechRate)...Double(AVSpeechUtteranceMaximumSpeechRate),
                             step: 0.05
-                        )
+                        ) { editing in
+                            if !editing {
+                                ttsViewModel.setSpeechRate(localRate)
+                            }
+                        }
 
                         HStack {
                             Text("Slower")
@@ -85,15 +90,22 @@ struct TTSSettingsView: View {
                 } header: {
                     Text("Reading Speed")
                 }
+                .onAppear {
+                    localRate = ttsViewModel.speechRate
+                }
+                .onChange(of: ttsViewModel.speechRate) { _, newValue in
+                    localRate = newValue
+                }
             }
             .navigationTitle("TTS Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .onAppear { ttsViewModel.refreshVoices() }
         .presentationDetents([.medium, .large])
     }
 
     private var speedLabel: String {
-        let rate = ttsViewModel.speechRate
+        let rate = localRate
         let defaultRate = AVSpeechUtteranceDefaultSpeechRate
 
         if rate < defaultRate - 0.1 {
@@ -113,7 +125,7 @@ private struct VoiceSelectionView: View {
     let voices: [TTSVoiceConfig]
     let selectedVoice: TTSVoiceConfig?
 
-    private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+    private var fontThemeManager: FontThemeManager
 
     init(
         ttsViewModel: TTSViewModel,

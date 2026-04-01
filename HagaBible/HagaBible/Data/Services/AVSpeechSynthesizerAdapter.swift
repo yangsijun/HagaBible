@@ -36,7 +36,7 @@ class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizer {
     }
 
     func pause() {
-        synthesizer.pauseSpeaking(at: .word)
+        synthesizer.pauseSpeaking(at: .immediate)
     }
 
     func resume() {
@@ -51,6 +51,10 @@ class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizer {
         synthesizer.delegate = nil
         synthesizer = AVSpeechSynthesizer()
         synthesizer.delegate = self
+    }
+
+    func clearVoiceCache() {
+        voiceCache.removeAll()
     }
 
     // MARK: - Private Methods
@@ -68,10 +72,17 @@ class AVSpeechSynthesizerAdapter: NSObject, SpeechSynthesizer {
         let languageCode = config.language.isEmpty ? "ko-KR" : config.language
 
         // macOS Catalyst에서는 premium 음성이 작동하지 않음
-        // compact 또는 eloquence 음성을 명시적으로 선택
+        // 사용자 선택 identifier 먼저 시도하고, premium이면 non-premium 폴백
         if PlatformHelper.isRunningOnMac {
+            // 사용자 선택 identifier 먼저 시도
+            if let voice = AVSpeechSynthesisVoice(identifier: config.identifier),
+               !voice.identifier.contains(".premium.") {
+                voiceCache[config.identifier] = voice
+                return voice
+            }
+            // premium이거나 identifier로 못 찾으면 non-premium 폴백
             if let workingVoice = getMacOSWorkingVoice(for: languageCode) {
-                voiceCache[config.identifier] = workingVoice
+                voiceCache[workingVoice.identifier] = workingVoice
                 return workingVoice
             }
             return getAnyAvailableVoice()

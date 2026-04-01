@@ -23,8 +23,12 @@ class DefaultTTSSettingsRepository: TTSSettingsRepository {
     }
 
     func loadSettings() -> TTSSettings {
-        let savedRate = userDefaults.float(forKey: Keys.speechRate)
-        let rate = savedRate > 0 ? savedRate : AVSpeechUtteranceDefaultSpeechRate
+        let rate: Float
+        if userDefaults.object(forKey: Keys.speechRate) != nil {
+            rate = userDefaults.float(forKey: Keys.speechRate)
+        } else {
+            rate = AVSpeechUtteranceDefaultSpeechRate
+        }
 
         return TTSSettings(
             speechRate: rate,

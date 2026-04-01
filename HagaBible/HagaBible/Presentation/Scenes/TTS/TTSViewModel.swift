@@ -108,11 +108,9 @@ class TTSViewModel {
     // MARK: - Chapter Navigation
 
     func goToNextChapter(forcePlay: Bool = false) {
-        bibleReaderViewModel.goToNextChapter()
-        bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self = self else { return }
+        Task {
+            await bibleReaderViewModel.goToNextChapterAsync()
+            bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
             let language = bibleReaderViewModel.bibleVersion?.language ?? "Korean"
             ttsManager.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language, forcePlay: forcePlay)
         }
@@ -126,11 +124,9 @@ class TTSViewModel {
         }
 
         // 1절이면 이전 장으로 이동
-        bibleReaderViewModel.goToPreviousChapter()
-        bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self = self else { return }
+        Task {
+            await bibleReaderViewModel.goToPreviousChapterAsync()
+            bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
             let language = bibleReaderViewModel.bibleVersion?.language ?? "Korean"
             ttsManager.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language)
         }
@@ -154,5 +150,9 @@ class TTSViewModel {
 
     func startReading(verses: [BibleVerse], language: String, startIndex: Int = 0) {
         ttsManager.startReading(verses: verses, language: language, startIndex: startIndex)
+    }
+
+    func refreshVoices() {
+        ttsManager.refreshVoices()
     }
 }

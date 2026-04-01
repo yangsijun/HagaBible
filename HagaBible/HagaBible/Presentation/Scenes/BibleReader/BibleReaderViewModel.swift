@@ -140,64 +140,80 @@ class BibleReaderViewModel {
     }
     
     func goToPreviousChapter() {
+        Task { await goToPreviousChapterAsync() }
+    }
+
+    func goToPreviousChapterAsync() async {
         if chapterNum > 1 {
-            applyBibleSelection(
+            await applyBibleSelectionAsync(
                 chapterNum: chapterNum - 1,
                 verseNum: 1
             )
             return
         }
-        if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
-            if index == 0 { return }
-            applyBibleSelection(
-                bookCode: bibleBookList[index - 1].bookCode,
-                chapterNum: bibleBookList[index - 1].totalChapters,
-                verseNum: 1
-            )
-        }
+        guard let currentBook = bibleBookList.first(where: { $0.bookCode == bookCode }),
+              let index = bibleBookList.firstIndex(of: currentBook) else { return }
+        if index == 0 { return }
+        await applyBibleSelectionAsync(
+            bookCode: bibleBookList[index - 1].bookCode,
+            chapterNum: bibleBookList[index - 1].totalChapters,
+            verseNum: 1
+        )
     }
-    
+
     func goToNextChapter() {
-        if chapterNum < bibleChapterList.last!.chapter {
-            applyBibleSelection(
+        Task { await goToNextChapterAsync() }
+    }
+
+    func goToNextChapterAsync() async {
+        guard let lastChapter = bibleChapterList.last else { return }
+        if chapterNum < lastChapter.chapter {
+            await applyBibleSelectionAsync(
                 chapterNum: chapterNum + 1,
                 verseNum: 1
             )
             return
         }
-        if let index = bibleBookList.firstIndex(of: bibleBookList.first(where: { $0.bookCode == bookCode })!) {
-            if index == bibleBookList.count - 1 { return }
-            applyBibleSelection(
-                bookCode: bibleBookList[index + 1].bookCode,
-                chapterNum: 1,
-                verseNum: 1
-            )
-        }
+        guard let currentBook = bibleBookList.first(where: { $0.bookCode == bookCode }),
+              let index = bibleBookList.firstIndex(of: currentBook) else { return }
+        if index == bibleBookList.count - 1 { return }
+        await applyBibleSelectionAsync(
+            bookCode: bibleBookList[index + 1].bookCode,
+            chapterNum: 1,
+            verseNum: 1
+        )
     }
-    
+
     func applyBibleSelection(
         versionCode: String? = nil,
         bookCode: String? = nil,
         chapterNum: Int? = nil,
         verseNum: Int? = nil
     ) {
-        Task {
-            if let versionCode = versionCode {
-                self.versionCode = versionCode
-                await fetchBibleVersion()
-            }
-            if let bookCode = bookCode {
-                self.bookCode = bookCode
-                await fetchBibleBook()
-            }
-            if let chapterNum = chapterNum {
-                self.chapterNum = chapterNum
-                await fetchBibleChapter()
-            }
-            if let verseNum = verseNum {
-                self.verseNum = verseNum
-                fetchBibleVerse()
-            }
+        Task { await applyBibleSelectionAsync(versionCode: versionCode, bookCode: bookCode, chapterNum: chapterNum, verseNum: verseNum) }
+    }
+
+    func applyBibleSelectionAsync(
+        versionCode: String? = nil,
+        bookCode: String? = nil,
+        chapterNum: Int? = nil,
+        verseNum: Int? = nil
+    ) async {
+        if let versionCode = versionCode {
+            self.versionCode = versionCode
+            await fetchBibleVersion()
+        }
+        if let bookCode = bookCode {
+            self.bookCode = bookCode
+            await fetchBibleBook()
+        }
+        if let chapterNum = chapterNum {
+            self.chapterNum = chapterNum
+            await fetchBibleChapter()
+        }
+        if let verseNum = verseNum {
+            self.verseNum = verseNum
+            fetchBibleVerse()
         }
     }
     

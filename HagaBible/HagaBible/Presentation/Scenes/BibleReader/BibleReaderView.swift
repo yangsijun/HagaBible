@@ -50,11 +50,10 @@ struct BibleReaderView: View {
                 .swipeGesture(
                     onLeftSwipe: {
                         let wasActive = ttsViewModel.playbackState != .idle
-                        viewModel.goToPreviousChapter()
-                        viewModel.bibleNavigationUpdateTrigger.toggle()
-                        if wasActive {
-                            Task {
-                                try? await Task.sleep(for: .milliseconds(100))
+                        Task {
+                            await viewModel.goToPreviousChapterAsync()
+                            viewModel.bibleNavigationUpdateTrigger.toggle()
+                            if wasActive {
                                 let language = viewModel.bibleVersion?.language ?? "Korean"
                                 ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
                             }
@@ -62,11 +61,10 @@ struct BibleReaderView: View {
                     },
                     onRightSwipe: {
                         let wasActive = ttsViewModel.playbackState != .idle
-                        viewModel.goToNextChapter()
-                        viewModel.bibleNavigationUpdateTrigger.toggle()
-                        if wasActive {
-                            Task {
-                                try? await Task.sleep(for: .milliseconds(100))
+                        Task {
+                            await viewModel.goToNextChapterAsync()
+                            viewModel.bibleNavigationUpdateTrigger.toggle()
+                            if wasActive {
                                 let language = viewModel.bibleVersion?.language ?? "Korean"
                                 ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
                             }

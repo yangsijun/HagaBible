@@ -48,4 +48,7 @@ protocol SpeechSynthesizer: AnyObject {
 
     /// 합성기를 새로 생성 (클린 상태 보장)
     func recreate()
+
+    /// 음성 캐시 초기화
+    func clearVoiceCache()
 }

@@ -30,6 +30,13 @@ class AVVoiceProvider: VoiceProvider {
         allVoicesMap[identifier]
     }
 
+    func refreshVoices() {
+        cachedKoreanVoices = nil
+        cachedEnglishVoices = nil
+        allVoicesMap.removeAll()
+        loadVoices()
+    }
+
     func defaultVoice(for language: String) -> TTSVoiceConfig? {
         let languageCode: String
         if language == "Korean" {
