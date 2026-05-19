@@ -68,17 +68,29 @@ extension DIContainer {
         ))
 
         container.register(type: AudioService.self, component: AudioService())
+        container.register(type: AudioSessionConfigurable.self, component: SystemAudioSessionConfigurator())
+        container.register(type: RemoteCommandConfigurable.self, component: SystemRemoteCommandConfigurator())
+        container.register(type: InterruptionObservable.self, component: NotificationCenterInterruptionObserver())
+        container.register(type: RecordingStateProvider.self, component: AudioServiceRecordingStateProvider(
+            audioServiceProvider: { container.resolve(type: AudioService.self) }
+        ))
 
         // TTS Dependencies
         let voiceProvider = AVVoiceProvider()
         container.register(type: VoiceProvider.self, component: voiceProvider)
         container.register(type: TTSSettingsRepository.self, component: DefaultTTSSettingsRepository())
         container.register(type: SpeechSynthesizer.self, component: AVSpeechSynthesizerAdapter())
+        container.register(type: NowPlayingInfoCenterProtocol.self, component: SystemNowPlayingInfoCenter())
 
         let ttsManager = TTSPlaybackManager(
             synthesizer: container.resolve(type: SpeechSynthesizer.self),
             settingsRepository: container.resolve(type: TTSSettingsRepository.self),
-            voiceProvider: voiceProvider
+            voiceProvider: voiceProvider,
+            audioSessionConfigurator: container.resolve(type: AudioSessionConfigurable.self),
+            remoteCommandConfigurator: container.resolve(type: RemoteCommandConfigurable.self),
+            interruptionObservable: container.resolve(type: InterruptionObservable.self),
+            recordingStateProvider: container.resolve(type: RecordingStateProvider.self),
+            nowPlayingInfoCenter: container.resolve(type: NowPlayingInfoCenterProtocol.self)
         )
         container.register(type: TTSPlaybackManager.self, component: ttsManager)
 
@@ -133,17 +145,29 @@ extension DIContainer {
         ))
 
         container.register(type: AudioService.self, component: AudioService())
+        container.register(type: AudioSessionConfigurable.self, component: SystemAudioSessionConfigurator())
+        container.register(type: RemoteCommandConfigurable.self, component: SystemRemoteCommandConfigurator())
+        container.register(type: InterruptionObservable.self, component: NotificationCenterInterruptionObserver())
+        container.register(type: RecordingStateProvider.self, component: AudioServiceRecordingStateProvider(
+            audioServiceProvider: { container.resolve(type: AudioService.self) }
+        ))
 
         // TTS Dependencies
         let voiceProvider = AVVoiceProvider()
         container.register(type: VoiceProvider.self, component: voiceProvider)
         container.register(type: TTSSettingsRepository.self, component: DefaultTTSSettingsRepository())
         container.register(type: SpeechSynthesizer.self, component: AVSpeechSynthesizerAdapter())
+        container.register(type: NowPlayingInfoCenterProtocol.self, component: SystemNowPlayingInfoCenter())
 
         let ttsManager = TTSPlaybackManager(
             synthesizer: container.resolve(type: SpeechSynthesizer.self),
             settingsRepository: container.resolve(type: TTSSettingsRepository.self),
-            voiceProvider: voiceProvider
+            voiceProvider: voiceProvider,
+            audioSessionConfigurator: container.resolve(type: AudioSessionConfigurable.self),
+            remoteCommandConfigurator: container.resolve(type: RemoteCommandConfigurable.self),
+            interruptionObservable: container.resolve(type: InterruptionObservable.self),
+            recordingStateProvider: container.resolve(type: RecordingStateProvider.self),
+            nowPlayingInfoCenter: container.resolve(type: NowPlayingInfoCenterProtocol.self)
         )
         container.register(type: TTSPlaybackManager.self, component: ttsManager)
 

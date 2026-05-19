@@ -63,6 +63,11 @@ class TTSPlaybackManager: NSObject {
     private let synthesizer: SpeechSynthesizer
     private let settingsRepository: TTSSettingsRepository
     private let voiceProvider: VoiceProvider
+    private let audioSessionConfigurator: AudioSessionConfigurable
+    private let remoteCommandConfigurator: RemoteCommandConfigurable
+    private let interruptionObservable: InterruptionObservable
+    private let recordingStateProvider: RecordingStateProvider
+    private let nowPlayingInfoCenter: NowPlayingInfoCenterProtocol
 
     // MARK: - Internal State
 
@@ -73,17 +78,28 @@ class TTSPlaybackManager: NSObject {
     private var isSynthesizerBusy = false
     private var operationGeneration: Int = 0
     private var isPauseRequested = false
+    private var interruptionObserverToken: NSObjectProtocol?
 
     // MARK: - Initialization
 
     init(
         synthesizer: SpeechSynthesizer,
         settingsRepository: TTSSettingsRepository,
-        voiceProvider: VoiceProvider
+        voiceProvider: VoiceProvider,
+        audioSessionConfigurator: AudioSessionConfigurable = SystemAudioSessionConfigurator(),
+        remoteCommandConfigurator: RemoteCommandConfigurable = SystemRemoteCommandConfigurator(),
+        interruptionObservable: InterruptionObservable = NotificationCenterInterruptionObserver(),
+        recordingStateProvider: RecordingStateProvider = AudioServiceRecordingStateProvider(),
+        nowPlayingInfoCenter: NowPlayingInfoCenterProtocol? = nil
     ) {
         self.synthesizer = synthesizer
         self.settingsRepository = settingsRepository
         self.voiceProvider = voiceProvider
+        self.audioSessionConfigurator = audioSessionConfigurator
+        self.remoteCommandConfigurator = remoteCommandConfigurator
+        self.interruptionObservable = interruptionObservable
+        self.recordingStateProvider = recordingStateProvider
+        self.nowPlayingInfoCenter = nowPlayingInfoCenter ?? SystemNowPlayingInfoCenter()
         self.settings = settingsRepository.loadSettings()
 
         super.init()
@@ -98,6 +114,11 @@ class TTSPlaybackManager: NSObject {
     func startReading(verses: [BibleVerse], language: String, startIndex: Int = 0) {
         guard !verses.isEmpty else {
             Logger.tts.warning("Cannot start reading: verses list is empty")
+            return
+        }
+
+        guard !recordingStateProvider.isRecording else {
+            Logger.tts.warning("Cannot start reading while recording is in progress")
             return
         }
 
@@ -168,7 +189,7 @@ class TTSPlaybackManager: NSObject {
             speakCurrentVerse()
         } else {
             playbackState = .paused
-            updateNowPlayingInfo()
+            syncNowPlayingState()
         }
 
         Logger.tts.info("Switched to \(self.bookName) \(self.chapterNum):\(self.currentVerseIndex + 1), wasPlaying: \(wasPlaying)")
@@ -190,7 +211,7 @@ class TTSPlaybackManager: NSObject {
             isPauseRequested = true
         }
         playbackState = .paused
-        updateNowPlayingInfo()
+        syncNowPlayingState()
         Logger.tts.debug("Paused at verse \(self.currentVerseIndex + 1)")
     }
 
@@ -218,7 +239,7 @@ class TTSPlaybackManager: NSObject {
             speakCurrentVerse()
         }
         playbackState = .playing
-        updateNowPlayingInfo()
+        syncNowPlayingState()
         Logger.tts.debug("Resumed at verse \(self.currentVerseIndex + 1)")
     }
 
@@ -244,6 +265,7 @@ class TTSPlaybackManager: NSObject {
             isSynthesizerBusy = false
             synthesizer.stop()
             synthesizer.recreate()
+            syncNowPlayingState(withInfo: false)
             clearNowPlayingInfo()
             deactivateAudioSession()
         }
@@ -425,7 +447,7 @@ class TTSPlaybackManager: NSObject {
 
     private func setupInterruptionHandling() {
         guard !PlatformHelper.isRunningOnMac else { return }
-        NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: nil) { [weak self] notification in
+        interruptionObserverToken = interruptionObservable.addInterruptionObserver { [weak self] notification in
             Task { @MainActor [weak self] in
                 self?.handleInterruption(notification)
             }
@@ -466,9 +488,7 @@ class TTSPlaybackManager: NSObject {
         }
 
         do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
-            try audioSession.setActive(true)
+            try audioSessionConfigurator.activatePlaybackSession()
             Logger.tts.debug("Audio session activated for TTS playback")
         } catch {
             Logger.tts.error("Failed to setup audio session: \(error.localizedDescription)")
@@ -483,7 +503,7 @@ class TTSPlaybackManager: NSObject {
         }
 
         do {
-            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            try audioSessionConfigurator.deactivatePlaybackSession()
             Logger.tts.debug("Audio session deactivated")
         } catch {
             Logger.tts.error("Failed to deactivate audio session: \(error.localizedDescription)")
@@ -499,51 +519,52 @@ class TTSPlaybackManager: NSObject {
             return
         }
 
-        let commandCenter = MPRemoteCommandCenter.shared()
-
-        commandCenter.playCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
-                self?.resume()
+        remoteCommandConfigurator.configureCommands(
+            onPlay: { [weak self] in
+                Task { @MainActor in
+                    self?.resume()
+                }
+            },
+            onPause: { [weak self] in
+                Task { @MainActor in
+                    self?.pause()
+                }
+            },
+            onTogglePlayPause: { [weak self] in
+                Task { @MainActor in
+                    self?.togglePlayPause()
+                }
+            },
+            onNextTrack: { [weak self] in
+                Task { @MainActor in
+                    self?.skipToNext()
+                }
+            },
+            onPreviousTrack: { [weak self] in
+                Task { @MainActor in
+                    self?.skipToPrevious()
+                }
             }
-            return .success
-        }
-
-        commandCenter.pauseCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
-                self?.pause()
-            }
-            return .success
-        }
-
-        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
-                self?.togglePlayPause()
-            }
-            return .success
-        }
-
-        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
-                self?.skipToNext()
-            }
-            return .success
-        }
-
-        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
-                self?.skipToPrevious()
-            }
-            return .success
-        }
-
-        commandCenter.changePlaybackPositionCommand.isEnabled = false
-        commandCenter.skipForwardCommand.isEnabled = false
-        commandCenter.skipBackwardCommand.isEnabled = false
+        )
 
         Logger.tts.debug("Remote command center configured")
     }
 
     // MARK: - Now Playing Info
+
+    /// 중앙 재생 상태 동기화 헬퍼 — 모든 재생 상태 전이가 이 경로를 통해
+    /// 시스템 Now Playing 상태와 앱 상태를 동기화한다.
+    /// - `withInfo: true`인 경우 메타데이터와 재생 상태를 함께 갱신한다.
+    /// - `withInfo: false`인 경우 재생 상태만 동기화한다 (절 데이터가 없는 전이에서 사용).
+    private func syncNowPlayingState(withInfo: Bool = true) {
+        guard !PlatformHelper.isRunningOnMac else { return }
+
+        if withInfo, !verses.isEmpty, currentVerseIndex < verses.count {
+            updateNowPlayingInfo()
+        } else {
+            nowPlayingInfoCenter.setPlaybackState(nowPlayingPlaybackState)
+        }
+    }
 
     private func updateNowPlayingInfo() {
         // MPNowPlayingInfoCenter is iOS-only; skip on macOS
@@ -561,14 +582,26 @@ class TTSPlaybackManager: NSObject {
         nowPlayingInfo[MPMediaItemPropertyAlbumTrackNumber] = currentVerseIndex + 1
         nowPlayingInfo[MPMediaItemPropertyAlbumTrackCount] = verses.count
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        nowPlayingInfoCenter.updateNowPlayingInfo(nowPlayingInfo)
+        nowPlayingInfoCenter.setPlaybackState(nowPlayingPlaybackState)
     }
 
     private func clearNowPlayingInfo() {
         // MPNowPlayingInfoCenter is iOS-only; skip on macOS
         guard !PlatformHelper.isRunningOnMac else { return }
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        nowPlayingInfoCenter.clearNowPlayingInfo()
+    }
+
+    private var nowPlayingPlaybackState: MPNowPlayingPlaybackState {
+        switch playbackState {
+        case .idle:
+            .stopped
+        case .playing:
+            .playing
+        case .paused:
+            .paused
+        }
     }
 }
 
@@ -594,7 +627,7 @@ extension TTSPlaybackManager: SpeechSynthesizerDelegate {
             // Finished all verses - wait 3 seconds then trigger next chapter
             Logger.tts.info("Finished reading all verses, waiting 3 seconds for next chapter")
             playbackState = .paused
-            updateNowPlayingInfo()
+            syncNowPlayingState()
 
             nextChapterTask?.cancel()
             nextChapterTask = Task { [weak self] in
