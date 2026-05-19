@@ -134,3 +134,9 @@ iOSInjectionProject/
 # End of https://www.toptal.com/developers/gitignore/api/macos,xcode,swift
 
 *.sqlite
+
+# Local development tooling state
+.omc/
+.sisyphus/
+buildServer.json
+
