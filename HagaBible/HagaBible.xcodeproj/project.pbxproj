@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */; };
+		DC4A9213679E53FEE00B337F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3AB6D737DA3C1366E4C3116 /* Foundation.framework */; };
+		DFA4A2FEEB7BE5EF8EEA11AF /* TTSPlaybackManagerNowPlayingSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */; };
 		ED3B587A2F05265000F17293 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED3B58792F05264F00F17293 /* WidgetKit.framework */; };
 		ED3B587C2F05265000F17293 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED3B587B2F05265000F17293 /* SwiftUI.framework */; };
 		ED3B58892F05265000F17293 /* HagaBibleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -14,6 +17,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		B4C540766E8160FCC68B9351 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ED6A82022E15339A003E0D6E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ED6A82092E15339A003E0D6E;
+			remoteInfo = HagaBible;
+		};
 		ED3B58872F05265000F17293 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = ED6A82022E15339A003E0D6E /* Project object */;
@@ -38,10 +48,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TTSPlaybackManagerNowPlayingSyncTests.swift; sourceTree = "<group>"; };
+		CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HagaBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpyNowPlayingInfoCenter.swift; sourceTree = "<group>"; };
 		ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HagaBibleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED3B58792F05264F00F17293 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		ED3B587B2F05265000F17293 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		ED6A820A2E15339A003E0D6E /* HagaBible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HagaBible.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F3AB6D737DA3C1366E4C3116 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -61,14 +75,6 @@
 		};
 		ED6B04D42E1A6EFA008FDEE0 /* Exceptions for "HagaBible" folder in "HagaBible" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			assetTagsByRelativePath = {
-				Data/Local/GRDB/SQLite/Bible_KJV.sqlite = (Bible_KJV, Bible_KJV_2, );
-				Data/Local/GRDB/SQLite/Bible_KRV.sqlite = (Bible_KRV, Bible_KRV_2, );
-				Data/Local/GRDB/SQLite/Bible_NIV.sqlite = (Bible_NIV, Bible_NIV_2, );
-				Data/Local/GRDB/SQLite/Bible_NKRV.sqlite = (Bible_NKRV, Bible_NKRV_2, );
-				Data/Local/GRDB/SQLite/Bible_WEB.sqlite = (Bible_WEB, Bible_WEB_2, );
-				Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite = (Bible_WEBBE, Bible_WEBBE_2, );
-			};
 			membershipExceptions = (
 				Info.plist,
 			);
@@ -97,6 +103,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		70AA2982A17B60C07493DCCB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC4A9213679E53FEE00B337F /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED3B58742F05264F00F17293 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -117,11 +131,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7ADA05789BB77868C1A1FF88 /* HagaBibleTests */ = {
+			isa = PBXGroup;
+			children = (
+				058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */,
+				F0D576F6426DF59DB3F00995 /* TestDoubles */,
+			);
+			path = HagaBibleTests;
+			sourceTree = "<group>";
+		};
+		A84048D6694AFB113084B3FD /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				F3AB6D737DA3C1366E4C3116 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		ED3B58782F05264F00F17293 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED3B58792F05264F00F17293 /* WidgetKit.framework */,
 				ED3B587B2F05265000F17293 /* SwiftUI.framework */,
+				A84048D6694AFB113084B3FD /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -133,6 +165,7 @@
 				ED3B587D2F05265000F17293 /* HagaBibleWidget */,
 				ED3B58782F05264F00F17293 /* Frameworks */,
 				ED6A820B2E15339A003E0D6E /* Products */,
+				7ADA05789BB77868C1A1FF88 /* HagaBibleTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -141,13 +174,40 @@
 			children = (
 				ED6A820A2E15339A003E0D6E /* HagaBible.app */,
 				ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */,
+				CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F0D576F6426DF59DB3F00995 /* TestDoubles */ = {
+			isa = PBXGroup;
+			children = (
+				E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */,
+			);
+			path = TestDoubles;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		E98319F16D86F5DB6F6D374C /* HagaBibleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 969B06C1E16758693167A59A /* Build configuration list for PBXNativeTarget "HagaBibleTests" */;
+			buildPhases = (
+				82DB451C276F2F8B2827F80E /* Sources */,
+				70AA2982A17B60C07493DCCB /* Frameworks */,
+				4A5CF211E5EB22DBA9E78D85 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				98E20A115CF765191EEB971C /* PBXTargetDependency */,
+			);
+			name = HagaBibleTests;
+			productName = HagaBibleTests;
+			productReference = CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = ED3B588A2F05265000F17293 /* Build configuration list for PBXNativeTarget "HagaBibleWidgetExtension" */;
@@ -164,8 +224,6 @@
 				ED3B587D2F05265000F17293 /* HagaBibleWidget */,
 			);
 			name = HagaBibleWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = HagaBibleWidgetExtension;
 			productReference = ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -246,11 +304,19 @@
 			targets = (
 				ED6A82092E15339A003E0D6E /* HagaBible */,
 				ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */,
+				E98319F16D86F5DB6F6D374C /* HagaBibleTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4A5CF211E5EB22DBA9E78D85 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED3B58752F05264F00F17293 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -268,6 +334,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		82DB451C276F2F8B2827F80E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DFA4A2FEEB7BE5EF8EEA11AF /* TTSPlaybackManagerNowPlayingSyncTests.swift in Sources */,
+				B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED3B58732F05264F00F17293 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -285,6 +360,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		98E20A115CF765191EEB971C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = HagaBible;
+			target = ED6A82092E15339A003E0D6E /* HagaBible */;
+			targetProxy = B4C540766E8160FCC68B9351 /* PBXContainerItemProxy */;
+		};
 		ED3B58882F05265000F17293 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = ED3B58762F05264F00F17293 /* HagaBibleWidgetExtension */;
@@ -293,6 +374,77 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		00B568517F3A872B1A09A9BC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_ON_DEMAND_RESOURCES = NO;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(BUILT_PRODUCTS_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					XCTest,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.hagabible.HagaBibleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphonesimulator;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/HagaBible";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HagaBible.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HagaBible";
+			};
+			name = Debug;
+		};
+		8C2AFD8A74E02D4F116AC7A6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_ON_DEMAND_RESOURCES = NO;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(BUILT_PRODUCTS_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					XCTest,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.hagabible.HagaBibleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphonesimulator;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/HagaBible";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HagaBible.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HagaBible";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		ED3B588B2F05265000F17293 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -487,6 +639,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9ZMW52M7L5;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HagaBible/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Haga Bible";
@@ -524,6 +677,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9ZMW52M7L5;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HagaBible/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Haga Bible";
@@ -555,6 +709,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		969B06C1E16758693167A59A /* Build configuration list for PBXNativeTarget "HagaBibleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8C2AFD8A74E02D4F116AC7A6 /* Release */,
+				00B568517F3A872B1A09A9BC /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		ED3B588A2F05265000F17293 /* Build configuration list for PBXNativeTarget "HagaBibleWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
