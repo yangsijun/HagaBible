@@ -45,6 +45,16 @@ extension DIContainer {
             fatalError("BibleDatabase 초기화에 실패했습니다: \(error)")
         }
         
+        do {
+            let userDataDB = try UserDataDatabaseService()
+            container.register(type: UserDataDatabaseService.self, component: userDataDB)
+            Logger.database.debug("UserDataDatabaseService registered successfully")
+        } catch {
+            fatalError("UserData database initialisation failed: \(error)")
+        }
+
+        container.register(type: BookmarkRepository.self, component: DefaultBookmarkRepository())
+
         container.register(type: ODRDataSource.self, component: ODRDataSource())
         container.register(type: FileSystemDataSource.self, component: FileSystemDataSource())
         container.register(type: BibleFileRepository.self, component: DefaultBibleFileRepository())
@@ -60,9 +70,10 @@ extension DIContainer {
 
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             appState: container.resolve(type: AppState.self),
-            bibleRepository: container.resolve(type: BibleRepository.self)
+            bibleRepository: container.resolve(type: BibleRepository.self),
+            bookmarkRepository: container.resolve(type: BookmarkRepository.self)
         ))
-        
+
         container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
@@ -134,12 +145,15 @@ extension DIContainer {
         container.register(type: BibleRepository.self, component: MockBibleRepository.shared)
         
         container.register(type: BibleActionService.self, component: BibleActionService())
-        
+
+        container.register(type: BookmarkRepository.self, component: MockBookmarkRepository())
+
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             appState: container.resolve(type: AppState.self),
-            bibleRepository: container.resolve(type: BibleRepository.self)
+            bibleRepository: container.resolve(type: BibleRepository.self),
+            bookmarkRepository: container.resolve(type: BookmarkRepository.self)
         ))
-        
+
         container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
             bibleRepository: container.resolve(type: BibleRepository.self)
         ))
