@@ -5,7 +5,7 @@
 //  Created by 양시준 on 7/4/25.
 //
 
-protocol BibleRepository {
+protocol BibleRepository: Sendable {
     func fetchBibleVersionList() async throws -> [BibleVersion]
     func fetchBibleBookList(versionCode: String) async throws -> [BibleBook]
     func fetchBibleChapterList(versionCode: String, bookCode: String) async throws -> [BibleChapter]

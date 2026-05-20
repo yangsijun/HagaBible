@@ -42,3 +42,13 @@ extension BibleVerse: Codable {
         case bookCode, bookName, bookOrder, chapter, verse, verseText, versionCode
     }
 }
+
+extension Sequence where Element == BibleVerse {
+    /// Joins the text of verses within `[startVerse, endVerse]`, in ascending verse order.
+    func combinedText(startVerse: Int, endVerse: Int) -> String {
+        filter { $0.verse >= startVerse && $0.verse <= endVerse }
+            .sorted { $0.verse < $1.verse }
+            .compactMap { $0.verseText }
+            .joined(separator: " ")
+    }
+}
