@@ -72,7 +72,7 @@ struct BookmarksList: View {
                     .frame(width: 4, height: 32)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(BibleReferenceFormatter.reference(book: bookmark.bookCode, for: bookmark))
+                    Text(BibleReferenceFormatter.reference(book: viewModel.displayBookName(for: bookmark), for: bookmark))
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)

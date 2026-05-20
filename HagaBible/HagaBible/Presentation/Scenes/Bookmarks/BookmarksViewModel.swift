@@ -19,6 +19,7 @@ final class BookmarksViewModel {
     var selectedBookCode: String?
     var keyword: String = ""
     var verseTexts: [UUID: String] = [:]
+    var bookNames: [UUID: String] = [:]
 
     var isBookmarkIndicatorEnabled: Bool {
         didSet {
@@ -83,11 +84,20 @@ final class BookmarksViewModel {
             Logger.repository.error("BookmarksViewModel load error: \(error.localizedDescription)")
             bookmarks = []
             verseTexts = [:]
+            bookNames = [:]
         }
     }
 
     private func preloadVerseTexts(for bookmarks: [Bookmark]) async {
-        verseTexts = await verseTextLoader.loadVerseTexts(for: bookmarks)
+        let loaded = await verseTextLoader.loadVerseTexts(for: bookmarks)
+        verseTexts = loaded.compactMapValues { $0.text.isEmpty ? nil : $0.text }
+        bookNames = loaded.compactMapValues { $0.bookName }
+    }
+
+    /// Display reference uses the book name from the current reading version
+    /// (e.g. "Psalm"/"시편"), falling back to the raw book code if unresolved.
+    func displayBookName(for bookmark: Bookmark) -> String {
+        bookNames[bookmark.id] ?? bookmark.bookCode
     }
 
     private func loadBookNameIndex() async {

@@ -42,8 +42,10 @@ struct VerseTextLoader {
         }
     }
 
-    /// Batch-loads combined verse text per bookmark, caching verses by chapter.
-    func loadVerseTexts(for bookmarks: [Bookmark]) async -> [UUID: String] {
+    /// Batch-loads combined verse text and the resolved book name per bookmark,
+    /// caching verses by chapter. The book name comes from the current reading
+    /// version so it matches the verse text shown alongside it.
+    func loadVerseTexts(for bookmarks: [Bookmark]) async -> [UUID: (bookName: String?, text: String)] {
         guard !bookmarks.isEmpty else { return [:] }
         let versionCode: String?
         do {
@@ -55,7 +57,7 @@ struct VerseTextLoader {
         guard let versionCode else { return [:] }
 
         var chapterCache: [String: [BibleVerse]] = [:]
-        var texts: [UUID: String] = [:]
+        var result: [UUID: (bookName: String?, text: String)] = [:]
         for bookmark in bookmarks {
             let key = "\(bookmark.bookCode)-\(bookmark.chapter)"
             let verses: [BibleVerse]
@@ -70,10 +72,8 @@ struct VerseTextLoader {
                 chapterCache[key] = verses
             }
             let combined = verses.combinedText(startVerse: bookmark.startVerse, endVerse: bookmark.endVerse)
-            if !combined.isEmpty {
-                texts[bookmark.id] = combined
-            }
+            result[bookmark.id] = (bookName: verses.first?.bookName, text: combined)
         }
-        return texts
+        return result
     }
 }
