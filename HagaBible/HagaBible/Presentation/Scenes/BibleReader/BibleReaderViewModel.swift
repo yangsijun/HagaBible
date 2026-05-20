@@ -18,7 +18,8 @@ class BibleReaderViewModel {
     var isLoadingSuccess: Bool?
     
     var bibleRepository: BibleRepository
-    
+    private let bookmarkRepository: BookmarkRepository
+
     var bibleVersion: BibleVersion? {
         get {
             appState.bibleReaderState.bibleVersion
@@ -63,12 +64,35 @@ class BibleReaderViewModel {
     var verseNum: Int
     
     var navigatedVerseNum: Int?
-    
-    init(appState: AppState, bibleRepository: BibleRepository) {
+
+    var bookmarksForCurrentChapter: [Bookmark] = [] {
+        didSet {
+            bookmarkStripesPerVerse = BookmarkStripeComputer.computeStripes(from: bookmarksForCurrentChapter)
+        }
+    }
+    var bookmarkStripesPerVerse: [Int: [BookmarkStripe?]] = [:]
+
+    var isBookmarkIndicatorEnabled: Bool {
+        didSet {
+            BookmarkPreferences.isIndicatorEnabled = isBookmarkIndicatorEnabled
+        }
+    }
+
+    func refreshIndicatorPreference() {
+        let value = BookmarkPreferences.isIndicatorEnabled
+        if isBookmarkIndicatorEnabled != value {
+            isBookmarkIndicatorEnabled = value
+        }
+    }
+
+    init(appState: AppState, bibleRepository: BibleRepository, bookmarkRepository: BookmarkRepository) {
         self.appState = appState
-        
+
         self.bibleRepository = bibleRepository
-        
+        self.bookmarkRepository = bookmarkRepository
+
+        self.isBookmarkIndicatorEnabled = BookmarkPreferences.isIndicatorEnabled
+
         self.versionCode = appState.bibleReaderState.bibleVersion?.versionCode ?? "WEBBE"
         self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? "GEN"
         self.chapterNum = appState.bibleReaderState.bibleChapter?.chapter ?? 1
@@ -132,6 +156,17 @@ class BibleReaderViewModel {
             bibleVerseList = try await bibleRepository.fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum)
         } catch {
             Logger.repository.error("Error fetching verses: \(error.localizedDescription)")
+        }
+        await fetchBookmarksForCurrentChapter()
+    }
+
+    func fetchBookmarksForCurrentChapter() async {
+        guard let bookOrder = bibleBook?.bookOrder else { return }
+        do {
+            bookmarksForCurrentChapter = try await bookmarkRepository.fetchForChapter(bookOrder: bookOrder, chapter: chapterNum)
+        } catch {
+            Logger.repository.error("Error fetching bookmarks for chapter: \(error.localizedDescription)")
+            bookmarksForCurrentChapter = []
         }
     }
     

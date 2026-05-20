@@ -10,15 +10,15 @@ import SwiftUI
 struct BibleVerseView: View {
     let verseNumber: Int
     let verseText: String
-    
+
     private var font: UIFont
     private var textColor: UIColor
     private var verseNumberColor: UIColor
     private var alignment: NSTextAlignment
     private var lineSpacing: CGFloat?
-    
+
     private var verseFontWidth: Font.Width
-    
+
     init(
         verseNumber: Int,
         verseText: String,
@@ -35,7 +35,7 @@ struct BibleVerseView: View {
         self.verseNumberColor = verseNumberColor
         self.alignment = alignment
         self.lineSpacing = lineSpacing
-        
+
         if verseNumber < 10 {
             self.verseFontWidth = .standard
         } else if verseNumber < 100 {
@@ -44,7 +44,7 @@ struct BibleVerseView: View {
             self.verseFontWidth = .compressed
         }
     }
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Text("\(verseNumber)")

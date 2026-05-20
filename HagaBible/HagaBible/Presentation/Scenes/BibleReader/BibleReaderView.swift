@@ -7,6 +7,15 @@
 
 import SwiftUI
 
+private struct AddBookmarkRequest: Identifiable, Equatable {
+    let id = UUID()
+    let bookCode: String
+    let bookOrder: Int
+    let chapter: Int
+    let startVerse: Int
+    let endVerse: Int
+}
+
 struct BibleReaderView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass: UserInterfaceSizeClass?
     @State private var appState: AppState = DIContainer.shared.resolve(type: AppState.self)
@@ -14,6 +23,8 @@ struct BibleReaderView: View {
     @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
+    @State private var addBookmarkRequest: AddBookmarkRequest?
+    @State private var showBookmarks: Bool = false
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
@@ -32,6 +43,10 @@ struct BibleReaderView: View {
                         theme: fontThemeManager.theme,
                         highlightedVerseNum: viewModel.navigatedVerseNum,
                         ttsCurrentVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
+                        bookmarkStripesPerVerse: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
+                        onAddBookmark: { start, end in
+                            requestAddBookmark(start: start, end: end)
+                        },
                         selectStartIndex: $selectStartIndex,
                         selectEndIndex: $selectEndIndex
                     )
@@ -94,7 +109,12 @@ struct BibleReaderView: View {
                 BibleReaderActionBar(
                     selectStartIndex: $selectStartIndex,
                     selectEndIndex: $selectEndIndex,
-                    bibleVerseList: viewModel.bibleVerseList
+                    bibleVerseList: viewModel.bibleVerseList,
+                    onBookmarkTapped: {
+                        guard let start = selectStartIndex else { return }
+                        let end = selectEndIndex ?? start
+                        requestAddBookmark(start: start, end: end)
+                    }
                 )
                 .ignoresSafeArea(edges: .horizontal)
             }
@@ -106,7 +126,8 @@ struct BibleReaderView: View {
                     showBibleNavigation: $showBibleNavigation,
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
-                    ttsPlaybackState: ttsViewModel.playbackState
+                    ttsPlaybackState: ttsViewModel.playbackState,
+                    onBookmarksTapped: { showBookmarks = true }
                 )
             }
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -137,6 +158,37 @@ struct BibleReaderView: View {
                             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
                     }
             }
+            .sheet(item: $addBookmarkRequest) { request in
+                AddBookmarkSheet(
+                    bookCode: request.bookCode,
+                    bookOrder: request.bookOrder,
+                    chapter: request.chapter,
+                    startVerse: request.startVerse,
+                    endVerse: request.endVerse,
+                    onSaved: {
+                        selectStartIndex = nil
+                        selectEndIndex = nil
+                        Task { await viewModel.fetchBookmarksForCurrentChapter() }
+                    }
+                )
+            }
+            .sheet(isPresented: $showBookmarks, onDismiss: {
+                viewModel.refreshIndicatorPreference()
+                Task { await viewModel.fetchBookmarksForCurrentChapter() }
+            }) {
+                BookmarksView(onNavigate: { bookCode, chapter, verseNum in
+                    showBookmarks = false
+                    Task {
+                        viewModel.navigatedVerseNum = verseNum
+                        await viewModel.applyBibleSelectionAsync(
+                            bookCode: bookCode,
+                            chapterNum: chapter,
+                            verseNum: verseNum
+                        )
+                        viewModel.bibleNavigationUpdateTrigger.toggle()
+                    }
+                })
+            }
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -163,6 +215,16 @@ struct BibleReaderView: View {
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
         }
+    }
+
+    private func requestAddBookmark(start: Int, end: Int) {
+        addBookmarkRequest = AddBookmarkRequest(
+            bookCode: viewModel.bookCode,
+            bookOrder: viewModel.bibleBook?.bookOrder ?? 1,
+            chapter: viewModel.chapterNum,
+            startVerse: start + 1,
+            endVerse: end + 1
+        )
     }
 
     // MARK: - TTS Methods

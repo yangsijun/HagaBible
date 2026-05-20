@@ -15,6 +15,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
     @Binding var showFontThemeConfig: Bool
     let onListenTapped: () -> Void
     let ttsPlaybackState: TTSPlaybackState
+    let onBookmarksTapped: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
@@ -36,7 +37,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
         ToolbarItem {
             BibleReaderToolbarMenuButton(
                 menuItems: [
-                    MenuItem(title: "Bookmarks", systemImage: "bookmark", action: {}),
+                    MenuItem(title: "Bookmarks", systemImage: "bookmark", action: onBookmarksTapped),
                     MenuItem(title: "Font & Themes", systemImage: "textformat.size", action: {
                         showFontThemeConfig.toggle()
                     })
@@ -67,7 +68,8 @@ struct MenuItem: Identifiable {
                     showBibleNavigation: .constant(false),
                     showFontThemeConfig: .constant(false),
                     onListenTapped: {},
-                    ttsPlaybackState: .idle
+                    ttsPlaybackState: .idle,
+                    onBookmarksTapped: {}
                 )
             }
     }

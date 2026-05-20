@@ -14,6 +14,8 @@ struct BibleVerseListView: View {
     var theme: Theme
     var highlightedVerseNum: Int?
     var ttsCurrentVerseIndex: Int?
+    var bookmarkStripesPerVerse: [Int: [BookmarkStripe?]] = [:]
+    var onAddBookmark: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
 
     var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
 
@@ -25,7 +27,7 @@ struct BibleVerseListView: View {
             Color.clear
                 .frame(height: 0)
                 .id(0)
-            LazyVStack(spacing: CGFloat(fontConfiguration.lineSpacing)) {
+            LazyVStack(spacing: 0) {
                 ForEach(0..<verses.count, id: \.self) { index in
                     verseRow(at: index)
                 }
@@ -34,28 +36,40 @@ struct BibleVerseListView: View {
         }
     }
 
+    private static let verseRowInnerPadding: CGFloat = 8
+
     @ViewBuilder
     private func verseRow(at index: Int) -> some View {
+        let stripes = bookmarkStripesPerVerse[index + 1] ?? []
+        let spacing = CGFloat(fontConfiguration.lineSpacing)
+        let isLast = index == verses.count - 1
+        let bottomGap: CGFloat = isLast ? 0 : spacing
         makeVerseView(at: index)
             .id(index + 1)
-            .padding(8)
-            .padding(.horizontal, 8)
+            .padding(Self.verseRowInnerPadding)
+            .padding(.horizontal, Self.verseRowInnerPadding)
             .background(highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear)
             .background(ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear)
             .background(isSelected(index) ? Color.accentColor.opacity(0.25) : .clear)
             .contentShape(.rect)
             .contextMenu {
                 Button(action: {
+                    let (start, end) = getSelectIndexFromContextMenuIndex(index)
+                    onAddBookmark(start, end)
+                }) {
+                    Label("Add bookmark", systemImage: "bookmark")
+                }
+                Button(action: {
                     UIPasteboard.general.string = getVerseTextsFromContextMenuIndex(index)
                     selectStartIndex = nil
                     selectEndIndex = nil
                 }) {
-                    Label("클립보드에 복사", systemImage: "doc.on.doc")
+                    Label("Copy to clipboard", systemImage: "doc.on.doc")
                 }
                 ShareLink(
                     item: getVerseTextsFromContextMenuIndex(index)
                 ) {
-                    Label("공유하기", systemImage: "square.and.arrow.up")
+                    Label("Share", systemImage: "square.and.arrow.up")
                 }
             } preview: {
                 contextMenuPreview(for: index)
@@ -63,11 +77,40 @@ struct BibleVerseListView: View {
             .onTapGesture {
                 handleSelectVerse(index)
             }
+            .padding(.bottom, bottomGap)
+            .overlay(alignment: .leading) {
+                if !stripes.isEmpty {
+                    HStack(spacing: 1) {
+                        ForEach(Array(stripes.prefix(BookmarkStripeComputer.columnLimit).enumerated()), id: \.offset) { _, stripe in
+                            stripeView(stripe, bottomGap: bottomGap)
+                        }
+                    }
+                    .allowsHitTesting(false)
+                }
+            }
+    }
+
+    @ViewBuilder
+    private func stripeView(_ stripe: BookmarkStripe?, bottomGap: CGFloat) -> some View {
+        if let stripe = stripe {
+            let topInset: CGFloat = stripe.extendsUp ? 0 : Self.verseRowInnerPadding
+            let bottomInset: CGFloat = stripe.extendsDown ? 0 : (Self.verseRowInnerPadding + bottomGap)
+            Rectangle()
+                .fill(stripe.color.swiftUIColor)
+                .opacity(0.8)
+                .frame(width: 3)
+                .padding(.top, topInset)
+                .padding(.bottom, bottomInset)
+        } else {
+            Color.clear
+                .frame(width: 3)
+        }
     }
 
     private func makeVerseView(at index: Int) -> BibleVerseView {
-        BibleVerseView(
-            verseNumber: index + 1,
+        let verseNumber = index + 1
+        return BibleVerseView(
+            verseNumber: verseNumber,
             verseText: verses[index].verseText ?? "",
             font: getUIFontFromFontConfiguration(fontConfiguration, language: language) ?? .systemFont(ofSize: CGFloat(fontConfiguration.size)),
             textColor: theme.textColor,
@@ -175,5 +218,51 @@ struct BibleVerseListView: View {
         ttsCurrentVerseIndex: nil,
         selectStartIndex: .constant(2),
         selectEndIndex: .constant(2)
+    )
+}
+
+#Preview("Bookmark stripes") {
+    DIContainer.registerForPreview()
+
+    let verses: [BibleVerse] = [
+        BibleVerse(bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: 1, verseText: "태초에 하나님이 천지를 창조하시니라", versionCode: "KRV"),
+        BibleVerse(bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: 2, verseText: "땅이 혼돈하고 공허하며 흑암이 깊음 위에 있고 하나님의 신은 수면에 운행하시니라", versionCode: "KRV"),
+        BibleVerse(bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: 3, verseText: "하나님이 가라사대 빛이 있으라 하시매 빛이 있었고", versionCode: "KRV"),
+        BibleVerse(bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: 4, verseText: "그 빛이 하나님의 보시기에 좋았더라 하나님이 빛과 어두움을 나누사", versionCode: "KRV"),
+    ]
+
+    // Yellow spans v1-2 in column 0; pink reuses column 0 at v3 once yellow ends.
+    // Blue is a single at v2; green spans v2-4. Stripe layout is derived by the
+    // real algorithm so the preview stays in sync with production behavior.
+    let bookmarks: [Bookmark] = [
+        .previewSample(bookCode: "GEN", bookOrder: 1, chapter: 1, startVerse: 1, endVerse: 2, color: .yellow),
+        .previewSample(bookCode: "GEN", bookOrder: 1, chapter: 1, startVerse: 2, color: .blue),
+        .previewSample(bookCode: "GEN", bookOrder: 1, chapter: 1, startVerse: 2, endVerse: 4, color: .green),
+        .previewSample(bookCode: "GEN", bookOrder: 1, chapter: 1, startVerse: 3, color: .pink),
+    ]
+    let stripesPerVerse = BookmarkStripeComputer.computeStripes(from: bookmarks)
+
+    return BibleVerseListView(
+        verses: verses,
+        language: "Korean",
+        fontConfiguration: FontConfiguration(
+            type: [
+                "English": .sans,
+                "Korean": .serif,
+            ],
+            style: .regular,
+            size: 17,
+            alignment: [
+                "English": .natural,
+                "Korean": .justified
+            ],
+            lineSpacing: 8
+        ),
+        theme: Theme.system,
+        highlightedVerseNum: nil,
+        ttsCurrentVerseIndex: nil,
+        bookmarkStripesPerVerse: stripesPerVerse,
+        selectStartIndex: .constant(nil),
+        selectEndIndex: .constant(nil)
     )
 }
