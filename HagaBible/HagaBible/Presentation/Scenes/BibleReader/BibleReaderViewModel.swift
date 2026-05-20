@@ -72,17 +72,11 @@ class BibleReaderViewModel {
     }
     var bookmarkStripesPerVerse: [Int: [BookmarkStripe?]] = [:]
 
+    /// Backed by shared AppState so toggling it anywhere (e.g. the bookmarks
+    /// sheet) updates the reader live, not just on sheet dismiss.
     var isBookmarkIndicatorEnabled: Bool {
-        didSet {
-            BookmarkPreferences.isIndicatorEnabled = isBookmarkIndicatorEnabled
-        }
-    }
-
-    func refreshIndicatorPreference() {
-        let value = BookmarkPreferences.isIndicatorEnabled
-        if isBookmarkIndicatorEnabled != value {
-            isBookmarkIndicatorEnabled = value
-        }
+        get { appState.bookmarkIndicatorEnabled }
+        set { appState.bookmarkIndicatorEnabled = newValue }
     }
 
     init(appState: AppState, bibleRepository: BibleRepository, bookmarkRepository: BookmarkRepository) {
@@ -90,8 +84,6 @@ class BibleReaderViewModel {
 
         self.bibleRepository = bibleRepository
         self.bookmarkRepository = bookmarkRepository
-
-        self.isBookmarkIndicatorEnabled = BookmarkPreferences.isIndicatorEnabled
 
         self.versionCode = appState.bibleReaderState.bibleVersion?.versionCode ?? "WEBBE"
         self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? "GEN"

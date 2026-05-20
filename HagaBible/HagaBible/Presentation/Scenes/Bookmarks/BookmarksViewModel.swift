@@ -21,12 +21,14 @@ final class BookmarksViewModel {
     var verseTexts: [UUID: String] = [:]
     var bookNames: [UUID: String] = [:]
 
+    /// Backed by shared AppState so a toggle here reflects live in the reader,
+    /// not just after the bookmarks sheet is dismissed.
     var isBookmarkIndicatorEnabled: Bool {
-        didSet {
-            BookmarkPreferences.isIndicatorEnabled = isBookmarkIndicatorEnabled
-        }
+        get { appState.bookmarkIndicatorEnabled }
+        set { appState.bookmarkIndicatorEnabled = newValue }
     }
 
+    private let appState: AppState
     private let bookmarkRepository: any BookmarkRepository
     private let bibleRepository: any BibleRepository
     private let verseTextLoader: VerseTextLoader
@@ -38,10 +40,10 @@ final class BookmarksViewModel {
         bookmarkRepository: any BookmarkRepository,
         bibleRepository: any BibleRepository
     ) {
+        self.appState = appState
         self.bookmarkRepository = bookmarkRepository
         self.bibleRepository = bibleRepository
         self.verseTextLoader = VerseTextLoader(appState: appState, bibleRepository: bibleRepository)
-        self.isBookmarkIndicatorEnabled = BookmarkPreferences.isIndicatorEnabled
     }
 
     var hasActiveFilters: Bool {

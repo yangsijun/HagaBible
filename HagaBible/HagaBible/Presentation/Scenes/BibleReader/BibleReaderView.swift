@@ -173,7 +173,6 @@ struct BibleReaderView: View {
                 )
             }
             .sheet(isPresented: $showBookmarks, onDismiss: {
-                viewModel.refreshIndicatorPreference()
                 Task { await viewModel.fetchBookmarksForCurrentChapter() }
             }) {
                 BookmarksView(onNavigate: { bookCode, chapter, verseNum in
