@@ -69,6 +69,16 @@ final class UserDataDatabaseService {
             """)
         }
 
+        // Sync-readiness: tombstone for delete propagation, user_id for per-user
+        // scoping (nullable until auth lands), and an updated_at index for delta sync.
+        migrator.registerMigration("v2_add_bookmark_sync_columns") { db in
+            try db.execute(sql: """
+                ALTER TABLE bookmarks ADD COLUMN deleted_at REAL;
+                ALTER TABLE bookmarks ADD COLUMN user_id TEXT;
+                CREATE INDEX idx_bookmarks_updated_at ON bookmarks(updated_at);
+            """)
+        }
+
         return migrator
     }
 }

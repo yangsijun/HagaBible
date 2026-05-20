@@ -75,6 +75,40 @@ struct UserDataDatabaseServiceTests {
         #expect(indexNames.contains("idx_bookmarks_created_at"))
     }
 
+    @Test("v2 migration adds the sync columns deleted_at and user_id")
+    func test_migration_v2_addsSyncColumns() throws {
+        let url = makeTempURL()
+        defer { cleanup(url) }
+
+        let service = try UserDataDatabaseService(databaseFileURL: url)
+        let pool = try #require(service.dbPool)
+
+        let columns = try pool.read { db -> [String] in
+            try Row.fetchAll(db, sql: "PRAGMA table_info(bookmarks)").map { row in row["name"] }
+        }
+
+        #expect(columns.contains("deleted_at"))
+        #expect(columns.contains("user_id"))
+    }
+
+    @Test("v2 migration adds the updated_at index")
+    func test_migration_v2_addsUpdatedAtIndex() throws {
+        let url = makeTempURL()
+        defer { cleanup(url) }
+
+        let service = try UserDataDatabaseService(databaseFileURL: url)
+        let pool = try #require(service.dbPool)
+
+        let indexNames = try pool.read { db in
+            try String.fetchAll(
+                db,
+                sql: "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'bookmarks'"
+            )
+        }
+
+        #expect(indexNames.contains("idx_bookmarks_updated_at"))
+    }
+
     @Test("re-initialising at the same path preserves previously inserted rows")
     func test_repeated_init_preservesData() throws {
         let url = makeTempURL()
@@ -96,6 +130,11 @@ struct UserDataDatabaseServiceTests {
                     arguments: [id]
                 )
             }
+            // Fully close the first connection (checkpoints the WAL into the main
+            // database file) before re-opening. Otherwise two pools race for the
+            // same file and the second init's migration surfaces "database is
+            // locked" while reading the schema.
+            try pool.close()
         }
 
         // Second init at the same path: row must still be there

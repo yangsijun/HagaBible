@@ -54,13 +54,16 @@ final class DefaultBookmarkRepository: BookmarkRepository {
             return
         }
         do {
+            // Soft delete: keep the row as a tombstone so the deletion can be
+            // propagated during sync. `updated_at` is bumped so delta sync picks it up.
+            let now = Date().timeIntervalSince1970
             try await pool.write { db in
                 try db.execute(
-                    sql: "DELETE FROM bookmarks WHERE id = ?",
-                    arguments: [id.uuidString]
+                    sql: "UPDATE bookmarks SET deleted_at = ?, updated_at = ? WHERE id = ?",
+                    arguments: [now, now, id.uuidString]
                 )
             }
-            Logger.repository.debug("Bookmark deleted: \(id.uuidString)")
+            Logger.repository.debug("Bookmark soft-deleted: \(id.uuidString)")
         } catch {
             Logger.repository.error("Bookmark write failed: \(error.localizedDescription)")
             throw error
@@ -80,7 +83,7 @@ final class DefaultBookmarkRepository: BookmarkRepository {
         case .biblicalOrder:
             orderClause = "ORDER BY book_order ASC, chapter ASC, start_verse ASC"
         }
-        let sql = "SELECT * FROM bookmarks \(orderClause)"
+        let sql = "SELECT * FROM bookmarks WHERE deleted_at IS NULL \(orderClause)"
         return try await pool.read { db in
             let records = try BookmarkRecord.fetchAll(db, sql: sql, arguments: [])
             return records.map { self.toEntity($0) }
@@ -93,7 +96,7 @@ final class DefaultBookmarkRepository: BookmarkRepository {
         guard let pool = DIContainer.shared.resolve(type: UserDataDatabaseService.self).dbPool else {
             return []
         }
-        let sql = "SELECT * FROM bookmarks WHERE book_order = ? AND chapter = ?"
+        let sql = "SELECT * FROM bookmarks WHERE book_order = ? AND chapter = ? AND deleted_at IS NULL"
         return try await pool.read { db in
             let records = try BookmarkRecord.fetchAll(db, sql: sql, arguments: [bookOrder, chapter])
             return records.map { self.toEntity($0) }
@@ -107,7 +110,7 @@ final class DefaultBookmarkRepository: BookmarkRepository {
             return []
         }
 
-        var conditions: [String] = []
+        var conditions: [String] = ["deleted_at IS NULL"]
         var arguments: [DatabaseValueConvertible] = []
 
         if let color = color {
@@ -123,7 +126,7 @@ final class DefaultBookmarkRepository: BookmarkRepository {
             arguments.append(keyword)
         }
 
-        let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
+        let whereClause = "WHERE " + conditions.joined(separator: " AND ")
         let sql = "SELECT * FROM bookmarks \(whereClause) ORDER BY created_at DESC"
         let stmtArgs = StatementArguments(arguments) ?? StatementArguments()
 
@@ -146,7 +149,12 @@ final class DefaultBookmarkRepository: BookmarkRepository {
             color: bookmark.color.rawValue,
             notes: bookmark.notes,
             createdAt: bookmark.createdAt.timeIntervalSince1970,
-            updatedAt: bookmark.updatedAt.timeIntervalSince1970
+            updatedAt: bookmark.updatedAt.timeIntervalSince1970,
+            // Domain `Bookmark` carries neither field; writes from the domain are
+            // always "live" and unscoped. A server-assigned user_id is only set by
+            // the (future) sync layer, which must not round-trip through `toRecord`.
+            deletedAt: nil,
+            userId: nil
         )
     }
 

@@ -5,6 +5,7 @@
 
 import Testing
 import Foundation
+import GRDB
 @testable import HagaBible
 
 // Tests are serialised because they share DIContainer.shared (singleton).
@@ -230,6 +231,32 @@ struct DefaultBookmarkRepositoryTests {
 
         let all = try await repo.fetchAll(sortedBy: .createdAtDesc)
         #expect(all.isEmpty)
+    }
+
+    @Test("delete is a soft delete: row remains as a tombstone but is excluded from every read path")
+    func test_delete_isSoftDelete() async throws {
+        let (repo, url) = try makeIsolatedRepo()
+        defer { cleanup(url) }
+
+        let bookmark = makeBookmark(bookCode: "GEN", bookOrder: 1, chapter: 1, notes: "to delete")
+        try await repo.insert(bookmark)
+        try await repo.delete(id: bookmark.id)
+
+        // Excluded from all read paths
+        #expect(try await repo.fetchAll(sortedBy: .createdAtDesc).isEmpty)
+        #expect(try await repo.fetchForChapter(bookOrder: 1, chapter: 1).isEmpty)
+        #expect(try await repo.fetchFiltered(color: nil, bookCode: "GEN", keyword: "to delete").isEmpty)
+
+        // But the row physically remains with deleted_at populated (tombstone for sync)
+        let pool = try #require(DIContainer.shared.resolve(type: UserDataDatabaseService.self).dbPool)
+        let tombstoneCount = try await pool.read { db in
+            try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM bookmarks WHERE id = ? AND deleted_at IS NOT NULL",
+                arguments: [bookmark.id.uuidString]
+            ) ?? 0
+        }
+        #expect(tombstoneCount == 1)
     }
 
     @Test("two bookmarks with the same verse range but different colors are both stored")

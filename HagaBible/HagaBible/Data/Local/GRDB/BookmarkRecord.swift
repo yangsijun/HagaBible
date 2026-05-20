@@ -20,6 +20,9 @@ struct BookmarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
     let notes: String?
     let createdAt: Double
     let updatedAt: Double
+    // Sync-only fields — not surfaced on the domain `Bookmark`.
+    let deletedAt: Double?
+    let userId: String?
 
     private enum CodingKeys: String, CodingKey {
         case id = "id"
@@ -32,5 +35,7 @@ struct BookmarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
         case notes = "notes"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case deletedAt = "deleted_at"
+        case userId = "user_id"
     }
 }
