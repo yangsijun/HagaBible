@@ -18,6 +18,12 @@
 		ED3B587C2F05265000F17293 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED3B587B2F05265000F17293 /* SwiftUI.framework */; };
 		ED3B58892F05265000F17293 /* HagaBibleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EDADAA8D2E1F365000CFCBE0 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = EDADAA8C2E1F365000CFCBE0 /* GRDB */; };
+		0DE0B11D0000000000000001 /* Bible_KJV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000001 /* Bible_KJV.sqlite */; settings = {ASSET_TAGS = (Bible_KJV_2, ); }; };
+		0DE0B11D0000000000000002 /* Bible_KRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000002 /* Bible_KRV.sqlite */; settings = {ASSET_TAGS = (Bible_KRV_2, ); }; };
+		0DE0B11D0000000000000003 /* Bible_NIV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000003 /* Bible_NIV.sqlite */; settings = {ASSET_TAGS = (Bible_NIV_2, ); }; };
+		0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */; settings = {ASSET_TAGS = (Bible_NKRV_2, ); }; };
+		0DE0B11D0000000000000005 /* Bible_WEB.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000005 /* Bible_WEB.sqlite */; settings = {ASSET_TAGS = (Bible_WEB_2, ); }; };
+		0DE0B11D0000000000000006 /* Bible_WEBBE.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */; settings = {ASSET_TAGS = (Bible_WEBBE_2, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +58,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0DE0F11E0000000000000001 /* Bible_KJV.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_KJV.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_KJV.sqlite; sourceTree = SOURCE_ROOT; };
+		0DE0F11E0000000000000002 /* Bible_KRV.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_KRV.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_KRV.sqlite; sourceTree = SOURCE_ROOT; };
+		0DE0F11E0000000000000003 /* Bible_NIV.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_NIV.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_NIV.sqlite; sourceTree = SOURCE_ROOT; };
+		0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_NKRV.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_NKRV.sqlite; sourceTree = SOURCE_ROOT; };
+		0DE0F11E0000000000000005 /* Bible_WEB.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_WEB.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_WEB.sqlite; sourceTree = SOURCE_ROOT; };
+		0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_WEBBE.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite; sourceTree = SOURCE_ROOT; };
 		058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TTSPlaybackManagerNowPlayingSyncTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataDatabaseServiceTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultBookmarkRepositoryTests.swift; sourceTree = "<group>"; };
@@ -85,6 +97,12 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Data/Local/GRDB/SQLite/Bible_KJV.sqlite,
+				Data/Local/GRDB/SQLite/Bible_KRV.sqlite,
+				Data/Local/GRDB/SQLite/Bible_NIV.sqlite,
+				Data/Local/GRDB/SQLite/Bible_NKRV.sqlite,
+				Data/Local/GRDB/SQLite/Bible_WEB.sqlite,
+				Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite,
 			);
 			target = ED6A82092E15339A003E0D6E /* HagaBible */;
 		};
@@ -175,10 +193,24 @@
 			children = (
 				ED6A820C2E15339A003E0D6E /* HagaBible */,
 				ED3B587D2F05265000F17293 /* HagaBibleWidget */,
+				0DE0610000000000000000A1 /* ODR Bibles */,
 				ED3B58782F05264F00F17293 /* Frameworks */,
 				ED6A820B2E15339A003E0D6E /* Products */,
 				7ADA05789BB77868C1A1FF88 /* HagaBibleTests */,
 			);
+			sourceTree = "<group>";
+		};
+		0DE0610000000000000000A1 /* ODR Bibles */ = {
+			isa = PBXGroup;
+			children = (
+				0DE0F11E0000000000000001 /* Bible_KJV.sqlite */,
+				0DE0F11E0000000000000002 /* Bible_KRV.sqlite */,
+				0DE0F11E0000000000000003 /* Bible_NIV.sqlite */,
+				0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */,
+				0DE0F11E0000000000000005 /* Bible_WEB.sqlite */,
+				0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */,
+			);
+			name = "ODR Bibles";
 			sourceTree = "<group>";
 		};
 		ED6A820B2E15339A003E0D6E /* Products */ = {
@@ -340,6 +372,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0DE0B11D0000000000000001 /* Bible_KJV.sqlite in Resources */,
+				0DE0B11D0000000000000002 /* Bible_KRV.sqlite in Resources */,
+				0DE0B11D0000000000000003 /* Bible_NIV.sqlite in Resources */,
+				0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */,
+				0DE0B11D0000000000000005 /* Bible_WEB.sqlite in Resources */,
+				0DE0B11D0000000000000006 /* Bible_WEBBE.sqlite in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
