@@ -6,5 +6,5 @@
 //
 
 enum TabIdentifier {
-    case bibleReader, recordings, search
+    case bibleReader, library, recordings, search
 }

@@ -40,6 +40,10 @@ struct RootView: View {
                 BibleReaderView()
                     .environment(\.horizontalSizeClass, horizontalSizeClass)
             }
+            Tab("Library", systemImage: "books.vertical.fill", value: .library) {
+                LibraryView()
+                    .environment(\.horizontalSizeClass, horizontalSizeClass)
+            }
             Tab("Recordings", systemImage: "waveform", value: .recordings) {
                 RecordingsView()
                     .environment(\.horizontalSizeClass, horizontalSizeClass)

@@ -24,7 +24,6 @@ struct BibleReaderView: View {
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
     @State private var addBookmarkRequest: AddBookmarkRequest?
-    @State private var showBookmarks: Bool = false
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
@@ -127,7 +126,7 @@ struct BibleReaderView: View {
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
                     ttsPlaybackState: ttsViewModel.playbackState,
-                    onBookmarksTapped: { showBookmarks = true }
+                    onBookmarksTapped: { appState.selectedTab = .library }
                 )
             }
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -172,21 +171,12 @@ struct BibleReaderView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showBookmarks, onDismiss: {
+        }
+        .onChange(of: appState.selectedTab) { _, tab in
+            // Returning from the Library tab (where bookmarks can be added/edited/
+            // deleted) — refresh the reader's per-chapter stripes.
+            if tab == .bibleReader {
                 Task { await viewModel.fetchBookmarksForCurrentChapter() }
-            }) {
-                BookmarksView(onNavigate: { bookCode, chapter, verseNum in
-                    showBookmarks = false
-                    Task {
-                        viewModel.navigatedVerseNum = verseNum
-                        await viewModel.applyBibleSelectionAsync(
-                            bookCode: bookCode,
-                            chapterNum: chapter,
-                            verseNum: verseNum
-                        )
-                        viewModel.bibleNavigationUpdateTrigger.toggle()
-                    }
-                })
             }
         }
         .onAppear {

@@ -8,8 +8,6 @@
 import SwiftUI
 
 struct BookmarksList: View {
-    @Environment(\.dismiss) private var dismiss
-
     let viewModel: BookmarksViewModel
     let onNavigate: (_ bookCode: String, _ chapter: Int, _ verseNum: Int) -> Void
     @Binding var editingBookmark: Bookmark?
@@ -61,10 +59,7 @@ struct BookmarksList: View {
 
     private func bookmarkRow(_ bookmark: Bookmark) -> some View {
         Button {
-            dismiss()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                onNavigate(bookmark.bookCode, bookmark.chapter, bookmark.startVerse)
-            }
+            onNavigate(bookmark.bookCode, bookmark.chapter, bookmark.startVerse)
         } label: {
             HStack(spacing: 12) {
                 Capsule()

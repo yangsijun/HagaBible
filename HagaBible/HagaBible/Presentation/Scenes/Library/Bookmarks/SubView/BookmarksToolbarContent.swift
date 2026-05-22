@@ -9,16 +9,8 @@ import SwiftUI
 
 struct BookmarksToolbarContent: ToolbarContent {
     let viewModel: BookmarksViewModel
-    let onClose: () -> Void
 
     var body: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button {
-                onClose()
-            } label: {
-                Image(systemName: "xmark")
-            }
-        }
         ToolbarItem(placement: .topBarTrailing) {
             Button {
                 viewModel.toggleIndicator()
@@ -43,7 +35,7 @@ private struct BookmarksToolbarPreviewHost: View {
                 .navigationTitle("Bookmarks")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    BookmarksToolbarContent(viewModel: viewModel, onClose: {})
+                    BookmarksToolbarContent(viewModel: viewModel)
                 }
         }
     }

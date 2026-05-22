@@ -21,6 +21,10 @@ final class BookmarksViewModel {
     var verseTexts: [UUID: String] = [:]
     var bookNames: [UUID: String] = [:]
 
+    /// True once the first load finishes. Lets the embedding view load on first
+    /// appear only, instead of re-running the heavy reload on every segment switch.
+    private(set) var hasLoaded = false
+
     /// Backed by shared AppState so a toggle here reflects live in the reader,
     /// not just after the bookmarks sheet is dismissed.
     var isBookmarkIndicatorEnabled: Bool {
@@ -88,6 +92,7 @@ final class BookmarksViewModel {
             verseTexts = [:]
             bookNames = [:]
         }
+        hasLoaded = true
     }
 
     private func preloadVerseTexts(for bookmarks: [Bookmark]) async {
