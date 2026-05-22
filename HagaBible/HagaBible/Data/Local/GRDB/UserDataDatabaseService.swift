@@ -79,6 +79,30 @@ final class UserDataDatabaseService {
             """)
         }
 
+        // Reading checklist (성경읽기표): one row per (book_code, chapter). New table,
+        // so the sync columns (deleted_at, user_id) are included from the start —
+        // same sync contract as bookmarks. The identity is `book_code` (version- and
+        // platform-independent), matching the bookmarks table which also carries both
+        // book_code and book_order; book_order is denormalized for biblical-order
+        // sorting. updated_at index for delta sync.
+        migrator.registerMigration("v3_create_reading_marks") { db in
+            try db.execute(sql: """
+                CREATE TABLE reading_marks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    book_code TEXT NOT NULL,
+                    book_order INTEGER NOT NULL,
+                    chapter INTEGER NOT NULL,
+                    is_read INTEGER NOT NULL DEFAULT 0,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    deleted_at REAL,
+                    user_id TEXT
+                );
+                CREATE UNIQUE INDEX idx_reading_marks_book_chapter ON reading_marks(book_code, chapter);
+                CREATE INDEX idx_reading_marks_updated_at ON reading_marks(updated_at);
+            """)
+        }
+
         return migrator
     }
 }

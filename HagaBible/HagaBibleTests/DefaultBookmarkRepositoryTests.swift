@@ -9,9 +9,12 @@ import GRDB
 @testable import HagaBible
 
 // Tests are serialised because they share DIContainer.shared (singleton).
-// Serialisation prevents cross-test DI state pollution.
-@Suite("DefaultBookmarkRepository Tests", .serialized)
-struct DefaultBookmarkRepositoryTests {
+// Serialisation prevents cross-test DI state pollution. Nested under
+// UserDataSuites so this suite also serializes against other DIContainer-using
+// suites (e.g. reading marks), not just within itself.
+extension UserDataSuites {
+    @Suite("DefaultBookmarkRepository Tests", .serialized)
+    struct DefaultBookmarkRepositoryTests {
 
     // MARK: - Setup helpers
 
@@ -300,5 +303,6 @@ struct DefaultBookmarkRepositoryTests {
         }
 
         #expect(didThrow, "Expected insert of duplicate primary key to throw, but it did not")
+    }
     }
 }

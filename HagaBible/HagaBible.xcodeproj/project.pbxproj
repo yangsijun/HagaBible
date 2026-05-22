@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AA11BB22CC33DD44EE55FF01 /* UserDataDatabaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */; };
 		AA11BB22CC33DD44EE55FF03 /* DefaultBookmarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */; };
+		AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */; };
 		B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */; };
 		DC4A9213679E53FEE00B337F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3AB6D737DA3C1366E4C3116 /* Foundation.framework */; };
 		DFA4A2FEEB7BE5EF8EEA11AF /* TTSPlaybackManagerNowPlayingSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */; };
@@ -53,6 +54,7 @@
 		058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TTSPlaybackManagerNowPlayingSyncTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataDatabaseServiceTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultBookmarkRepositoryTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultReadingMarkRepositoryTests.swift; sourceTree = "<group>"; };
 		CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HagaBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpyNowPlayingInfoCenter.swift; sourceTree = "<group>"; };
 		ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HagaBibleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -141,6 +143,7 @@
 				058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */,
 				AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */,
 				AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */,
+				AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */,
 				F0D576F6426DF59DB3F00995 /* TestDoubles */,
 			);
 			path = HagaBibleTests;
@@ -348,6 +351,7 @@
 				B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */,
 				AA11BB22CC33DD44EE55FF01 /* UserDataDatabaseServiceTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF03 /* DefaultBookmarkRepositoryTests.swift in Sources */,
+				AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

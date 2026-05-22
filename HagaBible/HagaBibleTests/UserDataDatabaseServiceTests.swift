@@ -109,6 +109,52 @@ struct UserDataDatabaseServiceTests {
         #expect(indexNames.contains("idx_bookmarks_updated_at"))
     }
 
+    @Test("v3 migration creates the reading_marks table with sync columns")
+    func test_migration_v3_createsReadingMarksTable() throws {
+        let url = makeTempURL()
+        defer { cleanup(url) }
+
+        let service = try UserDataDatabaseService(databaseFileURL: url)
+        let pool = try #require(service.dbPool)
+
+        let tableExists = try pool.read { db in
+            try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'reading_marks'"
+            ) ?? 0
+        }
+        #expect(tableExists == 1)
+
+        let columns = try pool.read { db -> [String] in
+            try Row.fetchAll(db, sql: "PRAGMA table_info(reading_marks)").map { row in row["name"] }
+        }
+        #expect(columns.contains("book_code"))
+        #expect(columns.contains("book_order"))
+        #expect(columns.contains("chapter"))
+        #expect(columns.contains("is_read"))
+        #expect(columns.contains("deleted_at"))
+        #expect(columns.contains("user_id"))
+    }
+
+    @Test("v3 migration creates the reading_marks indexes")
+    func test_migration_v3_createsIndexes() throws {
+        let url = makeTempURL()
+        defer { cleanup(url) }
+
+        let service = try UserDataDatabaseService(databaseFileURL: url)
+        let pool = try #require(service.dbPool)
+
+        let indexNames = try pool.read { db in
+            try String.fetchAll(
+                db,
+                sql: "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'reading_marks'"
+            )
+        }
+
+        #expect(indexNames.contains("idx_reading_marks_book_chapter"))
+        #expect(indexNames.contains("idx_reading_marks_updated_at"))
+    }
+
     @Test("re-initialising at the same path preserves previously inserted rows")
     func test_repeated_init_preservesData() throws {
         let url = makeTempURL()

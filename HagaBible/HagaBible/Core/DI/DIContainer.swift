@@ -54,6 +54,7 @@ extension DIContainer {
         }
 
         container.register(type: BookmarkRepository.self, component: DefaultBookmarkRepository())
+        container.register(type: ReadingMarkRepository.self, component: DefaultReadingMarkRepository())
 
         container.register(type: ODRDataSource.self, component: ODRDataSource())
         container.register(type: FileSystemDataSource.self, component: FileSystemDataSource())
@@ -147,6 +148,7 @@ extension DIContainer {
         container.register(type: BibleActionService.self, component: BibleActionService())
 
         container.register(type: BookmarkRepository.self, component: MockBookmarkRepository())
+        container.register(type: ReadingMarkRepository.self, component: MockReadingMarkRepository())
 
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
             appState: container.resolve(type: AppState.self),
