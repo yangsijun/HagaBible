@@ -92,6 +92,16 @@ struct BibleNavigation2View: View {
                                 return "\($0.verse) \(counterNoun)"
                             }
                             return "\($0.verse)"
+                        },
+                        additionalAction: {
+                            if let verse = selectedVerse {
+                                confirmVerseSelection(verse)
+                            }
+                        },
+                        doubleTapAction: {
+                            if let verse = selectedVerse {
+                                confirmVerseSelection(verse)
+                            }
                         }
                     )
                 }
@@ -120,10 +130,21 @@ struct BibleNavigation2View: View {
                     // Revert to previous version until download is confirmed
                     selectedVersion = oldValue
                 } else {
-                    // Already downloaded - load immediately
+                    // Already downloaded - keep the current book/chapter/verse
+                    // selection, re-resolved against the new version. Setting
+                    // selectedBook to the matching book triggers the cascade
+                    // below, which re-resolves chapter and verse in turn.
+                    let previousBookCode = selectedBook?.bookCode
                     Task {
                         await viewModel.loadBookList(version: newVersion)
-                        selectedBook = nil
+                        // Bail out if the user switched versions again while loading.
+                        guard selectedVersion?.versionCode == newVersion.versionCode else { return }
+                        if let previousBookCode {
+                            selectedBook = viewModel.bookList.first(where: { $0.bookCode == previousBookCode })
+                                ?? viewModel.bookList.first
+                        } else {
+                            selectedBook = nil
+                        }
                     }
                 }
             }
@@ -134,7 +155,22 @@ struct BibleNavigation2View: View {
                     return
                 }
                 if oldValue?.bookCode == newValue?.bookCode {
-                    selectedChapter = viewModel.chapterList.first(where: { $0.chapter == selectedChapter?.chapter })
+                    // Same book in a different version (version switch): reload
+                    // the chapter list for the new version and keep the chapter.
+                    let previousChapterNum = selectedChapter?.chapter
+                    Task {
+                        await viewModel.loadChapterList(version: selectedVersion!, book: newValue!)
+                        if let previousChapterNum {
+                            // Keep the same chapter; if the new version omits it,
+                            // fall back to the nearest preceding chapter, then the
+                            // first. chapterList is ascending by chapter.
+                            selectedChapter = viewModel.chapterList.first(where: { $0.chapter == previousChapterNum })
+                                ?? viewModel.chapterList.last(where: { $0.chapter < previousChapterNum })
+                                ?? viewModel.chapterList.first
+                        } else {
+                            selectedChapter = nil
+                        }
+                    }
                 } else {
                     Task {
                         await viewModel.loadChapterList(version: selectedVersion!, book: selectedBook!)
@@ -148,31 +184,30 @@ struct BibleNavigation2View: View {
                     return
                 }
                 if oldValue?.chapter == newValue?.chapter {
-                    selectedVerse = viewModel.verseList.first(where: { $0.verse == selectedVerse?.verse })
+                    // Same chapter in a different version (version switch): reload
+                    // the verse list for the new version and keep the verse.
+                    let previousVerseNum = selectedVerse?.verse
+                    Task {
+                        await viewModel.loadVerseList(version: selectedVersion!, book: selectedBook!, chapter: newValue!)
+                        if let previousVerseNum {
+                            // Keep the same verse; if the new version omits it
+                            // (versification differences), fall back to the nearest
+                            // preceding verse, then the first verse. verseList is
+                            // ascending by verse, so last(where: < n) is the closest
+                            // verse at or before the previous one.
+                            selectedVerse = viewModel.verseList.first(where: { $0.verse == previousVerseNum })
+                                ?? viewModel.verseList.last(where: { $0.verse < previousVerseNum })
+                                ?? viewModel.verseList.first
+                        } else {
+                            selectedVerse = nil
+                        }
+                    }
                 } else {
                     Task {
                         await viewModel.loadVerseList(version: selectedVersion!, book: selectedBook!, chapter: selectedChapter!)
                         selectedVerse = nil
                     }
                 }
-            }
-            .onChange(of: selectedVerse) { oldValue, newValue in
-                if newValue == nil {
-                    return
-                }
-                bibleReaderViewModel.applyBibleSelection(
-                    versionCode: selectedVersion?.versionCode,
-                    bookCode: selectedBook?.bookCode,
-                    chapterNum: selectedChapter?.chapter,
-                    verseNum: selectedVerse?.verse
-                )
-
-                dismiss()
-
-                let verseNum = selectedVerse?.verse ?? 1
-                bibleReaderViewModel.navigatedVerseNum = verseNum
-                bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                switchTTSChapterIfActive(language: selectedVersion?.language ?? "Korean", startVerseNum: verseNum)
             }
             .toolbarTitleMenu {
                 ForEach(viewModel.versionList, id: \.versionCode) { version in
@@ -241,6 +276,24 @@ struct BibleNavigation2View: View {
                 }
             }
         }
+    }
+
+    /// Applies the chosen verse to the reader and dismisses the navigation
+    /// sheet. Invoked by an explicit tap on a verse so that programmatic verse
+    /// re-resolution (e.g. when switching versions) does not auto-navigate.
+    private func confirmVerseSelection(_ verse: BibleVerse) {
+        bibleReaderViewModel.applyBibleSelection(
+            versionCode: selectedVersion?.versionCode,
+            bookCode: selectedBook?.bookCode,
+            chapterNum: selectedChapter?.chapter,
+            verseNum: verse.verse
+        )
+
+        dismiss()
+
+        bibleReaderViewModel.navigatedVerseNum = verse.verse
+        bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
+        switchTTSChapterIfActive(language: selectedVersion?.language ?? "Korean", startVerseNum: verse.verse)
     }
 
     private func switchTTSChapterIfActive(language: String, startVerseNum: Int = 1) {
