@@ -59,8 +59,8 @@ struct BibleReaderCompareMenuButton: View {
                 ToolbarItem {
                     BibleReaderCompareMenuButton(
                         versions: [
-                            .init(versionCode: "WEBBE", versionName: "World English Bible", language: "English", isDownloaded: true),
-                            .init(versionCode: "KRV", versionName: "개역한글", language: "Korean", isDownloaded: true),
+                            .init(versionCode: "WEBBE", versionName: "World English Bible", versionShortName: "WEBBE", language: "English", isDownloaded: true),
+                            .init(versionCode: "KRV", versionName: "개역한글", versionShortName: "개역한글", language: "Korean", isDownloaded: true),
                         ],
                         selectedVersionCode: "KRV",
                         onSelect: { _ in }

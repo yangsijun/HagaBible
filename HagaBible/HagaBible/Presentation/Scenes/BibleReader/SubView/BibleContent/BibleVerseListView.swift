@@ -19,6 +19,11 @@ struct BibleVerseListView: View {
     var compareTextByVerse: [Int: String] = [:]
     /// Language of the comparison version, used to pick its font family/alignment.
     var compareLanguage: String = "English"
+    /// When true, copy/share emit a version-choice request to the parent instead
+    /// of acting directly (역본 선택 dialog).
+    var isComparisonOn: Bool = false
+    var onCompareCopy: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
+    var onCompareShare: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
     var onAddBookmark: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
 
     var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
@@ -70,16 +75,30 @@ struct BibleVerseListView: View {
                     Label("Add bookmark", systemImage: "bookmark")
                 }
                 Button(action: {
-                    UIPasteboard.general.string = getVerseTextsFromContextMenuIndex(index)
-                    selectStartIndex = nil
-                    selectEndIndex = nil
+                    if isComparisonOn {
+                        let (start, end) = getSelectIndexFromContextMenuIndex(index)
+                        onCompareCopy(start, end)
+                    } else {
+                        UIPasteboard.general.string = getVerseTextsFromContextMenuIndex(index)
+                        selectStartIndex = nil
+                        selectEndIndex = nil
+                    }
                 }) {
                     Label("Copy to clipboard", systemImage: "doc.on.doc")
                 }
-                ShareLink(
-                    item: getVerseTextsFromContextMenuIndex(index)
-                ) {
-                    Label("Share", systemImage: "square.and.arrow.up")
+                if isComparisonOn {
+                    Button(action: {
+                        let (start, end) = getSelectIndexFromContextMenuIndex(index)
+                        onCompareShare(start, end)
+                    }) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+                } else {
+                    ShareLink(
+                        item: getVerseTextsFromContextMenuIndex(index)
+                    ) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
                 }
             } preview: {
                 contextMenuPreview(for: index)

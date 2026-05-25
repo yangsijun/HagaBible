@@ -7,25 +7,88 @@
 
 import SwiftUI
 
+/// Which action-bar button the export dialog should anchor to (copy vs share),
+/// so the iOS 26 confirmationDialog bubble points at the actually-tapped button.
+enum VerseExportDialogMode { case copy, share }
+
 struct BibleReaderActionBar: View {
     @Binding var selectStartIndex: Int?
     @Binding var selectEndIndex: Int?
     var bibleVerseList: [BibleVerse] = []
     var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
     var onBookmarkTapped: () -> Void = {}
+    /// When true, copy/share emit a version-choice request to the parent instead
+    /// of acting directly (역본 선택 dialog).
+    var isComparisonOn: Bool = false
+    var onCompareCopy: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
+    var onCompareShare: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
+    /// Drives + anchors the version-choice dialog. The dialog is attached to the
+    /// matching button so it appears as a bubble pointing at that button.
+    var exportDialogMode: VerseExportDialogMode? = nil
+    var exportDialogTitle: String = ""
+    var exportMainVersionName: String = ""
+    var exportCompareVersionName: String = ""
+    var onExportScopeChosen: (_ scope: BibleReaderViewModel.VerseExportScope) -> Void = { _ in }
+    var onExportCancel: () -> Void = {}
 
     var bibleVersesString: String {
         bibleActionService.makeVerseStringFromVerseList(bibleVerseList, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
+    }
+
+    private var selectedRange: (start: Int, end: Int) {
+        let start = selectStartIndex ?? 0
+        return (start, selectEndIndex ?? start)
     }
 
     var body: some View {
         if selectStartIndex != nil || selectEndIndex != nil {
             ActionBar {
                 ActionBarButton(action: { onBookmarkTapped() }, systemImage: "bookmark")
-                ActionBarButton(action: { copyVerseTextToClipboard() }, systemImage: "doc.on.doc")
-                ActionBarShareLink(item: bibleVersesString)
+                ActionBarButton(action: {
+                    if isComparisonOn {
+                        onCompareCopy(selectedRange.start, selectedRange.end)
+                    } else {
+                        copyVerseTextToClipboard()
+                    }
+                }, systemImage: "doc.on.doc")
+                .confirmationDialog(
+                    exportDialogTitle,
+                    isPresented: exportDialogBinding(for: .copy),
+                    titleVisibility: .visible
+                ) {
+                    exportDialogButtons()
+                }
+                if isComparisonOn {
+                    ActionBarButton(action: {
+                        onCompareShare(selectedRange.start, selectedRange.end)
+                    }, systemImage: "square.and.arrow.up")
+                    .confirmationDialog(
+                        exportDialogTitle,
+                        isPresented: exportDialogBinding(for: .share),
+                        titleVisibility: .visible
+                    ) {
+                        exportDialogButtons()
+                    }
+                } else {
+                    ActionBarShareLink(item: bibleVersesString)
+                }
             }
         }
+    }
+
+    private func exportDialogBinding(for mode: VerseExportDialogMode) -> Binding<Bool> {
+        Binding(
+            get: { exportDialogMode == mode },
+            set: { if !$0 { onExportCancel() } }
+        )
+    }
+
+    @ViewBuilder
+    private func exportDialogButtons() -> some View {
+        Button(exportMainVersionName) { onExportScopeChosen(.main) }
+        Button(exportCompareVersionName) { onExportScopeChosen(.compare) }
+        Button("Both") { onExportScopeChosen(.both) }
+        Button("Cancel", role: .cancel) { onExportCancel() }
     }
 
     private func copyVerseTextToClipboard() {

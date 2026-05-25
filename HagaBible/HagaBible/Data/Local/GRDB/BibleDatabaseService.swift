@@ -15,7 +15,7 @@ final class BibleDatabaseService {
     private let lock = NSLock()
     
     private let dbVersionKey = "dbVersion"
-    private let currentDBVersion = "1.5"
+    private let currentDBVersion = "1.6"
 
     // ODR Bible file schema version - increment when Bible_*.sqlite schema/content changes
     // Also used as ODR tag suffix to invalidate cache (e.g., Bible_KJV_2)

@@ -16,6 +16,22 @@ private struct AddBookmarkRequest: Identifiable, Equatable {
     let endVerse: Int
 }
 
+/// A pending copy/share that needs the user to pick which version(s) to export
+/// (shown only while translation comparison is on).
+private struct VerseExportRequest: Identifiable {
+    enum Mode { case copy, share }
+    let id = UUID()
+    let startIndex: Int
+    let endIndex: Int
+    let mode: Mode
+}
+
+/// Wrapper so the resolved share text can drive a `.sheet(item:)`.
+private struct ShareTextItem: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
 struct BibleReaderView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass: UserInterfaceSizeClass?
     @State private var appState: AppState = DIContainer.shared.resolve(type: AppState.self)
@@ -24,6 +40,8 @@ struct BibleReaderView: View {
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
     @State private var addBookmarkRequest: AddBookmarkRequest?
+    @State private var exportRequest: VerseExportRequest?
+    @State private var shareItem: ShareTextItem?
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
@@ -31,38 +49,61 @@ struct BibleReaderView: View {
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
     
+    @ViewBuilder
+    private var verseList: some View {
+        BibleVerseListView(
+            verses: viewModel.bibleVerseList,
+            language: viewModel.bibleVersion?.language ?? "English",
+            fontConfiguration: fontThemeManager.fontConfiguration,
+            theme: fontThemeManager.theme,
+            highlightedVerseNum: viewModel.navigatedVerseNum,
+            ttsCurrentVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
+            bookmarkStripesPerVerse: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
+            // Only render comparison rows once the version (and thus its
+            // language/font) is resolved, to avoid a wrong-font first frame.
+            compareTextByVerse: viewModel.compareVersion != nil ? viewModel.compareTextByVerse : [:],
+            compareLanguage: viewModel.compareVersion?.language ?? "English",
+            isComparisonOn: viewModel.isComparisonOn,
+            // From the context menu there may be no selection yet; select the
+            // verse(s) first so the action bar (which hosts + anchors the dialog)
+            // is on screen, then present on the next hop once it has laid out.
+            onCompareCopy: { start, end in
+                selectStartIndex = start
+                selectEndIndex = end
+                Task { @MainActor in
+                    exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .copy)
+                }
+            },
+            onCompareShare: { start, end in
+                selectStartIndex = start
+                selectEndIndex = end
+                Task { @MainActor in
+                    exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .share)
+                }
+            },
+            onAddBookmark: { start, end in
+                requestAddBookmark(start: start, end: end)
+            },
+            selectStartIndex: $selectStartIndex,
+            selectEndIndex: $selectEndIndex
+        )
+        .onChange(of: viewModel.navigatedVerseNum) {
+            if viewModel.navigatedVerseNum != nil {
+                highlightTask?.cancel()
+                highlightTask = Task {
+                    try await Task.sleep(for: .seconds(3))
+                    viewModel.navigatedVerseNum = nil
+                }
+            }
+        }
+        .safeAreaPadding(.bottom, 200)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
-                    BibleVerseListView(
-                        verses: viewModel.bibleVerseList,
-                        language: viewModel.bibleVersion?.language ?? "English",
-                        fontConfiguration: fontThemeManager.fontConfiguration,
-                        theme: fontThemeManager.theme,
-                        highlightedVerseNum: viewModel.navigatedVerseNum,
-                        ttsCurrentVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
-                        bookmarkStripesPerVerse: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
-                        // Only render comparison rows once the version (and thus its
-                        // language/font) is resolved, to avoid a wrong-font first frame.
-                        compareTextByVerse: viewModel.compareVersion != nil ? viewModel.compareTextByVerse : [:],
-                        compareLanguage: viewModel.compareVersion?.language ?? "English",
-                        onAddBookmark: { start, end in
-                            requestAddBookmark(start: start, end: end)
-                        },
-                        selectStartIndex: $selectStartIndex,
-                        selectEndIndex: $selectEndIndex
-                    )
-                    .onChange(of: viewModel.navigatedVerseNum) {
-                        if viewModel.navigatedVerseNum != nil {
-                            highlightTask?.cancel()
-                            highlightTask = Task {
-                                try await Task.sleep(for: .seconds(3))
-                                viewModel.navigatedVerseNum = nil
-                            }
-                        }
-                    }
-                    .safeAreaPadding(.bottom, 200)
+                    verseList
                 }
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
                 .swipeGesture(
@@ -117,6 +158,27 @@ struct BibleReaderView: View {
                         guard let start = selectStartIndex else { return }
                         let end = selectEndIndex ?? start
                         requestAddBookmark(start: start, end: end)
+                    },
+                    isComparisonOn: viewModel.isComparisonOn,
+                    onCompareCopy: { start, end in
+                        exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .copy)
+                    },
+                    onCompareShare: { start, end in
+                        exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .share)
+                    },
+                    // The dialog is attached to the matching action-bar button so
+                    // it appears as a bubble pointing at the tapped button.
+                    exportDialogMode: exportDialogMode,
+                    exportDialogTitle: exportDialogTitle,
+                    exportMainVersionName: viewModel.bibleVersion?.versionName ?? "Version A",
+                    exportCompareVersionName: viewModel.compareVersion?.versionName ?? "Version B",
+                    onExportScopeChosen: { scope in
+                        if let request = exportRequest {
+                            performExport(request, scope: scope)
+                        }
+                    },
+                    onExportCancel: {
+                        exportRequest = nil
                     }
                 )
                 .ignoresSafeArea(edges: .horizontal)
@@ -181,6 +243,9 @@ struct BibleReaderView: View {
                 )
             }
         }
+        .sheet(item: $shareItem) { item in
+            ActivityView(activityItems: [item.text])
+        }
         .onChange(of: appState.selectedTab) { _, tab in
             // Returning from the Library tab (where bookmarks can be added/edited/
             // deleted) — refresh the reader's per-chapter stripes.
@@ -212,6 +277,42 @@ struct BibleReaderView: View {
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+        }
+    }
+
+    private var exportDialogTitle: String {
+        switch exportRequest?.mode {
+        case .copy: return "Select version to copy"
+        case .share: return "Select version to share"
+        case .none: return ""
+        }
+    }
+
+    /// Maps the pending request to the action-bar button the dialog anchors to.
+    private var exportDialogMode: VerseExportDialogMode? {
+        switch exportRequest?.mode {
+        case .copy: return .copy
+        case .share: return .share
+        case .none: return nil
+        }
+    }
+
+    /// Builds the text for the chosen version scope, then copies it or presents
+    /// the share sheet. Share presentation is deferred one main-actor hop so the
+    /// dialog finishes dismissing first (avoids a presentation conflict).
+    private func performExport(_ request: VerseExportRequest, scope: BibleReaderViewModel.VerseExportScope) {
+        let text = viewModel.makeExportText(startIndex: request.startIndex, endIndex: request.endIndex, scope: scope)
+        exportRequest = nil
+        selectStartIndex = nil
+        selectEndIndex = nil
+        guard !text.isEmpty else { return }
+        switch request.mode {
+        case .copy:
+            UIPasteboard.general.string = text
+        case .share:
+            Task { @MainActor in
+                shareItem = ShareTextItem(text: text)
+            }
         }
     }
 

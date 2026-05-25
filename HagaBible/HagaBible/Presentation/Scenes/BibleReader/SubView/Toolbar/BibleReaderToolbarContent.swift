@@ -74,14 +74,14 @@ struct MenuItem: Identifiable {
                 BibleReaderToolbarContent(
                     bibleBook: .init(bookCode: "GRN", bookName: "창세기", bookOrder: 1, totalChapters: 50, versionCode: "KRV"),
                     chapterNum: 1,
-                    bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", language: "Korean", isDownloaded: true),
+                    bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", versionShortName: "개역한글", language: "Korean", isDownloaded: true),
                     showBibleNavigation: .constant(false),
                     showFontThemeConfig: .constant(false),
                     onListenTapped: {},
                     ttsPlaybackState: .idle,
                     onBookmarksTapped: {},
                     comparableVersions: [
-                        .init(versionCode: "WEBBE", versionName: "World English Bible", language: "English", isDownloaded: true)
+                        .init(versionCode: "WEBBE", versionName: "World English Bible", versionShortName: "WEBBE", language: "English", isDownloaded: true)
                     ],
                     compareVersionCode: nil,
                     onSelectCompareVersion: { _ in }

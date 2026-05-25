@@ -34,6 +34,7 @@ final class DefaultBibleRepository: BibleRepository {
                 BibleVersion(
                     versionCode: record.versionCode,
                     versionName: record.versionName,
+                    versionShortName: record.versionShortName,
                     language: record.language,
                     isDownloaded: fileDataSource.fileExists(filename: "Bible_\(record.versionCode).sqlite")
                 )

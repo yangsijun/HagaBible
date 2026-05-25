@@ -19,6 +19,7 @@ class BibleReaderViewModel {
     
     var bibleRepository: BibleRepository
     private let bookmarkRepository: BookmarkRepository
+    private let bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
 
     var bibleVersion: BibleVersion? {
         get {
@@ -74,12 +75,18 @@ class BibleReaderViewModel {
     }
     /// Comparison verses for the current book/chapter, keyed by verse number.
     var compareTextByVerse: [Int: String] = [:]
+    /// Comparison verses for the current book/chapter (kept for export, which needs
+    /// each verse's own book name). Stays in sync with `compareTextByVerse`.
+    var compareVerseList: [BibleVerse] = []
 
     /// The resolved comparison version, if one is selected and available.
     var compareVersion: BibleVersion? {
         guard let compareVersionCode else { return nil }
         return availableVersions.first { $0.versionCode == compareVersionCode }
     }
+
+    /// Whether translation comparison is currently active.
+    var isComparisonOn: Bool { compareVersion != nil }
 
     /// Versions selectable for comparison: downloaded and not the main version.
     var comparableVersions: [BibleVersion] {
@@ -189,6 +196,7 @@ class BibleReaderViewModel {
     func fetchCompareVerseList() async {
         guard let code = compareVersionCode else {
             compareTextByVerse = [:]
+            compareVerseList = []
             return
         }
         if code == versionCode {
@@ -196,6 +204,7 @@ class BibleReaderViewModel {
             // nothing meaningful to compare, so disable comparison entirely.
             compareVersionCode = nil
             compareTextByVerse = [:]
+            compareVerseList = []
             return
         }
         let expectedCode = code
@@ -207,6 +216,7 @@ class BibleReaderViewModel {
             guard compareVersionCode == expectedCode,
                   bookCode == expectedBook,
                   chapterNum == expectedChapter else { return }
+            compareVerseList = verses
             compareTextByVerse = Dictionary(
                 verses.compactMap { verse in verse.verseText.map { (verse.verse, $0) } },
                 uniquingKeysWith: { first, _ in first }
@@ -217,6 +227,34 @@ class BibleReaderViewModel {
                   bookCode == expectedBook,
                   chapterNum == expectedChapter else { return }
             compareTextByVerse = [:]
+            compareVerseList = []
+        }
+    }
+
+    enum VerseExportScope {
+        case main      // 역본 A (the reader's current version)
+        case compare   // 역본 B (the comparison version)
+        case both      // 둘 다
+    }
+
+    /// Builds the copy/share text for a verse selection in the chosen scope.
+    /// `startIndex`/`endIndex` are row indices (verse number = index + 1). A single
+    /// version (`.main`/`.compare`) omits the version name; `.both` tags each block
+    /// with the short version name (`versionShortName`, e.g. 개역개정/KJV) and separates
+    /// them with a blank line. Missing blocks (e.g. a versification gap) are omitted.
+    func makeExportText(startIndex: Int, endIndex: Int, scope: VerseExportScope) -> String {
+        let startVerse = min(startIndex, endIndex) + 1
+        let endVerse = max(startIndex, endIndex) + 1
+
+        switch scope {
+        case .main:
+            return bibleActionService.makeVersionBlock(bibleVerseList, startVerse: startVerse, endVerse: endVerse, versionName: nil) ?? ""
+        case .compare:
+            return bibleActionService.makeVersionBlock(compareVerseList, startVerse: startVerse, endVerse: endVerse, versionName: nil) ?? ""
+        case .both:
+            let mainBlock = bibleActionService.makeVersionBlock(bibleVerseList, startVerse: startVerse, endVerse: endVerse, versionName: bibleVersion?.versionShortName)
+            let compareBlock = bibleActionService.makeVersionBlock(compareVerseList, startVerse: startVerse, endVerse: endVerse, versionName: compareVersion?.versionShortName)
+            return [mainBlock, compareBlock].compactMap { $0 }.joined(separator: "\n\n")
         }
     }
 
