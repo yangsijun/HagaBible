@@ -18,6 +18,10 @@ final class ReadingChecklistViewModel {
     /// book_code (the sync identity), not book_order.
     var readChapters: [String: Set<Int>] = [:]
     var isLoading: Bool = false
+    /// True while a drag-paint is in progress in any chapter grid. The checklist
+    /// `List` reads this to suspend scrolling so painting a range doesn't also scroll
+    /// the list out from under the finger. See `ReadingChapterGrid`.
+    var isDragPainting: Bool = false
 
     /// Version whose book list is currently loaded. Book names are
     /// version-specific (reading marks are not), so a version change must refetch

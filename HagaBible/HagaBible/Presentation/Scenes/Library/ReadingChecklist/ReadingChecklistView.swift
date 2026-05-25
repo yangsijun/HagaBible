@@ -56,6 +56,9 @@ struct ReadingChecklistView: View {
         .listStyle(.insetGrouped)
         .listSectionSpacing(.compact)
         .scrollContentBackground(.hidden)
+        // Freeze scrolling only while a chapter range is being drag-painted, so the
+        // paint drag doesn't double as a scroll. Normal scrolling is unaffected.
+        .scrollDisabled(viewModel.isDragPainting)
     }
 }
 
