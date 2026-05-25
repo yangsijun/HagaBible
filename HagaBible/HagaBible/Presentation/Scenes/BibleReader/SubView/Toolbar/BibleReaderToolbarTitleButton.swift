@@ -27,7 +27,7 @@ struct BibleReaderToolbarTitleButton: View {
                     Text("\(bibleBook?.bookName ?? "") \(chapterNum)\(chapterCounterNoun)")
                         .font(.title2)
                         .bold()
-                    Text("\(bibleVersion?.versionCode ?? "")")
+                    Text("\(bibleVersion?.versionShortName ?? "")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -42,7 +42,7 @@ struct BibleReaderToolbarTitleButton: View {
                     Text("\(bibleBook?.bookName ?? "") \(chapterNum)\(chapterCounterNoun)")
                         .font(.title2)
                         .bold()
-                    Text("\(bibleVersion?.versionCode ?? "")")
+                    Text("\(bibleVersion?.versionShortName ?? "")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
