@@ -9,6 +9,8 @@ import Foundation
 
 /// 음성 합성기 이벤트 델리게이트
 protocol SpeechSynthesizerDelegate: AnyObject {
+    /// 발화가 실제로 재생을 시작함 (오디오 출력이 시작된 시점)
+    func speechDidStart()
     /// 현재 발화가 완료됨
     func speechDidFinish()
     /// 발화가 일시 정지됨
@@ -17,6 +19,11 @@ protocol SpeechSynthesizerDelegate: AnyObject {
     func speechDidContinue()
     /// 발화가 취소됨
     func speechDidCancel()
+}
+
+extension SpeechSynthesizerDelegate {
+    /// 기본 구현 — 시작 콜백이 필요 없는 구현체를 위해 비워둔다.
+    func speechDidStart() {}
 }
 
 /// 음성 합성기 추상화 프로토콜

@@ -91,7 +91,13 @@ extension DIContainer {
         let voiceProvider = AVVoiceProvider()
         container.register(type: VoiceProvider.self, component: voiceProvider)
         container.register(type: TTSSettingsRepository.self, component: DefaultTTSSettingsRepository())
-        container.register(type: SpeechSynthesizer.self, component: AVSpeechSynthesizerAdapter())
+        // On iOS, render speech through AVAudioEngine so the app becomes the system
+        // "Now Playing" app (Lock Screen / Control Center card). macOS Catalyst keeps
+        // the proven direct-speak adapter.
+        let speechSynthesizer: SpeechSynthesizer = PlatformHelper.isRunningOnMac
+            ? AVSpeechSynthesizerAdapter()
+            : AVAudioEngineSpeechSynthesizer()
+        container.register(type: SpeechSynthesizer.self, component: speechSynthesizer)
         container.register(type: NowPlayingInfoCenterProtocol.self, component: SystemNowPlayingInfoCenter())
 
         let ttsManager = TTSPlaybackManager(
@@ -172,7 +178,13 @@ extension DIContainer {
         let voiceProvider = AVVoiceProvider()
         container.register(type: VoiceProvider.self, component: voiceProvider)
         container.register(type: TTSSettingsRepository.self, component: DefaultTTSSettingsRepository())
-        container.register(type: SpeechSynthesizer.self, component: AVSpeechSynthesizerAdapter())
+        // On iOS, render speech through AVAudioEngine so the app becomes the system
+        // "Now Playing" app (Lock Screen / Control Center card). macOS Catalyst keeps
+        // the proven direct-speak adapter.
+        let speechSynthesizer: SpeechSynthesizer = PlatformHelper.isRunningOnMac
+            ? AVSpeechSynthesizerAdapter()
+            : AVAudioEngineSpeechSynthesizer()
+        container.register(type: SpeechSynthesizer.self, component: speechSynthesizer)
         container.register(type: NowPlayingInfoCenterProtocol.self, component: SystemNowPlayingInfoCenter())
 
         let ttsManager = TTSPlaybackManager(

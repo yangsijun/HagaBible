@@ -80,6 +80,11 @@ class TTSPlaybackManager: NSObject {
     private var isPauseRequested = false
     private var interruptionObserverToken: NSObjectProtocol?
 
+    /// Wall-clock anchor for the chapter's elapsed time. Paired with the playback
+    /// rate so iOS reflects play/pause on the Now Playing card (rate alone is not
+    /// honored). No duration is reported, so no progress bar is shown.
+    private var chapterStartDate: Date?
+
     // MARK: - Initialization
 
     init(
@@ -130,6 +135,7 @@ class TTSPlaybackManager: NSObject {
         self.currentLanguage = language
         playbackState = .playing
         isPauseRequested = false
+        chapterStartDate = Date()
 
         Logger.tts.info("Started reading \(self.bookName) \(self.chapterNum) from verse \(self.currentVerseIndex + 1) in \(language)")
 
@@ -179,6 +185,7 @@ class TTSPlaybackManager: NSObject {
         self.bookName = verses.first?.bookName ?? ""
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
+        chapterStartDate = Date()
 
         isRestarting = false
         isSynthesizerBusy = false
@@ -249,6 +256,7 @@ class TTSPlaybackManager: NSObject {
         isPauseRequested = false
         currentVerseIndex = 0
         verses = []
+        chapterStartDate = nil
 
         Logger.tts.info("Stopped playback")
 
@@ -566,24 +574,36 @@ class TTSPlaybackManager: NSObject {
         }
     }
 
+    /// Seconds since the current chapter started playing. Only anchors the card's
+    /// play/pause state; the precise value is irrelevant (no progress bar is shown).
+    private var currentElapsed: TimeInterval {
+        guard let chapterStartDate else { return 0 }
+        return Date().timeIntervalSince(chapterStartDate)
+    }
+
     private func updateNowPlayingInfo() {
         // MPNowPlayingInfoCenter is iOS-only; skip on macOS
         guard !PlatformHelper.isRunningOnMac else { return }
 
         guard !verses.isEmpty, currentVerseIndex < verses.count else { return }
 
-        let verse = verses[currentVerseIndex]
         var nowPlayingInfo = [String: Any]()
 
-        nowPlayingInfo[MPMediaItemPropertyTitle] = "\(bookName) \(chapterNum):\(verse.verse)"
+        // Chapter-level "track": the whole chapter is one item, not each verse.
+        nowPlayingInfo[MPMediaItemPropertyTitle] = "\(bookName) \(chapterNum)"
         nowPlayingInfo[MPMediaItemPropertyArtist] = "HagaBible"
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = bookName
+
+        // Play/pause icon only (no progress bar). iOS needs BOTH the playback rate
+        // and an elapsed time to reflect pause reliably — rate alone is ignored when
+        // pausing from inside the app. Duration is omitted so no scrubber/progress
+        // bar is shown; the elapsed value only anchors the play/pause state.
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playbackState == .playing ? 1.0 : 0.0
-        nowPlayingInfo[MPMediaItemPropertyAlbumTrackNumber] = currentVerseIndex + 1
-        nowPlayingInfo[MPMediaItemPropertyAlbumTrackCount] = verses.count
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentElapsed
 
         nowPlayingInfoCenter.updateNowPlayingInfo(nowPlayingInfo)
         nowPlayingInfoCenter.setPlaybackState(nowPlayingPlaybackState)
+        Logger.tts.info("Now Playing info set: title=\(nowPlayingInfo[MPMediaItemPropertyTitle] as? String ?? "?"), rate=\(nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] as? Double ?? -1), elapsed=\(self.currentElapsed)")
     }
 
     private func clearNowPlayingInfo() {
@@ -608,6 +628,15 @@ class TTSPlaybackManager: NSObject {
 // MARK: - SpeechSynthesizerDelegate
 
 extension TTSPlaybackManager: SpeechSynthesizerDelegate {
+    func speechDidStart() {
+        // 오디오가 실제로 출력되기 시작한 시점에 nowPlayingInfo를 다시 설정해야
+        // iOS가 이 앱을 "Now Playing 앱"으로 등록한다. AVAudioEngine 렌더링은
+        // 비동기로 시작되므로 speakCurrentVerse 시점(아래 updateNowPlayingInfo)에는
+        // 아직 오디오가 나오지 않아 MediaRemote가 등록을 건너뛴다.
+        guard playbackState == .playing else { return }
+        updateNowPlayingInfo()
+    }
+
     func speechDidFinish() {
         guard playbackState != .idle else {
             Logger.tts.debug("didFinish skipped - already idle")
