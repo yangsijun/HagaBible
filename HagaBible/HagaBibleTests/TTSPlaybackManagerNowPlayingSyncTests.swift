@@ -149,7 +149,7 @@ struct TTSPlaybackManagerNowPlayingSyncTests {
 
     @Test("Now playing writes flow through injected facade in call order")
     @MainActor
-    func nowPlayingWritesFlowThroughFacade() async {
+    func nowPlayingWritesFlowThroughFacade() async throws {
         let spy = SpyNowPlayingInfoCenter()
         let manager = TTSPlaybackManager(
             synthesizer: StubSpeechSynthesizer(),
@@ -169,17 +169,21 @@ struct TTSPlaybackManagerNowPlayingSyncTests {
         manager.stop()
         await settleMainActorTasks()
 
-        #expect(spy.nowPlayingInfoWrites.count == 3)
+        // startReading defers to speakCurrentVerse (one info update), so the
+        // expected sequence is 6 writes — not a redundant double-update on start.
+        #expect(spy.nowPlayingInfoWrites.count == 2)
         #expect(spy.playbackStateWrites.map(\.rawValue) == [
-            MPNowPlayingPlaybackState.playing.rawValue,
             MPNowPlayingPlaybackState.playing.rawValue,
             MPNowPlayingPlaybackState.paused.rawValue,
             MPNowPlayingPlaybackState.stopped.rawValue
         ])
         #expect(spy.clearNowPlayingInfoCallCount == 1)
-        #expect(spy.recordedCalls.count == 8)
 
-        // 1. syncNowPlayingState(withInfo: true) in startReading async Task
+        // Require the exact count before indexing: a future regression then fails
+        // this assertion instead of trapping out-of-range and killing the process.
+        try #require(spy.recordedCalls.count == 6)
+
+        // 1. startReading async Task → speakCurrentVerse → updateNowPlayingInfo (playing)
         switch spy.recordedCalls[0] {
         case .updateNowPlayingInfo(let info):
             #expect(info[MPMediaItemPropertyTitle] as? String == "Genesis 1:1")
@@ -195,47 +199,31 @@ struct TTSPlaybackManagerNowPlayingSyncTests {
             #expect(Bool(false))
         }
 
-        // 2. speakCurrentVerse → updateNowPlayingInfo
+        // 2. pause → syncNowPlayingState → updateNowPlayingInfo (paused)
         switch spy.recordedCalls[2] {
-        case .updateNowPlayingInfo(let info):
-            #expect(info[MPMediaItemPropertyTitle] as? String == "Genesis 1:1")
-            #expect(info[MPNowPlayingInfoPropertyPlaybackRate] as? Double == 1.0)
-        default:
-            #expect(Bool(false))
-        }
-
-        switch spy.recordedCalls[3] {
-        case .setPlaybackState(let state):
-            #expect(state.rawValue == MPNowPlayingPlaybackState.playing.rawValue)
-        default:
-            #expect(Bool(false))
-        }
-
-        // 3. pause → syncNowPlayingState
-        switch spy.recordedCalls[4] {
         case .updateNowPlayingInfo(let info):
             #expect(info[MPNowPlayingInfoPropertyPlaybackRate] as? Double == 0.0)
         default:
             #expect(Bool(false))
         }
 
-        switch spy.recordedCalls[5] {
+        switch spy.recordedCalls[3] {
         case .setPlaybackState(let state):
             #expect(state.rawValue == MPNowPlayingPlaybackState.paused.rawValue)
         default:
             #expect(Bool(false))
         }
 
-        // 4. stop async Task → syncNowPlayingState(withInfo: false)
-        switch spy.recordedCalls[6] {
+        // 3. stop async Task → syncNowPlayingState(withInfo: false) → setPlaybackState(.stopped)
+        switch spy.recordedCalls[4] {
         case .setPlaybackState(let state):
             #expect(state.rawValue == MPNowPlayingPlaybackState.stopped.rawValue)
         default:
             #expect(Bool(false))
         }
 
-        // 5. stop async Task → clearNowPlayingInfo
-        switch spy.recordedCalls[7] {
+        // 4. stop async Task → clearNowPlayingInfo
+        switch spy.recordedCalls[5] {
         case .clearNowPlayingInfo:
             #expect(Bool(true))
         default:
