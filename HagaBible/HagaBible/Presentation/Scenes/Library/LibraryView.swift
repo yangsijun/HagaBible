@@ -7,11 +7,6 @@
 
 import SwiftUI
 
-enum LibrarySection: Hashable {
-    case bookmarks
-    case reading
-}
-
 /// Single tab hosting both the bookmark list and the reading checklist
 /// (성경읽기표), switched via a top segmented control. Owns the one
 /// NavigationStack; the section views provide only content + their own toolbar.
@@ -20,7 +15,6 @@ struct LibraryView: View {
     @State private var bookmarksViewModel: BookmarksViewModel
     @State private var readingViewModel: ReadingChecklistViewModel
     @State private var fontThemeManager: FontThemeManager
-    @State private var section: LibrarySection = .bookmarks
 
     init() {
         let appState = DIContainer.shared.resolve(type: AppState.self)
@@ -42,7 +36,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                switch section {
+                switch appState.librarySection {
                 case .bookmarks:
                     BookmarksSectionView(viewModel: bookmarksViewModel, onNavigate: navigateToReader)
                         .transition(.opacity)
@@ -59,7 +53,7 @@ struct LibraryView: View {
                     // Animating the binding wraps the whole switch in one
                     // transaction, so the content crossfades AND the bookmark
                     // search bar animates in/out together (no abrupt nav-bar jump).
-                    Picker("Library section", selection: $section.animation(.easeInOut(duration: 0.25))) {
+                    Picker("Library section", selection: $appState.librarySection.animation(.easeInOut(duration: 0.25))) {
                         Text("Bookmarks").tag(LibrarySection.bookmarks)
                         Text("Reading").tag(LibrarySection.reading)
                     }

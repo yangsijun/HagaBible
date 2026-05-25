@@ -192,7 +192,15 @@ struct BibleReaderView: View {
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
                     ttsPlaybackState: ttsViewModel.playbackState,
-                    onBookmarksTapped: { appState.selectedTab = .library },
+                    onBookmarksTapped: {
+                        appState.librarySection = .bookmarks
+                        appState.selectedTab = .library
+                    },
+                    onReadingChecklistTapped: {
+                        appState.pendingReadingScrollBookOrder = viewModel.bibleBook?.bookOrder
+                        appState.librarySection = .reading
+                        appState.selectedTab = .library
+                    },
                     comparableVersions: viewModel.comparableVersions,
                     compareVersionCode: viewModel.compareVersionCode,
                     onSelectCompareVersion: { code in

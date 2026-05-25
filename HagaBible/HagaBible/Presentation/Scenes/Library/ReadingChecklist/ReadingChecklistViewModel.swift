@@ -100,6 +100,19 @@ final class ReadingChecklistViewModel {
         }
     }
 
+    // MARK: - Scroll target (성경읽기표 바로가기)
+
+    /// Book order the checklist should scroll to on entry, forwarded from
+    /// `AppState` so the view can observe it. Set by the reader's "Reading
+    /// Checklist" toolbar action; nil when there's nothing to scroll to.
+    var scrollTargetBookOrder: Int? { appState.pendingReadingScrollBookOrder }
+
+    /// Clears the pending scroll target once the checklist has scrolled to it,
+    /// so a normal re-entry into the tab doesn't scroll again.
+    func consumeScrollTarget() {
+        appState.pendingReadingScrollBookOrder = nil
+    }
+
     // MARK: - Queries
 
     func isRead(bookCode: String, chapter: Int) -> Bool {

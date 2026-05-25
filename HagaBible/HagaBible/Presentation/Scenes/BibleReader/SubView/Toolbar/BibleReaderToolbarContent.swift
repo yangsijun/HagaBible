@@ -16,6 +16,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let onListenTapped: () -> Void
     let ttsPlaybackState: TTSPlaybackState
     let onBookmarksTapped: () -> Void
+    let onReadingChecklistTapped: () -> Void
     let comparableVersions: [BibleVersion]
     let compareVersionCode: String?
     let onSelectCompareVersion: (String?) -> Void
@@ -53,6 +54,10 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 Button(action: onBookmarksTapped) {
                     Label("Bookmarks", systemImage: "bookmark")
                 }
+                Button(action: onReadingChecklistTapped) {
+                    Label("Reading Checklist", systemImage: "checklist")
+                }
+                Divider()
                 Button {
                     showFontThemeConfig.toggle()
                 } label: {
@@ -79,6 +84,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     onListenTapped: {},
                     ttsPlaybackState: .idle,
                     onBookmarksTapped: {},
+                    onReadingChecklistTapped: {},
                     comparableVersions: [
                         .init(versionCode: "WEBBE", versionName: "World English Bible", versionShortName: "WEBBE", language: "English", isDownloaded: true)
                     ],

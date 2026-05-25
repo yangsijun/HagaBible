@@ -12,6 +12,14 @@ import Foundation
 class AppState {
     var selectedTab: TabIdentifier = .bibleReader
 
+    /// Which Library segment to show. Shared so the reader's toolbar can route to
+    /// a specific section (Bookmarks or 성경읽기표) when it switches to the tab.
+    var librarySection: LibrarySection = .bookmarks
+
+    /// Book order (1–66) the 성경읽기표 should scroll to when the Library tab opens,
+    /// set by the reader's "Reading Checklist" toolbar action; cleared once consumed.
+    var pendingReadingScrollBookOrder: Int?
+
     /// 초기 다운로드 완료 후 BibleReaderView 리로드 트리거
     var initialDownloadCompleted: Bool = false
 
