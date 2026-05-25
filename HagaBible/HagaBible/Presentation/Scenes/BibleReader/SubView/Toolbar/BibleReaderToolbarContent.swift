@@ -30,40 +30,39 @@ struct BibleReaderToolbarContent: ToolbarContent {
             )
         }
         ToolbarItem {
-            BibleReaderToolbarIconButton(action: onListenTapped) {
-                Label("Listen", systemImage: ttsPlaybackState == .idle ? "headphones" : "headphones.slash")
-            }
-        }
-        ToolbarItem {
-            BibleReaderCompareMenuButton(
-                versions: comparableVersions,
-                selectedVersionCode: compareVersionCode,
-                onSelect: onSelectCompareVersion
-            )
-        }
-        if #available(iOS 26.0, *) {
-            ToolbarSpacer(.fixed)
-        }
-        ToolbarItem {
-            BibleReaderToolbarMenuButton(
-                menuItems: [
-                    MenuItem(title: "Bookmarks", systemImage: "bookmark", action: onBookmarksTapped),
-                    MenuItem(title: "Font & Themes", systemImage: "textformat.size", action: {
-                        showFontThemeConfig.toggle()
-                    })
-                ]
-            ) {
+            BibleReaderToolbarMenuButton {
+                Button(action: onListenTapped) {
+                    Label(
+                        ttsPlaybackState == .idle ? "Listen" : "Stop Listening",
+                        systemImage: ttsPlaybackState == .idle ? "headphones" : "headphones.slash"
+                    )
+                }
+                Menu {
+                    BibleReaderCompareMenuItems(
+                        versions: comparableVersions,
+                        selectedVersionCode: compareVersionCode,
+                        onSelect: onSelectCompareVersion
+                    )
+                } label: {
+                    Label(
+                        "Compare",
+                        systemImage: compareVersionCode == nil ? "rectangle.split.1x2" : "rectangle.split.1x2.fill"
+                    )
+                }
+                Divider()
+                Button(action: onBookmarksTapped) {
+                    Label("Bookmarks", systemImage: "bookmark")
+                }
+                Button {
+                    showFontThemeConfig.toggle()
+                } label: {
+                    Label("Font & Themes", systemImage: "textformat.size")
+                }
+            } label: {
                 Label("Other", systemImage: "ellipsis")
             }
         }
     }
-}
-
-struct MenuItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let systemImage: String
-    let action: () -> Void
 }
 
 #Preview {

@@ -7,34 +7,20 @@
 
 import SwiftUI
 
-struct BibleReaderToolbarMenuButton<LabelContent: View>: View {
-    let menuItems: [MenuItem]
-    @ViewBuilder let label: LabelContent
-    
+/// A top-bar menu button that hosts arbitrary menu content, applying the
+/// circle toolbar styling on pre-iOS-26 systems.
+struct BibleReaderToolbarMenuButton<MenuContent: View, LabelContent: View>: View {
+    @ViewBuilder let content: () -> MenuContent
+    @ViewBuilder let label: () -> LabelContent
+
     var body: some View {
         if #available(iOS 26.0, *) {
-            Menu {
-                ForEach(menuItems) { item in
-                    Button(action: item.action) {
-                        Label(item.title, systemImage: item.systemImage)
-                    }
-                }
-            } label: {
-                label
-            }
-            .menuStyle(.button)
+            Menu(content: content, label: label)
+                .menuStyle(.button)
         } else {
-            Menu {
-                ForEach(menuItems) { item in
-                    Button(action: item.action) {
-                        Label(item.title, systemImage: item.systemImage)
-                    }
-                }
-            } label: {
-                label
-            }
-            .menuStyle(.button)
-            .toolbarButtonStyle(.circle)
+            Menu(content: content, label: label)
+                .menuStyle(.button)
+                .toolbarButtonStyle(.circle)
         }
     }
 }
@@ -44,15 +30,17 @@ struct BibleReaderToolbarMenuButton<LabelContent: View>: View {
         Text("Hello, World!")
             .toolbar {
                 ToolbarItem {
-                    BibleReaderToolbarMenuButton(
-                        menuItems: [
-                            MenuItem(title: "Bookmarks", systemImage: "bookmark", action: {}),
-                            MenuItem(title: "Font & Themes", systemImage: "textformat.size", action: {})
-                        ]
-                    ) {
+                    BibleReaderToolbarMenuButton {
+                        Button(action: {}) {
+                            Label("Bookmarks", systemImage: "bookmark")
+                        }
+                        Button(action: {}) {
+                            Label("Font & Themes", systemImage: "textformat.size")
+                        }
+                    } label: {
                         Image(systemName: "ellipsis")
                     }
-                } 
+                }
             }
     }
 }
