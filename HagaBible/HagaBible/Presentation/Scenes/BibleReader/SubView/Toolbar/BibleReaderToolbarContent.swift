@@ -16,6 +16,9 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let onListenTapped: () -> Void
     let ttsPlaybackState: TTSPlaybackState
     let onBookmarksTapped: () -> Void
+    let comparableVersions: [BibleVersion]
+    let compareVersionCode: String?
+    let onSelectCompareVersion: (String?) -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
@@ -30,6 +33,13 @@ struct BibleReaderToolbarContent: ToolbarContent {
             BibleReaderToolbarIconButton(action: onListenTapped) {
                 Label("Listen", systemImage: ttsPlaybackState == .idle ? "headphones" : "headphones.slash")
             }
+        }
+        ToolbarItem {
+            BibleReaderCompareMenuButton(
+                versions: comparableVersions,
+                selectedVersionCode: compareVersionCode,
+                onSelect: onSelectCompareVersion
+            )
         }
         if #available(iOS 26.0, *) {
             ToolbarSpacer(.fixed)
@@ -69,7 +79,12 @@ struct MenuItem: Identifiable {
                     showFontThemeConfig: .constant(false),
                     onListenTapped: {},
                     ttsPlaybackState: .idle,
-                    onBookmarksTapped: {}
+                    onBookmarksTapped: {},
+                    comparableVersions: [
+                        .init(versionCode: "WEBBE", versionName: "World English Bible", language: "English", isDownloaded: true)
+                    ],
+                    compareVersionCode: nil,
+                    onSelectCompareVersion: { _ in }
                 )
             }
     }

@@ -43,6 +43,10 @@ struct BibleReaderView: View {
                         highlightedVerseNum: viewModel.navigatedVerseNum,
                         ttsCurrentVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
                         bookmarkStripesPerVerse: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
+                        // Only render comparison rows once the version (and thus its
+                        // language/font) is resolved, to avoid a wrong-font first frame.
+                        compareTextByVerse: viewModel.compareVersion != nil ? viewModel.compareTextByVerse : [:],
+                        compareLanguage: viewModel.compareVersion?.language ?? "English",
                         onAddBookmark: { start, end in
                             requestAddBookmark(start: start, end: end)
                         },
@@ -126,7 +130,12 @@ struct BibleReaderView: View {
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
                     ttsPlaybackState: ttsViewModel.playbackState,
-                    onBookmarksTapped: { appState.selectedTab = .library }
+                    onBookmarksTapped: { appState.selectedTab = .library },
+                    comparableVersions: viewModel.comparableVersions,
+                    compareVersionCode: viewModel.compareVersionCode,
+                    onSelectCompareVersion: { code in
+                        Task { await viewModel.setCompareVersion(code) }
+                    }
                 )
             }
             .toolbarBackground(.hidden, for: .navigationBar)

@@ -65,6 +65,27 @@ class BibleReaderViewModel {
     
     var navigatedVerseNum: Int?
 
+    // MARK: - Translation comparison (역본 대조)
+
+    /// Version code shown beneath each verse for side-by-side comparison;
+    /// `nil` means comparison is off. Persisted across launches.
+    var compareVersionCode: String? = ComparePreferences.compareVersionCode {
+        didSet { ComparePreferences.compareVersionCode = compareVersionCode }
+    }
+    /// Comparison verses for the current book/chapter, keyed by verse number.
+    var compareTextByVerse: [Int: String] = [:]
+
+    /// The resolved comparison version, if one is selected and available.
+    var compareVersion: BibleVersion? {
+        guard let compareVersionCode else { return nil }
+        return availableVersions.first { $0.versionCode == compareVersionCode }
+    }
+
+    /// Versions selectable for comparison: downloaded and not the main version.
+    var comparableVersions: [BibleVersion] {
+        availableVersions.filter { $0.isDownloaded && $0.versionCode != versionCode }
+    }
+
     var bookmarksForCurrentChapter: [Bookmark] = [] {
         didSet {
             bookmarkStripesPerVerse = BookmarkStripeComputer.computeStripes(from: bookmarksForCurrentChapter)
@@ -150,6 +171,53 @@ class BibleReaderViewModel {
             Logger.repository.error("Error fetching verses: \(error.localizedDescription)")
         }
         await fetchBookmarksForCurrentChapter()
+        await fetchCompareVerseList()
+    }
+
+    /// Selects (or clears, with `nil`) the comparison version and refreshes the
+    /// comparison verses for the current chapter immediately.
+    func setCompareVersion(_ code: String?) async {
+        compareVersionCode = code
+        await fetchCompareVerseList()
+    }
+
+    /// Loads the comparison version's verses for the current book/chapter and
+    /// builds the verse-number → text map. Clears the map when comparison is off,
+    /// and when the main version becomes the comparison version it turns the
+    /// comparison off so the toolbar reflects reality. Stale results from a
+    /// superseded selection (rapid chapter swipes or menu taps) are discarded.
+    func fetchCompareVerseList() async {
+        guard let code = compareVersionCode else {
+            compareTextByVerse = [:]
+            return
+        }
+        if code == versionCode {
+            // The main version switched to match the comparison version; there is
+            // nothing meaningful to compare, so disable comparison entirely.
+            compareVersionCode = nil
+            compareTextByVerse = [:]
+            return
+        }
+        let expectedCode = code
+        let expectedBook = bookCode
+        let expectedChapter = chapterNum
+        do {
+            let verses = try await bibleRepository.fetchBibleVerseList(versionCode: code, bookCode: bookCode, chapter: chapterNum)
+            // Drop the result if the selection moved on while we were fetching.
+            guard compareVersionCode == expectedCode,
+                  bookCode == expectedBook,
+                  chapterNum == expectedChapter else { return }
+            compareTextByVerse = Dictionary(
+                verses.compactMap { verse in verse.verseText.map { (verse.verse, $0) } },
+                uniquingKeysWith: { first, _ in first }
+            )
+        } catch {
+            Logger.repository.error("Error fetching comparison verses: \(error.localizedDescription)")
+            guard compareVersionCode == expectedCode,
+                  bookCode == expectedBook,
+                  chapterNum == expectedChapter else { return }
+            compareTextByVerse = [:]
+        }
     }
 
     func fetchBookmarksForCurrentChapter() async {

@@ -8,6 +8,11 @@
 import SwiftUI
 
 struct BibleVerseView: View {
+    /// Minimum width of the leading verse-number column.
+    static let verseNumberColumnWidth: CGFloat = 12
+    /// Spacing between the verse number and the verse text.
+    static let verseNumberSpacing: CGFloat = 8
+
     let verseNumber: Int
     let verseText: String
 
@@ -46,9 +51,9 @@ struct BibleVerseView: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: Self.verseNumberSpacing) {
             Text("\(verseNumber)")
-                .frame(minWidth: 12, minHeight: 22, alignment: .center)
+                .frame(minWidth: Self.verseNumberColumnWidth, minHeight: 22, alignment: .center)
                 .font(.caption)
                 .fontWidth(verseFontWidth)
                 .foregroundStyle(Color(uiColor: verseNumberColor))

@@ -15,6 +15,10 @@ struct BibleVerseListView: View {
     var highlightedVerseNum: Int?
     var ttsCurrentVerseIndex: Int?
     var bookmarkStripesPerVerse: [Int: [BookmarkStripe?]] = [:]
+    /// Comparison-translation text keyed by verse number; empty when off (역본 대조).
+    var compareTextByVerse: [Int: String] = [:]
+    /// Language of the comparison version, used to pick its font family/alignment.
+    var compareLanguage: String = "English"
     var onAddBookmark: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
 
     var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
@@ -37,6 +41,12 @@ struct BibleVerseListView: View {
     }
 
     private static let verseRowInnerPadding: CGFloat = 8
+    /// Leading inset that aligns comparison text under the main verse text column,
+    /// derived from `BibleVerseView`'s own verse-number column metrics.
+    private static let compareLeadingInset: CGFloat =
+        BibleVerseView.verseNumberColumnWidth + BibleVerseView.verseNumberSpacing
+    /// Comparison font size relative to the main font.
+    private static let compareFontScale: CGFloat = 0.82
 
     @ViewBuilder
     private func verseRow(at index: Int) -> some View {
@@ -44,7 +54,7 @@ struct BibleVerseListView: View {
         let spacing = CGFloat(fontConfiguration.lineSpacing)
         let isLast = index == verses.count - 1
         let bottomGap: CGFloat = isLast ? 0 : spacing
-        makeVerseView(at: index)
+        verseContent(at: index)
             .id(index + 1)
             .padding(Self.verseRowInnerPadding)
             .padding(.horizontal, Self.verseRowInnerPadding)
@@ -105,6 +115,34 @@ struct BibleVerseListView: View {
             Color.clear
                 .frame(width: 3)
         }
+    }
+
+    /// The main verse stacked over its comparison verse (when comparison is on).
+    @ViewBuilder
+    private func verseContent(at index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            makeVerseView(at: index)
+            if let compareText = compareTextByVerse[index + 1], !compareText.isEmpty {
+                makeCompareView(text: compareText)
+                    .padding(.leading, Self.compareLeadingInset)
+            }
+        }
+    }
+
+    private func makeCompareView(text: String) -> BibleCompareVerseView {
+        BibleCompareVerseView(
+            verseText: text,
+            font: compareUIFont(),
+            textColor: theme.textColor.withAlphaComponent(0.5),
+            alignment: fontConfiguration.alignment[compareLanguage]?.nsAlignment ?? .natural,
+            lineSpacing: CGFloat(fontConfiguration.lineSpacing)
+        )
+    }
+
+    private func compareUIFont() -> UIFont {
+        let base = getUIFontFromFontConfiguration(fontConfiguration, language: compareLanguage)
+            ?? .systemFont(ofSize: CGFloat(fontConfiguration.size))
+        return base.withSize(base.pointSize * Self.compareFontScale)
     }
 
     private func makeVerseView(at index: Int) -> BibleVerseView {
