@@ -25,7 +25,7 @@ struct RecordingsView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if viewModel.recordings.isEmpty {
-                    Text("녹음이 없습니다.")
+                    Text("No recordings yet.")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
@@ -42,7 +42,7 @@ struct RecordingsView: View {
                                 Button {
                                     beginRename(recording)
                                 } label: {
-                                    Label("제목 수정", systemImage: "pencil")
+                                    Label("Rename", systemImage: "pencil")
                                 }
                                 ShareLink(
                                     item: ShareableRecording(title: recording.title, fileName: recording.fileName),
@@ -51,14 +51,14 @@ struct RecordingsView: View {
                                         icon: Image(uiImage: UIImage(systemName: "waveform")!)
                                     )
                                 ) {
-                                  Label("공유하기", systemImage: "square.and.arrow.up")
+                                  Label("Share", systemImage: "square.and.arrow.up")
                                 }
                             }
                             .swipeActions(edge: .leading) {
                                 Button {
                                     beginRename(recording)
                                 } label: {
-                                    Label("제목 수정", systemImage: "pencil")
+                                    Label("Rename", systemImage: "pencil")
                                 }
                                 .tint(.blue)
                             }
@@ -66,10 +66,10 @@ struct RecordingsView: View {
                         .onDelete(perform: deleteRecording)
                     }
                     .scrollContentBackground(.hidden)
-                    .alert("제목 수정", isPresented: $isRenaming, presenting: recordingPendingRename) { recording in
-                        TextField("제목", text: $renameText)
-                        Button("취소", role: .cancel) {}
-                        Button("저장") {
+                    .alert("Rename", isPresented: $isRenaming, presenting: recordingPendingRename) { recording in
+                        TextField("Title", text: $renameText)
+                        Button("Cancel", role: .cancel) {}
+                        Button("Save") {
                             viewModel.renameRecording(recording, to: renameText)
                         }
                     }
