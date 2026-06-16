@@ -323,8 +323,15 @@ struct BibleNavigation2View: View {
         }
 
         do {
-            let bibleFileRepository = DIContainer.shared.resolve(type: BibleFileRepository.self)
-            try await bibleFileRepository.downloadAndInstall(version: version)
+            // Route through the acquire use case so paid versions trigger the
+            // purchase flow (and entitlement check) before downloading — never
+            // download a paid version directly.
+            let acquireUseCase = DIContainer.shared.resolve(type: AcquireBibleVersionUseCase.self)
+            let outcome = try await acquireUseCase.execute(version: version)
+
+            // Only select when the version was actually installed; a cancelled or
+            // pending purchase leaves the previous selection intact.
+            guard outcome == .installed else { return }
 
             // Refresh version list
             await viewModel.loadVersionList()

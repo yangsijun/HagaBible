@@ -19,7 +19,11 @@ struct RootView: View {
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var showFullPlayer: Bool = false
 
-    private let defaultVersions = ["WEBBE", "NKRV"]
+    // Default versions auto-downloaded on first launch must be FREE — bundling a
+    // paid version here would hand out purchased content without payment. KRV
+    // (개역한글) is the free Korean default; the paid 개역개정 (NKRV) is acquired
+    // through the version store instead.
+    private let defaultVersions = ["WEBBE", "KRV"]
 
     var body: some View {
         Group {
@@ -96,6 +100,22 @@ struct RootView: View {
                 if let version = allVersions.first(where: { $0.versionCode == versionCode }),
                    !versionsToDownload.contains(where: { $0.versionCode == versionCode }) {
                     versionsToDownload.append(version)
+                }
+            }
+
+            // Entitlement gate: never auto-download a paid version the user does
+            // not own. Free versions always pass; paid versions only re-download
+            // when the on-device entitlement is present (e.g. a previously
+            // purchased version removed by a schema update).
+            let paidCodes = versionsToDownload.filter { !BibleVersionPurchaseCatalog.isFree($0.versionCode) }
+            if !paidCodes.isEmpty {
+                let store = DIContainer.shared.resolve(type: BibleVersionStore.self)
+                let owned = await store.purchasedProductIDs()
+                versionsToDownload = versionsToDownload.filter { version in
+                    guard let productID = BibleVersionPurchaseCatalog.productID(for: version.versionCode) else {
+                        return true // free
+                    }
+                    return owned.contains(productID)
                 }
             }
         } catch {

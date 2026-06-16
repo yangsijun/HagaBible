@@ -66,7 +66,14 @@ extension DIContainer {
         container.register(type: BibleRepository.self, component: DefaultBibleRepository(
 //            dbPool: dbPool
         ))
-        
+
+        // In-app purchase store (StoreKit 2) + version acquisition use cases.
+        registerBibleVersionStore(
+            container: container,
+            store: StoreKitBibleVersionStore(),
+            fileRepository: container.resolve(type: BibleFileRepository.self)
+        )
+
         container.register(type: BibleActionService.self, component: BibleActionService())
 
         container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
@@ -143,14 +150,54 @@ extension DIContainer {
         
         container.register(type: FontThemeManager.self, component: FontThemeManager())
     }
-    
+
+    /// Wires the in-app purchase store and its version-acquisition use cases +
+    /// view model. Shared by the production and preview registration paths so the
+    /// graph stays identical apart from the injected `store`/`fileRepository`.
+    private static func registerBibleVersionStore(
+        container: DIContainer,
+        store: BibleVersionStore,
+        fileRepository: BibleFileRepository
+    ) {
+        container.register(type: BibleVersionStore.self, component: store)
+
+        let loadCatalogUseCase: LoadBibleVersionCatalogUseCase = DefaultLoadBibleVersionCatalogUseCase(
+            bibleRepository: container.resolve(type: BibleRepository.self),
+            store: store
+        )
+        container.register(type: LoadBibleVersionCatalogUseCase.self, component: loadCatalogUseCase)
+
+        let acquireUseCase: AcquireBibleVersionUseCase = DefaultAcquireBibleVersionUseCase(
+            store: store,
+            fileRepository: fileRepository
+        )
+        container.register(type: AcquireBibleVersionUseCase.self, component: acquireUseCase)
+
+        let restoreUseCase: RestorePurchasesUseCase = DefaultRestorePurchasesUseCase(store: store)
+        container.register(type: RestorePurchasesUseCase.self, component: restoreUseCase)
+
+        container.register(type: BibleVersionStoreViewModel.self, component: BibleVersionStoreViewModel(
+            loadCatalogUseCase: loadCatalogUseCase,
+            acquireUseCase: acquireUseCase,
+            restoreUseCase: restoreUseCase,
+            fileRepository: fileRepository
+        ))
+    }
+
     static func registerForPreview() {
         let container = DIContainer.shared
-        
+
         container.register(type: AppState.self, component: AppState())
-        
+
         container.register(type: BibleRepository.self, component: MockBibleRepository.shared)
-        
+
+        // In-app purchase store (mocked) + version acquisition use cases.
+        registerBibleVersionStore(
+            container: container,
+            store: MockBibleVersionStore(),
+            fileRepository: MockBibleFileRepository()
+        )
+
         container.register(type: BibleActionService.self, component: BibleActionService())
 
         container.register(type: BookmarkRepository.self, component: MockBookmarkRepository())

@@ -1,0 +1,104 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "B1A7E0C2-0001-4000-A000-000000000001",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "B1A7E0C2-1001-4000-A000-000000000001",
+      "localizations" : [
+        {
+          "description" : "New International Version Bible text.",
+          "displayName" : "New International Version",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.sijun.HagaBible.bible.niv",
+      "referenceName" : "NIV",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "5000",
+      "familyShareable" : false,
+      "internalID" : "B1A7E0C2-1001-4000-A000-000000000002",
+      "localizations" : [
+        {
+          "description" : "개역개정 성경 본문입니다.",
+          "displayName" : "개역개정",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.sijun.HagaBible.bible.nkrv",
+      "referenceName" : "NKRV",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "ko",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "KOR",
+    "_storeKitErrors" : [
+      {
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 5,
+    "minor" : 0
+  }
+}

@@ -5,60 +5,35 @@
 //  Created by 양시준 on 11/30/25.
 //
 
-import OSLog
 import SwiftUI
 
 struct BibleVersionManageView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(BibleNavigationViewModel.self) private var bibleNavigationViewModel: BibleNavigationViewModel
 
-    let bibleFileRepository: BibleFileRepository = DIContainer.shared.resolve(type: BibleFileRepository.self)
+    @State private var viewModel = DIContainer.shared.resolve(type: BibleVersionStoreViewModel.self)
 
-    @State private var isProcessing: Bool = false
-    @State private var processingVersionCode: String?
     @State private var showDeleteConfirmation: Bool = false
-    @State private var versionToDelete: BibleVersion?
-    
+    @State private var versionToDelete: BibleVersionItem?
+
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(bibleNavigationViewModel.versionList, id: \.versionCode) { version in
+                ForEach(viewModel.items) { item in
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(version.versionName)
+                            Text(item.version.versionName)
                                 .font(.body)
-                            Text(version.language)
+                            Text(item.version.language)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
 
                         Spacer()
 
-                        if processingVersionCode == version.versionCode {
-                            ProgressView()
-                                .frame(width: 24, height: 24)
-                        } else if version.isDownloaded {
-                            Button {
-                                versionToDelete = version
-                                showDeleteConfirmation = true
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
-                            }
-                            .buttonStyle(.plain)
-                        } else {
-                            Button {
-                                Task {
-                                    await downloadVersion(version)
-                                }
-                            } label: {
-                                Image(systemName: "arrow.down.circle")
-                                    .foregroundStyle(.blue)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        accessory(for: item)
                     }
                     .contentShape(Rectangle())
                 }
@@ -68,6 +43,12 @@ struct BibleVersionManageView: View {
             .navigationTitle("Manage Versions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Restore") {
+                        Task { await viewModel.restore() }
+                    }
+                    .disabled(viewModel.isProcessing)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         dismiss()
@@ -79,53 +60,97 @@ struct BibleVersionManageView: View {
                     versionToDelete = nil
                 }
                 Button("Delete", role: .destructive) {
-                    guard let version = versionToDelete else { return }
-                    Task {
-                        await deleteVersion(version)
-                    }
+                    guard let item = versionToDelete else { return }
+                    Task { await performDelete(item) }
                 }
             } message: {
-                if let version = versionToDelete {
-                    Text("Are you sure you want to delete \(version.versionName)?")
+                if let item = versionToDelete {
+                    Text("Are you sure you want to delete \(item.version.versionName)?")
                 }
             }
-            .disabled(isProcessing)
+            .alert(
+                "Something went wrong",
+                isPresented: Binding(
+                    get: { viewModel.errorMessage != nil },
+                    set: { if !$0 { viewModel.errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+            } message: {
+                Text(viewModel.errorMessage ?? "")
+            }
+            .disabled(viewModel.isProcessing)
+            .overlay {
+                if viewModel.isRestoring {
+                    ProgressView("Restoring…")
+                        .padding()
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+        .task {
+            await viewModel.load()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .bibleVersionEntitlementsChanged)) { _ in
+            Task { await viewModel.load() }
         }
     }
 
-    private func downloadVersion(_ version: BibleVersion) async {
-        isProcessing = true
-        processingVersionCode = version.versionCode
+    // MARK: - Row accessory
 
-        defer {
-            isProcessing = false
-            processingVersionCode = nil
-        }
+    @ViewBuilder
+    private func accessory(for item: BibleVersionItem) -> some View {
+        if viewModel.processingVersionCode == item.version.versionCode {
+            ProgressView()
+                .frame(width: 24, height: 24)
+        } else if item.isDownloaded {
+            Button {
+                versionToDelete = item
+                showDeleteConfirmation = true
+            } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
+        } else {
+            switch item.availability {
+            case .locked(let displayPrice):
+                // Paid and not owned — buying triggers purchase, then download.
+                Button {
+                    Task { await performAcquire(item) }
+                } label: {
+                    Text(displayPrice.isEmpty ? "Buy" : displayPrice)
+                        .font(.callout.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.blue, in: Capsule())
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
 
-        do {
-            try await bibleFileRepository.downloadAndInstall(version: version)
-            await bibleNavigationViewModel.loadVersionList()
-        } catch {
-            Logger.repository.error("Failed to download bible file: \(error.localizedDescription)")
+            case .free, .purchased:
+                // Free, or paid-and-owned — just download.
+                Button {
+                    Task { await performAcquire(item) }
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                        .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
-    private func deleteVersion(_ version: BibleVersion) async {
-        isProcessing = true
-        processingVersionCode = version.versionCode
+    // MARK: - Actions
+
+    private func performAcquire(_ item: BibleVersionItem) async {
+        await viewModel.acquire(item)
+        await bibleNavigationViewModel.loadVersionList()
+    }
+
+    private func performDelete(_ item: BibleVersionItem) async {
         versionToDelete = nil
-
-        defer {
-            isProcessing = false
-            processingVersionCode = nil
-        }
-
-        do {
-            try await bibleFileRepository.delete(version: version)
-            await bibleNavigationViewModel.loadVersionList()
-        } catch {
-            Logger.repository.error("Failed to delete bible file: \(error.localizedDescription)")
-        }
+        await viewModel.delete(item)
+        await bibleNavigationViewModel.loadVersionList()
     }
-
 }
