@@ -94,6 +94,10 @@ struct TTSFullPlayerView: View {
                         let totalVerses = max(ttsViewModel.totalVerses - 1, 1)
                         let progress = sliderValue / Double(totalVerses)
                         let trackHeight: CGFloat = isDragging ? 16 : 8
+                        // Floor the fill width at trackHeight so its leading cap stays a full
+                        // semicircle. A Capsule narrower than it is tall rounds by width/2,
+                        // leaving the track's rounded left end unfilled near verse 0.
+                        let fillWidth = progress > 0 ? max(trackHeight, geometry.size.width * progress) : 0
 
                         ZStack(alignment: .leading) {
                             // Background track
@@ -104,7 +108,7 @@ struct TTSFullPlayerView: View {
                             // Progress track
                             Capsule()
                                 .fill(Color.white)
-                                .frame(width: max(0, geometry.size.width * progress), height: trackHeight)
+                                .frame(width: fillWidth, height: trackHeight)
                         }
                         .frame(height: geometry.size.height)
                         .contentShape(Rectangle())
@@ -247,6 +251,10 @@ struct VolumeSliderView: View {
                 GeometryReader { geometry in
                     let progress = CGFloat(volume)
                     let trackHeight: CGFloat = isDragging ? 10 : 6
+                    // Floor the fill width at trackHeight so its leading cap stays a full
+                    // semicircle. A Capsule narrower than it is tall rounds by width/2,
+                    // leaving the track's rounded left end unfilled near zero volume.
+                    let fillWidth = progress > 0 ? max(trackHeight, geometry.size.width * progress) : 0
 
                     ZStack(alignment: .leading) {
                         // Background track
@@ -257,7 +265,7 @@ struct VolumeSliderView: View {
                         // Volume track
                         Capsule()
                             .fill(.thickMaterial)
-                            .frame(width: max(0, geometry.size.width * progress), height: trackHeight)
+                            .frame(width: fillWidth, height: trackHeight)
                     }
                     .frame(height: geometry.size.height)
                     .contentShape(Rectangle())
