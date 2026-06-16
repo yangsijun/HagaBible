@@ -75,6 +75,35 @@ class RecordingsViewModel {
         fetchRecordings()
     }
     
+    /// Trims surrounding whitespace and returns `nil` for an empty result.
+    /// Pure and side-effect free so the validation rule can be unit-tested
+    /// without constructing the view model.
+    nonisolated static func normalizedTitle(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    func renameRecording(_ recording: Recording, to newTitle: String) {
+        guard let title = Self.normalizedTitle(newTitle), title != recording.title else {
+            return
+        }
+        let previousTitle = recording.title
+        let previousUpdatedAt = recording.updatedAt
+        do {
+            recording.title = title
+            recording.updatedAt = .now
+            try recordingRepository.updateRecording(recording)
+            Logger.audio.info("Recording renamed to: \(title)")
+        } catch {
+            // Persist failed: roll back the in-memory @Model so the UI doesn't show
+            // a "renamed" title that silently reverts on the next launch.
+            recording.title = previousTitle
+            recording.updatedAt = previousUpdatedAt
+            Logger.audio.error("Failed to rename recording: \(error.localizedDescription)")
+        }
+        fetchRecordings()
+    }
+
     func deleteRecording(_ recording: Recording) {
         do {
             Logger.audio.debug("All recordings before delete: \(self.audioService.getAllRecordings())")

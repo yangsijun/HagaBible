@@ -16,7 +16,7 @@ class DefaultRecordingRepository: RecordingRepository {
         let modelContainer = DIContainer.shared.resolve(type: ModelContainer.self)
         self.modelContext = modelContainer.mainContext
     }
-    
+
     public func fetchRecordings() throws -> [Recording] {
         let recordings = try modelContext.fetch(
             FetchDescriptor<Recording>(
@@ -29,6 +29,10 @@ class DefaultRecordingRepository: RecordingRepository {
 
     public func addRecording(_ recording: Recording) throws {
         modelContext.insert(recording)
+        try modelContext.save()
+    }
+
+    public func updateRecording(_ recording: Recording) throws {
         try modelContext.save()
     }
 

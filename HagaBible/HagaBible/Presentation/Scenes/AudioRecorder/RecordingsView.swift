@@ -14,9 +14,13 @@ struct RecordingsView: View {
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     
     @State private var bibleReference = "요한복음 3장 16절"
-    
+
     @State private var isPlayerPresented = false
-    
+
+    @State private var isRenaming = false
+    @State private var recordingPendingRename: Recording?
+    @State private var renameText = ""
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -35,6 +39,11 @@ struct RecordingsView: View {
                                 }
                             }
                             .contextMenu {
+                                Button {
+                                    beginRename(recording)
+                                } label: {
+                                    Label("제목 수정", systemImage: "pencil")
+                                }
                                 ShareLink(
                                     item: ShareableRecording(title: recording.title, fileName: recording.fileName),
                                     preview: SharePreview(
@@ -45,10 +54,25 @@ struct RecordingsView: View {
                                   Label("공유하기", systemImage: "square.and.arrow.up")
                                 }
                             }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    beginRename(recording)
+                                } label: {
+                                    Label("제목 수정", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                         }
                         .onDelete(perform: deleteRecording)
                     }
                     .scrollContentBackground(.hidden)
+                    .alert("제목 수정", isPresented: $isRenaming, presenting: recordingPendingRename) { recording in
+                        TextField("제목", text: $renameText)
+                        Button("취소", role: .cancel) {}
+                        Button("저장") {
+                            viewModel.renameRecording(recording, to: renameText)
+                        }
+                    }
                 }
             }
             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
@@ -85,6 +109,16 @@ struct RecordingsView: View {
         }
     }
     
+    private func beginRename(_ recording: Recording) {
+        recordingPendingRename = recording
+        renameText = recording.title
+        // Defer one runloop so a context-menu dismissal completes before the alert
+        // presents (works around the SwiftUI context-menu → alert presentation race).
+        DispatchQueue.main.async {
+            self.isRenaming = true
+        }
+    }
+
     private func toggleRecording() {
         if viewModel.isRecording {
             viewModel.stopRecording()
@@ -145,11 +179,27 @@ private struct ShareableRecording: Transferable {
         FileManager.documentsDirectory.appendingPathComponent(fileName)
     }
     
+    /// Maps the (now user-editable) title to a safe single path component for the
+    /// shared file's name: replaces path separators / null bytes and clamps length,
+    /// so an arbitrary rename can't break or traverse the temp-file path.
+    private static func safeFileName(from title: String) -> String {
+        let sanitized = title
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+            .replacingOccurrences(of: "\0", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let clamped = String(sanitized.prefix(200))
+        if clamped.isEmpty || clamped == "." || clamped == ".." {
+            return "recording"
+        }
+        return clamped
+    }
+
     static var transferRepresentation: some TransferRepresentation {
         ProxyRepresentation(
             exporting: { recording in
                 let tempURL = FileManager.default.temporaryDirectory
-                    .appendingPathComponent(recording.title)
+                    .appendingPathComponent(safeFileName(from: recording.title))
                     .appendingPathExtension(recording.fileURL.pathExtension)
                 
                 if FileManager.default.fileExists(atPath: tempURL.path) {

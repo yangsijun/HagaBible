@@ -18,6 +18,7 @@
 		AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */; };
 		AA11BB22CC33DD44EE55FF07 /* ReadingChecklistLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */; };
 		AA11BB22CC33DD44EE55FF09 /* BibleVersionPurchaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */; };
+		AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */; };
 		B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */; };
 		DC4A9213679E53FEE00B337F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3AB6D737DA3C1366E4C3116 /* Foundation.framework */; };
 		DFA4A2FEEB7BE5EF8EEA11AF /* TTSPlaybackManagerNowPlayingSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */; };
@@ -71,6 +72,7 @@
 		AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultReadingMarkRepositoryTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingChecklistLogicTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleVersionPurchaseTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingRenameTests.swift; sourceTree = "<group>"; };
 		EDC04F165704E10D00000001 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
 		CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HagaBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpyNowPlayingInfoCenter.swift; sourceTree = "<group>"; };
@@ -182,6 +184,7 @@
 				AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */,
 				AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */,
 				AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */,
+				AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */,
 				F0D576F6426DF59DB3F00995 /* TestDoubles */,
 			);
 			path = HagaBibleTests;
@@ -400,7 +403,8 @@
 				AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF07 /* ReadingChecklistLogicTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF09 /* BibleVersionPurchaseTests.swift in Sources */,
-			);
+					AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		ED3B58732F05264F00F17293 /* Sources */ = {

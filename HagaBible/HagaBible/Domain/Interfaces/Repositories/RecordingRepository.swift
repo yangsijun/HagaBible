@@ -8,5 +8,6 @@
 protocol RecordingRepository {
     func fetchRecordings() throws -> [Recording]
     func addRecording(_ recording: Recording) throws
+    func updateRecording(_ recording: Recording) throws
     func deleteRecording(_ recording: Recording) throws
 }
