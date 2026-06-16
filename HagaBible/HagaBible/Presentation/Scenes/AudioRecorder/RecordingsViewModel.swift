@@ -16,16 +16,65 @@ class RecordingsViewModel {
     
     private let audioService: AudioService
     private let recordingRepository: RecordingRepository
-    
+    private let playbackManager: RecordingPlaybackManager
+
     var recordings: [Recording] = []
-    
-    init(appState: AppState, audioService: AudioService, recordingRepository: RecordingRepository) {
+
+    init(
+        appState: AppState,
+        audioService: AudioService,
+        recordingRepository: RecordingRepository,
+        playbackManager: RecordingPlaybackManager
+    ) {
         self.appState = appState
-        
+
         self.audioService = audioService
         self.recordingRepository = recordingRepository
-        
+        self.playbackManager = playbackManager
+
         self.fetchRecordings()
+    }
+
+    // MARK: - Playback (forwarded to RecordingPlaybackManager)
+
+    var playbackState: RecordingPlaybackState {
+        playbackManager.playbackState
+    }
+
+    var playbackCurrentTime: TimeInterval {
+        playbackManager.currentTime
+    }
+
+    var playbackDuration: TimeInterval {
+        playbackManager.duration
+    }
+
+    func play(_ recording: Recording) {
+        playbackManager.play(recording)
+    }
+
+    func togglePlayPause() {
+        playbackManager.togglePlayPause()
+    }
+
+    func pausePlayback() {
+        playbackManager.pause()
+    }
+
+    func stopPlayback() {
+        playbackManager.stop()
+    }
+
+    func seek(to time: TimeInterval) {
+        playbackManager.seek(to: time)
+    }
+
+    func skipForward() {
+        playbackManager.skipForward()
+    }
+
+    func skipBackward() {
+        playbackManager.skipBackward()
     }
     
     func fetchRecordings() {

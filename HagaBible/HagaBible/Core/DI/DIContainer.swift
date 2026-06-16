@@ -133,10 +133,16 @@ extension DIContainer {
         
         container.register(type: RecordingRepository.self, component: DefaultRecordingRepository())
             
+        container.register(type: RecordingPlaybackManager.self, component: RecordingPlaybackManager(
+            ttsManager: container.resolve(type: TTSPlaybackManager.self),
+            interruptionObservable: container.resolve(type: InterruptionObservable.self)
+        ))
+
         container.register(type: RecordingsViewModel.self, component: RecordingsViewModel(
             appState: container.resolve(type: AppState.self),
             audioService: container.resolve(type: AudioService.self),
-            recordingRepository: container.resolve(type: RecordingRepository.self)
+            recordingRepository: container.resolve(type: RecordingRepository.self),
+            playbackManager: container.resolve(type: RecordingPlaybackManager.self)
         ))
         
         container.register(type: SearchHistoryRepository.self, component: DefaultSearchHistoryRepository())
@@ -260,10 +266,16 @@ extension DIContainer {
         
         container.register(type: RecordingRepository.self, component: DefaultRecordingRepository())
         
+        container.register(type: RecordingPlaybackManager.self, component: RecordingPlaybackManager(
+            ttsManager: container.resolve(type: TTSPlaybackManager.self),
+            interruptionObservable: container.resolve(type: InterruptionObservable.self)
+        ))
+
         container.register(type: RecordingsViewModel.self, component: RecordingsViewModel(
             appState: container.resolve(type: AppState.self),
             audioService: container.resolve(type: AudioService.self),
-            recordingRepository: container.resolve(type: RecordingRepository.self)
+            recordingRepository: container.resolve(type: RecordingRepository.self),
+            playbackManager: container.resolve(type: RecordingPlaybackManager.self)
         ))
         
         container.register(type: SearchHistoryRepository.self, component: DefaultSearchHistoryRepository())

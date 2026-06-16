@@ -15,7 +15,7 @@ struct RecordingsView: View {
     
     @State private var bibleReference = "요한복음 3장 16절"
 
-    @State private var isPlayerPresented = false
+    @State private var recordingToPlay: Recording?
 
     @State private var isRenaming = false
     @State private var recordingPendingRename: Recording?
@@ -31,7 +31,7 @@ struct RecordingsView: View {
                     List {
                         ForEach(viewModel.recordings) { recording in
                             Button(action: {
-                                // TODO: 녹음파일 재생
+                                recordingToPlay = recording
                             }) {
                                 VStack(alignment: .leading) {
                                     Text(recording.title)
@@ -72,6 +72,9 @@ struct RecordingsView: View {
                         Button("Save") {
                             viewModel.renameRecording(recording, to: renameText)
                         }
+                    }
+                    .sheet(item: $recordingToPlay) { recording in
+                        RecordingPlayerView(viewModel: viewModel, recording: recording)
                     }
                 }
             }
@@ -130,24 +133,6 @@ struct RecordingsView: View {
     private func deleteRecording(at offsets: IndexSet) {
         for index in offsets {
             viewModel.deleteRecording(at: index)
-        }
-    }
-}
-
-struct RecordingRow: View {
-    let url: URL
-    let playAction: () -> Void
-    
-    var body: some View {
-        HStack {
-            Text(url.lastPathComponent)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer()
-            Button(action: playAction) {
-                Image(systemName: "play.circle")
-                    .font(.system(size: 24))
-            }
         }
     }
 }
