@@ -37,6 +37,11 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
     private let playerNode = AVAudioPlayerNode()
     private let renderFormat: AVAudioFormat
 
+    /// Whether the audio graph (attach/connect/prepare) has been built. Deferred out
+    /// of `init` and run on first use so creating this object at launch doesn't
+    /// acquire the audio route and interrupt other apps' audio. Main-thread only.
+    private var graphConfigured = false
+
     /// Renders utterances to buffers; never produces system audio itself.
     private var renderSynth = AVSpeechSynthesizer()
 
@@ -72,9 +77,14 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
 
         super.init()
 
-        engine.attach(playerNode)
-        engine.connect(playerNode, to: engine.mainMixerNode, format: renderFormat)
-        engine.prepare()
+        // Do NOT build the audio graph here. Attaching/connecting the player node
+        // pulls the hardware format from `engine.mainMixerNode`/`outputNode`, and
+        // `prepare()` allocates render resources against the I/O unit — together
+        // that acquires the audio route under the default (non-mixing) session and
+        // interrupts other apps' background audio the instant this object is
+        // created. RootView resolves the TTS object graph at launch, so that fired
+        // on app entry, before the user pressed play. Build the graph lazily on the
+        // first speak instead (configureGraphIfNeeded).
 
         // The engine stops itself when the hardware route/format changes — most
         // importantly when Bluetooth switches from HFP to A2DP as the session goes
@@ -308,7 +318,20 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
         }
     }
 
+    /// Builds the audio graph (attach/connect/prepare) once, on first use. Deferred
+    /// out of `init` so merely creating this object — which happens at app launch
+    /// when RootView resolves the TTS graph — doesn't acquire the audio route and
+    /// interrupt other apps' audio before the user starts playback.
+    private func configureGraphIfNeeded() {
+        guard !graphConfigured else { return }
+        engine.attach(playerNode)
+        engine.connect(playerNode, to: engine.mainMixerNode, format: renderFormat)
+        engine.prepare()
+        graphConfigured = true
+    }
+
     private func startEngineIfNeeded() {
+        configureGraphIfNeeded()
         guard !engine.isRunning else { return }
         do {
             try engine.start()
