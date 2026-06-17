@@ -175,6 +175,7 @@ struct TTSFullPlayerView: View {
                             .font(.system(size: 48))
                             .foregroundStyle(.white)
                             .contentTransition(.symbolEffect(.replace.downUp))
+                            .animation(.smooth(duration: 0.3), value: ttsViewModel.playbackState)
                     }
 
                     Button {

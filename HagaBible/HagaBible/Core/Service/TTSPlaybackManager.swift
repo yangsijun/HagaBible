@@ -16,6 +16,13 @@ class TTSPlaybackManager: NSObject {
     // MARK: - Public Properties
 
     private(set) var playbackState: TTSPlaybackState = .idle
+    /// Whether a reading session exists (playing OR paused). Mirrors `playbackState != .idle`
+    /// but is stored *separately* so views that only care about the mini player's presence
+    /// (RootView's `tabViewBottomAccessory`) can observe THIS instead of `playbackState`.
+    /// Observing `playbackState` invalidates the parent on every play↔pause toggle, which
+    /// re-hosts the accessory's content and destroys its animation continuity (the symbol
+    /// replace and size changes then snap). This flag only flips on session start/stop.
+    private(set) var isSessionActive: Bool = false
     private(set) var currentVerseIndex: Int = 0
     private(set) var verses: [BibleVerse] = []
     private(set) var bookName: String = ""
@@ -144,6 +151,7 @@ class TTSPlaybackManager: NSObject {
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
         playbackState = .playing
+        isSessionActive = true
         isPauseRequested = false
         chapterStartDate = Date()
 
@@ -264,6 +272,7 @@ class TTSPlaybackManager: NSObject {
     func stop() {
         // 1. 즉시 상태 업데이트 (UI 애니메이션이 블로킹되지 않도록)
         playbackState = .idle
+        isSessionActive = false
         isPauseRequested = false
         currentVerseIndex = 0
         verses = []

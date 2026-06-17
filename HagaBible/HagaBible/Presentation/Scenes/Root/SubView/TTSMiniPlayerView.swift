@@ -41,6 +41,11 @@ struct TTSMiniPlayerView: View {
                         .frame(width: 38, height: 38)
                         .contentShape(.rect)
                         .contentTransition(.symbolEffect(.replace.downUp))
+                        // Animate the play/pause symbol swap at render time. A withAnimation at
+                        // the tap site didn't take here because playbackState is an @Observable
+                        // computed value; an implicit animation keyed on the state animates the
+                        // replace however it's triggered (tap, remote command, auto-advance).
+                        .animation(.smooth(duration: 0.3), value: ttsViewModel.playbackState)
                 }
                 .buttonStyle(.plain)
 
@@ -60,7 +65,9 @@ struct TTSMiniPlayerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .id(placement)
+        // No `.id(placement)`: `placement` already drives reactive re-evaluation through
+        // @Environment, so forcing an identity change only made the inline↔expanded layout
+        // (and its size change) rebuild abruptly instead of animating with the tab bar.
     }
 
     private var currentVerseNumber: Int {

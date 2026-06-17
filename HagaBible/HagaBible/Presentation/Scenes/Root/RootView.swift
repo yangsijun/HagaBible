@@ -163,7 +163,10 @@ extension View {
     @ViewBuilder
     func applyTTSBottomAccessory(ttsViewModel: TTSViewModel, showFullPlayer: Binding<Bool>) -> some View {
         if #available(iOS 26.0, *) {
-            if ttsViewModel.playbackState != .idle {
+            // Observe `isSessionActive` (flips only on session start/stop), NOT `playbackState`.
+            // Reading `playbackState` here would re-run this builder on every play↔pause toggle,
+            // re-hosting the accessory content and snapping the mini player's animations.
+            if ttsViewModel.isSessionActive {
                 self.tabViewBottomAccessory {
                     TTSMiniPlayerView(
                         ttsViewModel: ttsViewModel,

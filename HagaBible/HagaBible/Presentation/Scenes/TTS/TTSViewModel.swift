@@ -22,6 +22,13 @@ class TTSViewModel {
         ttsManager.playbackState
     }
 
+    /// Whether a reading session exists (playing or paused). RootView's bottom accessory
+    /// observes this — NOT `playbackState` — so a play↔pause toggle doesn't invalidate the
+    /// parent and re-host the accessory (which would break the mini player's animations).
+    var isSessionActive: Bool {
+        ttsManager.isSessionActive
+    }
+
     var currentVerseIndex: Int {
         ttsManager.currentVerseIndex
     }
