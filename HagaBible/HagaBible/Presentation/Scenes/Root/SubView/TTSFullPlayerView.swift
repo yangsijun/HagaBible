@@ -64,7 +64,7 @@ struct TTSFullPlayerView: View {
                 // Title and info section
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(ttsViewModel.bookName) \(ttsViewModel.chapterNum)")
+                        Text(ttsViewModel.chapterTitle)
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)

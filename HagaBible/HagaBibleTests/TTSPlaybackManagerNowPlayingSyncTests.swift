@@ -186,7 +186,7 @@ struct TTSPlaybackManagerNowPlayingSyncTests {
         // 1. startReading async Task → speakCurrentVerse → updateNowPlayingInfo (playing)
         switch spy.recordedCalls[0] {
         case .updateNowPlayingInfo(let info):
-            #expect(info[MPMediaItemPropertyTitle] as? String == "Genesis 1")
+            #expect(info[MPMediaItemPropertyTitle] as? String == "Genesis 1장")
             #expect(info[MPNowPlayingInfoPropertyPlaybackRate] as? Double == 1.0)
         default:
             #expect(Bool(false))

@@ -19,6 +19,7 @@ class TTSPlaybackManager: NSObject {
     private(set) var currentVerseIndex: Int = 0
     private(set) var verses: [BibleVerse] = []
     private(set) var bookName: String = ""
+    private(set) var bookCode: String = ""
     private(set) var chapterNum: Int = 0
     private(set) var currentLanguage: String = "Korean"
 
@@ -46,6 +47,14 @@ class TTSPlaybackManager: NSObject {
     }
 
     var totalVerses: Int { verses.count }
+
+    /// Chapter title for display, with the Korean counter noun appended when a Korean
+    /// version is active: "예레미야 1장" (or "시편 1편" for Psalms). Non-Korean versions get
+    /// an empty counter noun, so this stays "Genesis 1".
+    var chapterTitle: String {
+        let counterNoun = getChapterCounterNoun(bookCode: bookCode, versionLanguage: currentLanguage)
+        return "\(bookName) \(chapterNum)\(counterNoun)"
+    }
 
     var currentVoice: TTSVoiceConfig? {
         if currentLanguage == "Korean" {
@@ -131,6 +140,7 @@ class TTSPlaybackManager: NSObject {
         self.verses = verses
         self.currentVerseIndex = min(startIndex, verses.count - 1)
         self.bookName = verses.first?.bookName ?? ""
+        self.bookCode = verses.first?.bookCode ?? ""
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
         playbackState = .playing
@@ -183,6 +193,7 @@ class TTSPlaybackManager: NSObject {
         self.verses = verses
         self.currentVerseIndex = min(startIndex, verses.count - 1)
         self.bookName = verses.first?.bookName ?? ""
+        self.bookCode = verses.first?.bookCode ?? ""
         self.chapterNum = verses.first?.chapter ?? 0
         self.currentLanguage = language
         chapterStartDate = Date()
@@ -590,7 +601,7 @@ class TTSPlaybackManager: NSObject {
         var nowPlayingInfo = [String: Any]()
 
         // Chapter-level "track": the whole chapter is one item, not each verse.
-        nowPlayingInfo[MPMediaItemPropertyTitle] = "\(bookName) \(chapterNum)"
+        nowPlayingInfo[MPMediaItemPropertyTitle] = chapterTitle
         nowPlayingInfo[MPMediaItemPropertyArtist] = "HagaBible"
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = bookName
 

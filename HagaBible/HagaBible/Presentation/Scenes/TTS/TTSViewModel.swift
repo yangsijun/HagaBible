@@ -38,6 +38,10 @@ class TTSViewModel {
         ttsManager.chapterNum
     }
 
+    var chapterTitle: String {
+        ttsManager.chapterTitle
+    }
+
     var totalVerses: Int {
         ttsManager.totalVerses
     }

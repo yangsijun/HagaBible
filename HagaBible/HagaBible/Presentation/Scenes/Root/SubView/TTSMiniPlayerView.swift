@@ -17,7 +17,7 @@ struct TTSMiniPlayerView: View {
         HStack(spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(ttsViewModel.bookName) \(ttsViewModel.chapterNum)")
+                    Text(ttsViewModel.chapterTitle)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
