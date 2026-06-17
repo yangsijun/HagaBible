@@ -20,26 +20,19 @@ class AudioService {
     var isRecording = false
     
     private var audioRecorder: AVAudioRecorder?
-    private var recordingSession: AVAudioSession?
     
     private var monitoringTask: Task<Void, Never>?
     var audioSamples: [CGFloat] = []
     
     init() {
-        setupAudioSession()
-    }
-    
-    private func setupAudioSession() {
-        recordingSession = AVAudioSession.sharedInstance()
-        do {
-            try recordingSession?.setCategory(.playAndRecord, mode: .default)
-            try recordingSession?.setActive(true)
-            AVAudioApplication.requestRecordPermission(completionHandler: { isGranted in
-                Logger.audio.debug("Recording permission granted: \(isGranted)")
-            })
-        } catch {
-            Logger.audio.error("Failed to setup audio session: \(error.localizedDescription)")
-        }
+        // Only request mic permission up front. Each feature sets its own audio session
+        // category at the moment it's used. Activating .playAndRecord at launch forced
+        // Bluetooth into HFP, which made TTS's first .playback render switch the route to
+        // A2DP (a stalling delay) and left the session output-only so recording after TTS
+        // captured no input until an app relaunch.
+        AVAudioApplication.requestRecordPermission(completionHandler: { isGranted in
+            Logger.audio.debug("Recording permission granted: \(isGranted)")
+        })
     }
     
 //    private func getDocumentsDirectory() -> URL {
@@ -47,6 +40,19 @@ class AudioService {
 //    }
     
     func startRecording() {
+        // Activate a record-capable session right before recording. TTS may have switched
+        // the shared session to .playback (output only), so re-assert .playAndRecord every
+        // time or the recording captures no input until an app relaunch.
+        // .allowBluetoothA2DP keeps output high quality; input stays on the built-in mic
+        // (matches the recording-playback session).
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
+            try session.setActive(true)
+        } catch {
+            Logger.audio.error("Failed to activate recording session: \(error.localizedDescription)")
+        }
+
         let audioFilename = FileManager.documentsDirectory.appendingPathComponent("\(UUID().uuidString).m4a")
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),

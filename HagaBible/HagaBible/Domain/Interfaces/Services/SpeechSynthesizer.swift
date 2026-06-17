@@ -19,11 +19,18 @@ protocol SpeechSynthesizerDelegate: AnyObject {
     func speechDidContinue()
     /// 발화가 취소됨
     func speechDidCancel()
+
+    /// 오디오 출력 라우트/포맷 변경(예: 블루투스 HFP→A2DP 전환)으로 엔진이 재시작되어
+    /// 진행 중이던 발화의 스케줄 버퍼가 유실됨. 호출자가 현재 절을 재발화해 복구할 수 있다.
+    func speechDidResetEngine()
 }
 
 extension SpeechSynthesizerDelegate {
     /// 기본 구현 — 시작 콜백이 필요 없는 구현체를 위해 비워둔다.
     func speechDidStart() {}
+    /// 기본 구현 — 엔진을 직접 구동하지 않는 구현체(예: AVSpeechSynthesizer 직접 호출)는
+    /// 라우트 변경 시 재발화 복구가 필요 없으므로 비워둔다.
+    func speechDidResetEngine() {}
 }
 
 /// 음성 합성기 추상화 프로토콜

@@ -53,6 +53,10 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
     /// Bumped on every `speak`/`stop`; stale callbacks compare against it and bail.
     private var generation = 0
 
+    /// Main-thread-only timestamp of the last configuration-change recovery. A single
+    /// route transition can post a burst of notifications, so we debounce on it.
+    private var lastConfigChangeRecovery: Date?
+
     /// Main-thread-only voice lookup cache.
     private var voiceCache: [String: AVSpeechSynthesisVoice] = [:]
 
@@ -71,9 +75,22 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
         engine.attach(playerNode)
         engine.connect(playerNode, to: engine.mainMixerNode, format: renderFormat)
         engine.prepare()
+
+        // The engine stops itself when the hardware route/format changes — most
+        // importantly when Bluetooth switches from HFP to A2DP as the session goes
+        // .playAndRecord → .playback on the first play. That drops the scheduled
+        // buffers and the first verse goes silent until the user stops and replays.
+        // Observe the change so we can restart the engine and re-speak automatically.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEngineConfigurationChange),
+            name: .AVAudioEngineConfigurationChange,
+            object: engine
+        )
     }
 
     deinit {
+        NotificationCenter.default.removeObserver(self)
         playerNode.stop()
         engine.stop()
     }
@@ -155,6 +172,33 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
 
     func clearVoiceCache() {
         voiceCache.removeAll()
+    }
+
+    // MARK: - Route / configuration changes
+
+    /// Restarts the engine and asks the delegate to re-speak the current verse after
+    /// the audio route or format changes mid-utterance — most importantly when
+    /// Bluetooth switches from HFP to A2DP as the session goes .playAndRecord →
+    /// .playback on the first play. The engine stops on such a change and drops the
+    /// scheduled buffers, so without this recovery the first verse stays silent until
+    /// the user manually stops and replays (the replay works only because the route
+    /// has settled by then). Fires on an arbitrary thread, so it hops to main.
+    @objc private func handleEngineConfigurationChange(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            // Only recover an in-flight utterance; ignore changes while idle or paused.
+            guard self.isSpeaking else { return }
+            // A single route transition can post a burst of notifications — debounce
+            // so we re-speak the verse only once per transition.
+            if let last = self.lastConfigChangeRecovery,
+               Date().timeIntervalSince(last) < 1.0 { return }
+            self.lastConfigChangeRecovery = Date()
+
+            Logger.tts.info("Audio engine configuration changed — restarting engine and re-speaking current verse")
+            self.stop()
+            self.startEngineIfNeeded()
+            self.delegate?.speechDidResetEngine()
+        }
     }
 
     // MARK: - Rendering

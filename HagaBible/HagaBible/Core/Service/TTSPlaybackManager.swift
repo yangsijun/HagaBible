@@ -648,6 +648,16 @@ extension TTSPlaybackManager: SpeechSynthesizerDelegate {
         updateNowPlayingInfo()
     }
 
+    func speechDidResetEngine() {
+        // 출력 라우트/포맷 변경(예: 블루투스 HFP→A2DP 전환)으로 오디오 엔진이 재시작되며
+        // 진행 중이던 발화의 스케줄 버퍼가 유실됐다. 재생 중이라면 현재 절을 처음부터 다시
+        // 읽어 복구한다(= 사용자가 수동으로 하던 정지→재생 자동화).
+        guard playbackState == .playing else { return }
+        guard !isRestarting, !isSynthesizerBusy else { return }
+        Logger.tts.info("Re-speaking current verse after audio engine reset")
+        speakCurrentVerse()
+    }
+
     func speechDidFinish() {
         guard playbackState != .idle else {
             Logger.tts.debug("didFinish skipped - already idle")
