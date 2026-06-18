@@ -41,6 +41,7 @@ struct BibleReaderView: View {
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
     @State private var showLabs: Bool = false
+    @State private var showReminder: Bool = false
     @State private var addBookmarkRequest: AddBookmarkRequest?
     @State private var exportRequest: VerseExportRequest?
     @State private var shareItem: ShareTextItem?
@@ -102,13 +103,14 @@ struct BibleReaderView: View {
         .safeAreaPadding(.bottom, 200)
     }
 
-    /// True while any modal is open over the reader (Bible Navigation, Font &
-    /// Themes, Labs, Add Bookmark, the export dialog, or the share sheet).
+    /// True while any modal is open over the reader (Bible Navigation, Font & Themes,
+    /// Labs, Reading Reminder, Add Bookmark, the export dialog, or the share sheet).
     /// Dimming is suppressed while one is up, so it only fires during actual reading.
     private var isReaderModalOpen: Bool {
         showBibleNavigation
             || showFontThemeConfig
             || showLabs
+            || showReminder
             || addBookmarkRequest != nil
             || exportRequest != nil
             || shareItem != nil
@@ -265,6 +267,7 @@ struct BibleReaderView: View {
                     ttsPlaybackState: ttsViewModel.playbackState,
                     isTTSEnabled: appState.isTTSEnabled,
                     onLabsTapped: { showLabs = true },
+                    onReminderTapped: { showReminder = true },
                     onBookmarksTapped: {
                         appState.librarySection = .bookmarks
                         appState.selectedTab = .library
@@ -311,6 +314,9 @@ struct BibleReaderView: View {
             }
             .sheet(isPresented: $showLabs) {
                 ExperimentalFeaturesView(appState: appState)
+            }
+            .sheet(isPresented: $showReminder) {
+                ReadingReminderView(appState: appState)
             }
             .sheet(item: $addBookmarkRequest) { request in
                 AddBookmarkSheet(

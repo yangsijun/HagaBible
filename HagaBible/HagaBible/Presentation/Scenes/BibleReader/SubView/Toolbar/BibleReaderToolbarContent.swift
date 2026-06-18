@@ -17,6 +17,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let ttsPlaybackState: TTSPlaybackState
     let isTTSEnabled: Bool
     let onLabsTapped: () -> Void
+    let onReminderTapped: () -> Void
     let onBookmarksTapped: () -> Void
     let onReadingChecklistTapped: () -> Void
     let comparableVersions: [BibleVersion]
@@ -67,6 +68,9 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 } label: {
                     Label("Font & Themes", systemImage: "textformat.size")
                 }
+                Button(action: onReminderTapped) {
+                    Label("Reading Reminder", systemImage: "bell")
+                }
                 Button(action: onLabsTapped) {
                     Label("Labs", systemImage: "testtube.2")
                 }
@@ -92,6 +96,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     ttsPlaybackState: .idle,
                     isTTSEnabled: true,
                     onLabsTapped: {},
+                    onReminderTapped: {},
                     onBookmarksTapped: {},
                     onReadingChecklistTapped: {},
                     comparableVersions: [

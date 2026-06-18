@@ -36,6 +36,8 @@ extension DIContainer {
         
         container.register(type: AppState.self, component: AppState())
         
+        container.register(type: NotificationService.self, component: NotificationService())
+
         do {
             let bibleDatabaseService = try BibleDatabaseService()
             container.register(type: BibleDatabaseService.self, component: bibleDatabaseService)
@@ -194,6 +196,8 @@ extension DIContainer {
         let container = DIContainer.shared
 
         container.register(type: AppState.self, component: AppState())
+
+        container.register(type: NotificationService.self, component: NotificationService())
 
         container.register(type: BibleRepository.self, component: MockBibleRepository.shared)
 

@@ -16,4 +16,5 @@ extension Logger {
     nonisolated static let search = Logger(subsystem: subsystem, category: "Search")
     nonisolated static let app = Logger(subsystem: subsystem, category: "App")
     nonisolated static let tts = Logger(subsystem: subsystem, category: "TTS")
+    nonisolated static let notification = Logger(subsystem: subsystem, category: "Notification")
 }

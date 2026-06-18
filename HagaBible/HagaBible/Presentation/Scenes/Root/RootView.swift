@@ -36,6 +36,15 @@ struct RootView: View {
         .task {
             await downloadDefaultVersionsIfNeeded()
         }
+        .task {
+            // Keep the OS schedule in sync with the saved reminder list on launch (e.g.
+            // a reminder fired/changed while the app was closed). Only reconcile while
+            // still authorized so we don't prompt for permission at every launch.
+            let service = DIContainer.shared.resolve(type: NotificationService.self)
+            if await service.isAuthorized() {
+                await service.syncReadingReminders(appState.readingReminders)
+            }
+        }
     }
 
     private var mainContent: some View {

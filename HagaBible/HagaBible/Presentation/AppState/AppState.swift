@@ -52,6 +52,14 @@ class AppState {
         didSet { ScreenDisplayPreferences.dimAfterSeconds = screenDimAfterSeconds }
     }
 
+    /// Alarm-style list of Bible-reading reminders, persisted via
+    /// `ReadingReminderPreferences`. Observable so the list UI reflects changes live; the
+    /// schedule is reconciled through `NotificationService` whenever the list changes
+    /// (see `ReadingReminderView`) and on launch (`RootView`).
+    var readingReminders: [ReadingReminder] = ReadingReminderPreferences.reminders {
+        didSet { ReadingReminderPreferences.reminders = readingReminders }
+    }
+
     var bibleReaderState = BibleReaderState() {
         didSet {
             saveBibleReaderState()
