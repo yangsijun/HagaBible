@@ -123,6 +123,7 @@ struct ScreenWakeConfigView: View {
     var body: some View {
         Section {
             Toggle("Keep screen on", isOn: $appState.keepScreenOn)
+                .tint(.accent)
             if appState.keepScreenOn {
                 Picker("Dim after", selection: $appState.screenDimAfterSeconds) {
                     ForEach(Self.dimOptions, id: \.seconds) { option in
