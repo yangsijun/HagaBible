@@ -30,6 +30,17 @@ class AppState {
         didSet { BookmarkPreferences.isIndicatorEnabled = bookmarkIndicatorEnabled }
     }
 
+    /// Experimental ("Labs") feature toggles — opt-in, default off, persisted via
+    /// `ExperimentalFeaturePreferences`. Observable so flipping one immediately
+    /// shows/hides the dependent UI: the reader's "Listen" action + the TTS mini
+    /// player (TTS), and the Recordings tab (recording).
+    var isTTSEnabled: Bool = ExperimentalFeaturePreferences.isTTSEnabled {
+        didSet { ExperimentalFeaturePreferences.isTTSEnabled = isTTSEnabled }
+    }
+    var isRecordingEnabled: Bool = ExperimentalFeaturePreferences.isRecordingEnabled {
+        didSet { ExperimentalFeaturePreferences.isRecordingEnabled = isRecordingEnabled }
+    }
+
     /// Screen-wake settings for the reader, persisted via `ScreenDisplayPreferences`.
     /// `keepScreenOn` (default true) keeps the display awake; when on,
     /// `screenDimAfterSeconds` (default 0 = never) dims the brightness after that

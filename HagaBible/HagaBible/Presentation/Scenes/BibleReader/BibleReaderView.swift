@@ -40,6 +40,7 @@ struct BibleReaderView: View {
     @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
+    @State private var showLabs: Bool = false
     @State private var addBookmarkRequest: AddBookmarkRequest?
     @State private var exportRequest: VerseExportRequest?
     @State private var shareItem: ShareTextItem?
@@ -102,11 +103,12 @@ struct BibleReaderView: View {
     }
 
     /// True while any modal is open over the reader (Bible Navigation, Font &
-    /// Themes, Add Bookmark, the export dialog, or the share sheet).
+    /// Themes, Labs, Add Bookmark, the export dialog, or the share sheet).
     /// Dimming is suppressed while one is up, so it only fires during actual reading.
     private var isReaderModalOpen: Bool {
         showBibleNavigation
             || showFontThemeConfig
+            || showLabs
             || addBookmarkRequest != nil
             || exportRequest != nil
             || shareItem != nil
@@ -261,6 +263,8 @@ struct BibleReaderView: View {
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
                     ttsPlaybackState: ttsViewModel.playbackState,
+                    isTTSEnabled: appState.isTTSEnabled,
+                    onLabsTapped: { showLabs = true },
                     onBookmarksTapped: {
                         appState.librarySection = .bookmarks
                         appState.selectedTab = .library
@@ -304,6 +308,9 @@ struct BibleReaderView: View {
                         view
                             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
                     }
+            }
+            .sheet(isPresented: $showLabs) {
+                ExperimentalFeaturesView(appState: appState)
             }
             .sheet(item: $addBookmarkRequest) { request in
                 AddBookmarkSheet(
@@ -425,6 +432,9 @@ struct BibleReaderView: View {
 
     // MARK: - TTS Methods
     private func handleListenTapped() {
+        // Defense in depth: the Listen action is hidden when TTS is disabled, but
+        // guard here too so a session can never start while the feature is off.
+        guard appState.isTTSEnabled else { return }
         if ttsViewModel.playbackState == .idle {
             // Start from selected verse or beginning
             let startIndex = selectStartIndex ?? 0

@@ -25,11 +25,19 @@ class AudioService {
     var audioSamples: [CGFloat] = []
     
     init() {
-        // Only request mic permission up front. Each feature sets its own audio session
-        // category at the moment it's used. Activating .playAndRecord at launch forced
-        // Bluetooth into HFP, which made TTS's first .playback render switch the route to
-        // A2DP (a stalling delay) and left the session output-only so recording after TTS
-        // captured no input until an app relaunch.
+        // No audio work at launch. Recording is an opt-in ("Labs") feature, so the mic
+        // permission prompt is deferred to requestMicrophonePermissionIfNeeded() — called
+        // when the user enables recording — instead of firing on every app launch. The
+        // .playAndRecord session is likewise activated lazily in startRecording().
+        // (Activating audio at launch previously forced Bluetooth into HFP and prompted
+        // for the mic before the user ever used recording.)
+    }
+
+    /// Requests microphone permission. Called when the user turns on the opt-in
+    /// recording feature, so the system prompt appears then — not at app launch.
+    /// `requestRecordPermission` is idempotent: if permission is already determined it
+    /// reports the status without prompting again.
+    func requestMicrophonePermissionIfNeeded() {
         AVAudioApplication.requestRecordPermission(completionHandler: { isGranted in
             Logger.audio.debug("Recording permission granted: \(isGranted)")
         })

@@ -15,6 +15,8 @@ struct BibleReaderToolbarContent: ToolbarContent {
     @Binding var showFontThemeConfig: Bool
     let onListenTapped: () -> Void
     let ttsPlaybackState: TTSPlaybackState
+    let isTTSEnabled: Bool
+    let onLabsTapped: () -> Void
     let onBookmarksTapped: () -> Void
     let onReadingChecklistTapped: () -> Void
     let comparableVersions: [BibleVersion]
@@ -32,11 +34,13 @@ struct BibleReaderToolbarContent: ToolbarContent {
         }
         ToolbarItem {
             BibleReaderToolbarMenuButton {
-                Button(action: onListenTapped) {
-                    Label(
-                        ttsPlaybackState == .idle ? "Listen" : "Stop Listening",
-                        systemImage: ttsPlaybackState == .idle ? "headphones" : "headphones.slash"
-                    )
+                if isTTSEnabled {
+                    Button(action: onListenTapped) {
+                        Label(
+                            ttsPlaybackState == .idle ? "Listen" : "Stop Listening",
+                            systemImage: ttsPlaybackState == .idle ? "headphones" : "headphones.slash"
+                        )
+                    }
                 }
                 Menu {
                     BibleReaderCompareMenuItems(
@@ -63,6 +67,9 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 } label: {
                     Label("Font & Themes", systemImage: "textformat.size")
                 }
+                Button(action: onLabsTapped) {
+                    Label("Labs", systemImage: "testtube.2")
+                }
             } label: {
                 Label("Other", systemImage: "ellipsis")
             }
@@ -83,6 +90,8 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     showFontThemeConfig: .constant(false),
                     onListenTapped: {},
                     ttsPlaybackState: .idle,
+                    isTTSEnabled: true,
+                    onLabsTapped: {},
                     onBookmarksTapped: {},
                     onReadingChecklistTapped: {},
                     comparableVersions: [

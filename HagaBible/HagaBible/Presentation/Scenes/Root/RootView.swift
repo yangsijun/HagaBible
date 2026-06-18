@@ -48,9 +48,11 @@ struct RootView: View {
                 LibraryView()
                     .environment(\.horizontalSizeClass, horizontalSizeClass)
             }
-            Tab("Recordings", systemImage: "waveform", value: .recordings) {
-                RecordingsView()
-                    .environment(\.horizontalSizeClass, horizontalSizeClass)
+            if appState.isRecordingEnabled {
+                Tab("Recordings", systemImage: "waveform", value: .recordings) {
+                    RecordingsView()
+                        .environment(\.horizontalSizeClass, horizontalSizeClass)
+                }
             }
             Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
                 SearchView(searchText: $search)
@@ -59,11 +61,27 @@ struct RootView: View {
             }
         }
         .applyTabBarMinimizeBehavior()
-        .applyTTSBottomAccessory(ttsViewModel: ttsViewModel, showFullPlayer: $showFullPlayer)
+        .applyTTSBottomAccessory(isEnabled: appState.isTTSEnabled, ttsViewModel: ttsViewModel, showFullPlayer: $showFullPlayer)
         .environment(\.horizontalSizeClass, .compact)
         .onAppear {
             ttsViewModel.onChapterFinished = { [ttsViewModel] in
                 ttsViewModel.goToNextChapter(forcePlay: true)
+            }
+        }
+        .onChange(of: appState.isTTSEnabled) { _, enabled in
+            // Disabling TTS mid-session must stop playback — the mini player is gated
+            // on isTTSEnabled and would otherwise vanish while audio keeps playing.
+            if !enabled { ttsViewModel.stop() }
+        }
+        .onChange(of: appState.isRecordingEnabled) { _, enabled in
+            if enabled {
+                // Ask for mic permission when recording is turned on, so the prompt
+                // appears here rather than at every app launch.
+                DIContainer.shared.resolve(type: AudioService.self).requestMicrophonePermissionIfNeeded()
+            } else if appState.selectedTab == .recordings {
+                // The Recordings tab is about to disappear; fall back to the reader so
+                // the TabView isn't left on a now-missing tab.
+                appState.selectedTab = .bibleReader
             }
         }
     }
@@ -161,12 +179,14 @@ extension View {
     }
 
     @ViewBuilder
-    func applyTTSBottomAccessory(ttsViewModel: TTSViewModel, showFullPlayer: Binding<Bool>) -> some View {
+    func applyTTSBottomAccessory(isEnabled: Bool, ttsViewModel: TTSViewModel, showFullPlayer: Binding<Bool>) -> some View {
         if #available(iOS 26.0, *) {
             // Observe `isSessionActive` (flips only on session start/stop), NOT `playbackState`.
             // Reading `playbackState` here would re-run this builder on every play↔pause toggle,
             // re-hosting the accessory content and snapping the mini player's animations.
-            if ttsViewModel.isSessionActive {
+            // `isEnabled` is the Labs/TTS feature flag and only changes when the user toggles
+            // the feature, so it doesn't reintroduce the play↔pause re-host.
+            if isEnabled, ttsViewModel.isSessionActive {
                 self.tabViewBottomAccessory {
                     TTSMiniPlayerView(
                         ttsViewModel: ttsViewModel,
