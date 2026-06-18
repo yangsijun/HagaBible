@@ -47,9 +47,12 @@ struct BibleVerseListView: View {
 
     private static let verseRowInnerPadding: CGFloat = 8
     /// Leading inset that aligns comparison text under the main verse text column,
-    /// derived from `BibleVerseView`'s own verse-number column metrics.
-    private static let compareLeadingInset: CGFloat =
-        BibleVerseView.verseNumberColumnWidth + BibleVerseView.verseNumberSpacing
+    /// derived from `BibleVerseView`'s own verse-number column metrics (which scale
+    /// with the reader's font size).
+    private var compareLeadingInset: CGFloat {
+        BibleVerseView.verseNumberColumnWidth(forBodyFontSize: CGFloat(fontConfiguration.size))
+            + BibleVerseView.verseNumberSpacing
+    }
     /// Comparison font size relative to the main font.
     private static let compareFontScale: CGFloat = 0.82
 
@@ -143,7 +146,7 @@ struct BibleVerseListView: View {
             makeVerseView(at: index)
             if let compareText = compareTextByVerse[index + 1], !compareText.isEmpty {
                 makeCompareView(text: compareText)
-                    .padding(.leading, Self.compareLeadingInset)
+                    .padding(.leading, compareLeadingInset)
             }
         }
     }

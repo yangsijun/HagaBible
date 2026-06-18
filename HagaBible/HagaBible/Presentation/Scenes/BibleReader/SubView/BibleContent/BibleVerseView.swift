@@ -8,10 +8,20 @@
 import SwiftUI
 
 struct BibleVerseView: View {
-    /// Minimum width of the leading verse-number column.
-    static let verseNumberColumnWidth: CGFloat = 12
+    /// Body font size the verse-number metrics are tuned around. The verse number
+    /// scales proportionally to the reader's font size relative to this base, so it
+    /// grows/shrinks roughly in step with the verse text (≈ caption size at the base).
+    static let baseBodyFontSize: CGFloat = 20
+    /// Minimum width of the leading verse-number column at `baseBodyFontSize`.
+    static let baseVerseNumberColumnWidth: CGFloat = 12
     /// Spacing between the verse number and the verse text.
     static let verseNumberSpacing: CGFloat = 8
+
+    /// Verse-number column min-width scaled for a given body font size, so callers
+    /// (e.g. the compare-view inset) can align with the same proportional column.
+    static func verseNumberColumnWidth(forBodyFontSize bodyFontSize: CGFloat) -> CGFloat {
+        baseVerseNumberColumnWidth * bodyFontSize / baseBodyFontSize
+    }
 
     let verseNumber: Int
     let verseText: String
@@ -23,6 +33,12 @@ struct BibleVerseView: View {
     private var lineSpacing: CGFloat?
 
     private var verseFontWidth: Font.Width
+
+    /// Verse-number metrics, scaled in `init` from the body font size around
+    /// `baseBodyFontSize` (caption-ish at the base, larger with bigger reader fonts).
+    private var verseNumberFontSize: CGFloat
+    private var verseNumberMinWidth: CGFloat
+    private var verseNumberMinHeight: CGFloat
 
     init(
         verseNumber: Int,
@@ -48,13 +64,20 @@ struct BibleVerseView: View {
         } else {
             self.verseFontWidth = .compressed
         }
+
+        // Scale the verse number roughly in proportion to the body font size, so it
+        // tracks the reader's font-size setting instead of staying a fixed caption.
+        let scale = self.font.pointSize / Self.baseBodyFontSize
+        self.verseNumberFontSize = 12 * scale
+        self.verseNumberMinHeight = 22 * scale
+        self.verseNumberMinWidth = Self.verseNumberColumnWidth(forBodyFontSize: self.font.pointSize)
     }
 
     var body: some View {
         HStack(alignment: .top, spacing: Self.verseNumberSpacing) {
             Text("\(verseNumber)")
-                .frame(minWidth: Self.verseNumberColumnWidth, minHeight: 22, alignment: .center)
-                .font(.caption)
+                .frame(minWidth: verseNumberMinWidth, minHeight: verseNumberMinHeight, alignment: .center)
+                .font(.system(size: verseNumberFontSize))
                 .fontWidth(verseFontWidth)
                 .foregroundStyle(Color(uiColor: verseNumberColor))
             AdvancedText(
