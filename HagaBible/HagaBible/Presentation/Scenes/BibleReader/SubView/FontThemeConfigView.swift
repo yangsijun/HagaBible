@@ -10,6 +10,7 @@ import SwiftUI
 struct FontThemeConfigView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(FontThemeManager.self) private var fontThemeManager: FontThemeManager
+    @State private var appState = DIContainer.shared.resolve(type: AppState.self)
     var language: String
     
     var body: some View {
@@ -29,6 +30,7 @@ struct FontThemeConfigView: View {
                 LineSpacingStepperView(lineSpacing: $fontThemeManager.fontConfiguration.lineSpacing)
                 FontTypeConfigView(fontType: fontTypeBinding)
                 ThemePickerView(theme: $fontThemeManager.theme)
+                ScreenWakeConfigView(appState: appState)
             }
             .scrollContentBackground(.hidden)
         }
@@ -99,6 +101,43 @@ struct ThemePickerView: View {
             }
         }
         .pickerStyle(.inline)
+    }
+}
+
+/// "Screen" section for the Font & Themes sheet: keep the display awake while
+/// reading and, optionally, dim it after a period of inactivity. Bound to the
+/// shared `AppState`, so changes apply live in the reader (see `ScreenWakeController`).
+struct ScreenWakeConfigView: View {
+    @Bindable var appState: AppState
+
+    /// (label, seconds) options for the dim delay; `0` means never dim.
+    private static let dimOptions: [(label: String, seconds: Int)] = [
+        ("Never", 0),
+        ("15 sec", 15),
+        ("30 sec", 30),
+        ("1 min", 60),
+        ("2 min", 120),
+        ("5 min", 300),
+    ]
+
+    var body: some View {
+        Section {
+            Toggle("Keep screen on", isOn: $appState.keepScreenOn)
+            if appState.keepScreenOn {
+                Picker("Dim after", selection: $appState.screenDimAfterSeconds) {
+                    ForEach(Self.dimOptions, id: \.seconds) { option in
+                        Text(option.label).tag(option.seconds)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+        } header: {
+            Text("Screen")
+        } footer: {
+            Text(appState.keepScreenOn
+                 ? "The screen stays on while reading. Optionally dim it after a period of inactivity to save power — tap the screen to restore."
+                 : "The screen turns off automatically using your device's Auto-Lock setting.")
+        }
     }
 }
 

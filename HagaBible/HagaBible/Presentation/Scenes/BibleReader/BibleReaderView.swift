@@ -34,6 +34,7 @@ private struct ShareTextItem: Identifiable {
 
 struct BibleReaderView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass: UserInterfaceSizeClass?
+    @Environment(\.scenePhase) private var scenePhase
     @State private var appState: AppState = DIContainer.shared.resolve(type: AppState.self)
     @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
@@ -45,6 +46,7 @@ struct BibleReaderView: View {
     @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
+    @State private var screenWake = ScreenWakeController()
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -99,6 +101,51 @@ struct BibleReaderView: View {
         .safeAreaPadding(.bottom, 200)
     }
 
+    /// True while any modal is open over the reader (Bible Navigation, Font &
+    /// Themes, Add Bookmark, the export dialog, or the share sheet).
+    /// Dimming is suppressed while one is up, so it only fires during actual reading.
+    private var isReaderModalOpen: Bool {
+        showBibleNavigation
+            || showFontThemeConfig
+            || addBookmarkRequest != nil
+            || exportRequest != nil
+            || shareItem != nil
+    }
+
+    /// Push the current screen-wake settings into the controller — but only while
+    /// the reader tab is active, so dimming/keep-awake never applies on other tabs
+    /// (e.g. coming back from background while Library is selected).
+    private func applyScreenWake() {
+        guard appState.selectedTab == .bibleReader else {
+            screenWake.teardown()
+            return
+        }
+        // Keep the screen awake, but suppress dimming (delay 0 = never) while a
+        // modal is open over the reader; the real delay resumes once it closes.
+        let dimAfterSeconds = isReaderModalOpen ? 0 : appState.screenDimAfterSeconds
+        screenWake.apply(
+            keepScreenOn: appState.keepScreenOn,
+            dimAfterSeconds: dimAfterSeconds
+        )
+    }
+
+    /// Full-screen transparent catcher shown only while the screen is dimmed; any
+    /// touch restores brightness and restarts the countdown (the device is never
+    /// locked, so resume is just a tap — no Face ID / passcode).
+    private var screenDimWakeCatcher: some View {
+        Color.black.opacity(0.001)
+            .ignoresSafeArea()
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0).onChanged { _ in
+                    screenWake.userDidInteract(
+                        keepScreenOn: appState.keepScreenOn,
+                        dimAfterSeconds: appState.screenDimAfterSeconds
+                    )
+                }
+            )
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -106,6 +153,28 @@ struct BibleReaderView: View {
                     verseList
                 }
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+                .onScrollPhaseChange { _, newPhase in
+                    // Active scrolling counts as interaction — keep the screen lit
+                    // and restart the dim countdown.
+                    if newPhase != .idle {
+                        screenWake.userDidInteract(
+                            keepScreenOn: appState.keepScreenOn,
+                            dimAfterSeconds: appState.screenDimAfterSeconds
+                        )
+                    }
+                }
+                // Any touch on the reading surface — a tap, the start of a scroll or a
+                // chapter swipe — also counts, so the dim fires only after genuine
+                // inactivity rather than on a fixed timer. The recognizer observes
+                // without blocking scroll/taps (see `TouchActivityDetector`).
+                .gesture(
+                    TouchActivityDetector {
+                        screenWake.userDidInteract(
+                            keepScreenOn: appState.keepScreenOn,
+                            dimAfterSeconds: appState.screenDimAfterSeconds
+                        )
+                    }
+                )
                 .swipeGesture(
                     onLeftSwipe: {
                         let wasActive = ttsViewModel.playbackState != .idle
@@ -260,9 +329,24 @@ struct BibleReaderView: View {
             if tab == .bibleReader {
                 Task { await viewModel.fetchBookmarksForCurrentChapter() }
             }
+            // Screen-wake/dim follows the active tab: re-arm on the reader, tear
+            // down on any other tab (applyScreenWake self-gates on selectedTab).
+            applyScreenWake()
         }
-        .onAppear {
-            UIApplication.shared.isIdleTimerDisabled = true
+        .onAppear { applyScreenWake() }
+        .onChange(of: appState.keepScreenOn) { applyScreenWake() }
+        .onChange(of: appState.screenDimAfterSeconds) { applyScreenWake() }
+        .onChange(of: isReaderModalOpen) { applyScreenWake() }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active:
+                applyScreenWake()
+            case .inactive, .background:
+                // Don't leave another app at our dimmed brightness.
+                screenWake.suspend()
+            @unknown default:
+                break
+            }
         }
         .task {
             await viewModel.fetchAvailableVersions()
@@ -284,7 +368,12 @@ struct BibleReaderView: View {
             }
         }
         .onDisappear {
-            UIApplication.shared.isIdleTimerDisabled = false
+            screenWake.teardown()
+        }
+        .overlay {
+            if screenWake.isDimmed {
+                screenDimWakeCatcher
+            }
         }
     }
 

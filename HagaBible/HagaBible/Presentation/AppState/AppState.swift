@@ -30,6 +30,17 @@ class AppState {
         didSet { BookmarkPreferences.isIndicatorEnabled = bookmarkIndicatorEnabled }
     }
 
+    /// Screen-wake settings for the reader, persisted via `ScreenDisplayPreferences`.
+    /// `keepScreenOn` (default true) keeps the display awake; when on,
+    /// `screenDimAfterSeconds` (default 0 = never) dims the brightness after that
+    /// many seconds of inactivity. Observable so changes apply live in the reader.
+    var keepScreenOn: Bool = ScreenDisplayPreferences.keepScreenOn {
+        didSet { ScreenDisplayPreferences.keepScreenOn = keepScreenOn }
+    }
+    var screenDimAfterSeconds: Int = ScreenDisplayPreferences.dimAfterSeconds {
+        didSet { ScreenDisplayPreferences.dimAfterSeconds = screenDimAfterSeconds }
+    }
+
     var bibleReaderState = BibleReaderState() {
         didSet {
             saveBibleReaderState()
