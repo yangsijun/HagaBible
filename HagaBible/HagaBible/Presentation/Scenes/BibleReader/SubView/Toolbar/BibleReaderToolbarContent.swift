@@ -11,6 +11,10 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let bibleBook: BibleBook?
     let chapterNum: Int
     let bibleVersion: BibleVersion?
+    /// Measured reader content width (≈ window width), forwarded to the title button so it
+    /// can cap its width to the real available space and shrink to fit a cramped top bar
+    /// instead of being dropped.
+    let availableWidth: CGFloat
     @Binding var showBibleNavigation: Bool
     @Binding var showFontThemeConfig: Bool
     let onListenTapped: () -> Void
@@ -30,6 +34,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 bibleBook: bibleBook,
                 chapterNum: chapterNum,
                 bibleVersion: bibleVersion,
+                availableWidth: availableWidth,
                 showBibleNavigation: $showBibleNavigation
             )
         }
@@ -90,6 +95,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     bibleBook: .init(bookCode: "GRN", bookName: "창세기", bookOrder: 1, totalChapters: 50, versionCode: "KRV"),
                     chapterNum: 1,
                     bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", versionShortName: "개역한글", language: "Korean", isDownloaded: true),
+                    availableWidth: 0,
                     showBibleNavigation: .constant(false),
                     showFontThemeConfig: .constant(false),
                     onListenTapped: {},

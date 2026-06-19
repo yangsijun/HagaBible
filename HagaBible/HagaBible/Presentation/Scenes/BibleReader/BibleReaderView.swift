@@ -49,6 +49,11 @@ struct BibleReaderView: View {
     @State private var highlightTask: Task<Void, Error>?
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     @State private var screenWake = ScreenWakeController()
+    /// Measured width of the reader content (≈ the window width). Passed to the toolbar
+    /// title so it caps itself to the real available space and shrinks to fit a cramped
+    /// top bar (e.g. a narrow iPad window) instead of being dropped — the shrink decision
+    /// is real measured width, not a size-class guess.
+    @State private var availableWidth: CGFloat = 0
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -221,6 +226,11 @@ struct BibleReaderView: View {
                 }
             }
             .background(Color.gray.opacity(0.2), ignoresSafeAreaEdges: .all)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.width
+            } action: { newWidth in
+                availableWidth = newWidth
+            }
             .toolbarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom, alignment: .trailing) {
                 BibleReaderActionBar(
@@ -261,6 +271,7 @@ struct BibleReaderView: View {
                     bibleBook: viewModel.bibleBook,
                     chapterNum: viewModel.chapterNum,
                     bibleVersion: viewModel.bibleVersion,
+                    availableWidth: availableWidth,
                     showBibleNavigation: $showBibleNavigation,
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
