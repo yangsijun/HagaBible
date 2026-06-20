@@ -146,7 +146,9 @@ final class BookmarksViewModel {
                 return code
             }
         }
-        return nil
+        // Cross-language fallback that works regardless of which versions are
+        // downloaded (e.g. "Gen" / "창" both resolve to "GEN").
+        return BibleBookReference.bookCode(for: trimmed)
     }
 
     private func resolveBookCodeViaAbbreviation(_ abbreviation: String) async -> String? {

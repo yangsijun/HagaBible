@@ -53,7 +53,14 @@ class SearchViewModel {
         Task {
             var book: BibleBook? = bibleReaderViewModel.bibleBookList.first(where: { $0.bookName.lowercased() == parsed.book.lowercased() })
 
-            // If no exact match, try to find by abbreviation
+            // Resolve cross-language names/abbreviations (e.g. "Gen" while a Korean
+            // version is loaded, or "창" while an English version is loaded) via the
+            // version-independent canonical book code.
+            if book == nil, let bookCode = BibleBookReference.bookCode(for: parsed.book) {
+                book = bibleReaderViewModel.bibleBookList.first(where: { $0.bookCode == bookCode })
+            }
+
+            // Fallback: version-specific abbreviation table in the database.
             if book == nil {
                 if let bookCode = try? await bibleRepository.findBookCodeByAbbreviation(versionCode: bibleVersion.versionCode, abbreviation: parsed.book) {
                     book = bibleReaderViewModel.bibleBookList.first(where: { $0.bookCode == bookCode })
