@@ -55,6 +55,7 @@ struct SearchView: View {
         }
         .onAppear {
             viewModel.loadSearchHistory()
+            viewModel.loadAvailableVersions()
         }
     }
 }

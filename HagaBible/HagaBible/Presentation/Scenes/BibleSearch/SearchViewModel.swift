@@ -23,6 +23,10 @@ class SearchViewModel {
     var searchResults: [BibleVerse] = []
     var groupedSearchResults: [BibleBook: [BibleVerse]] = [:]
     var searchHistories: [SearchHistory] = []
+
+    /// Downloaded versions, used to offer "open this verse in another translation"
+    /// from a search result's context menu.
+    var availableVersions: [BibleVersion] = []
         
     init(
         appState: AppState,
@@ -125,9 +129,28 @@ class SearchViewModel {
         }
     }
     
-    func gotoVerse(verse: BibleVerse) {
+    /// Returns the downloaded versions other than the verse's own, for offering
+    /// the same passage in another version. (`availableVersions` is already
+    /// filtered to downloaded versions.)
+    func otherVersions(for verse: BibleVerse) -> [BibleVersion] {
+        availableVersions.filter { $0.versionCode != verse.versionCode }
+    }
+
+    func loadAvailableVersions() {
+        Task {
+            do {
+                availableVersions = try await bibleRepository.fetchBibleVersionList().filter { $0.isDownloaded }
+            } catch {
+                Logger.search.error("Failed to load available versions: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Opens the verse in the reader. Pass `versionCode` to open the same
+    /// book/chapter/verse in a different translation than the verse came from.
+    func gotoVerse(verse: BibleVerse, versionCode: String? = nil) {
         bibleReaderViewModel.applyBibleSelection(
-            versionCode: verse.versionCode,
+            versionCode: versionCode ?? verse.versionCode,
             bookCode: verse.bookCode,
             chapterNum: verse.chapter,
             verseNum: verse.verse
