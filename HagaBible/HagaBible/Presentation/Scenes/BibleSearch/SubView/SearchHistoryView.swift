@@ -25,6 +25,7 @@ struct SearchHistoryView: View {
                         verseText: searchHistory.verse.verseText ?? ""
                     )
                 }
+                .openInVersionContextMenu(for: searchHistory.verse, viewModel: viewModel, addToHistory: false, dismiss: { dismissSearch() })
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
                         viewModel.deleteSearchHistory(searchHistory)

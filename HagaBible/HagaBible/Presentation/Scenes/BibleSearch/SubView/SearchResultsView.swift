@@ -27,7 +27,7 @@ struct SearchResultsView: View {
                         verseText: verse.verseText ?? ""
                     )
                 }
-                .contextMenu { openInVersionMenu(for: verse) }
+                .openInVersionContextMenu(for: verse, viewModel: viewModel, addToHistory: true, dismiss: { dismissSearch() })
             }
         }
         if !viewModel.groupedSearchResults.isEmpty {
@@ -57,7 +57,7 @@ struct SearchResultsView: View {
                                     highlightedText: searchText
                                 )
                             }
-                            .contextMenu { openInVersionMenu(for: verse) }
+                            .openInVersionContextMenu(for: verse, viewModel: viewModel, addToHistory: true, dismiss: { dismissSearch() })
                         }
                     } label: {
                         HStack {
@@ -72,26 +72,4 @@ struct SearchResultsView: View {
         }
     }
 
-    /// Context-menu content offering to open the same passage in another
-    /// downloaded version.
-    @ViewBuilder
-    private func openInVersionMenu(for verse: BibleVerse) -> some View {
-        let others = viewModel.otherVersions(for: verse)
-        if others.isEmpty {
-            Label("No other versions", systemImage: "book.closed")
-                .disabled(true)
-        } else {
-            Section("Open in Version") {
-                ForEach(others, id: \.self) { version in
-                    Button {
-                        viewModel.gotoVerse(verse: verse, versionCode: version.versionCode)
-                        viewModel.addSearchHistory(from: verse)
-                        dismissSearch()
-                    } label: {
-                        Text(version.versionName)
-                    }
-                }
-            }
-        }
-    }
 }
