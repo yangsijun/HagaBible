@@ -17,6 +17,7 @@
 		AA11BB22CC33DD44EE55FF03 /* DefaultBookmarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */; };
 		AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */; };
 		AA11BB22CC33DD44EE55FF07 /* ReadingChecklistLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */; };
+		AA11BB22CC33DD44EE55FF11 /* BibleBookReferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */; };
 		AA11BB22CC33DD44EE55FF09 /* BibleVersionPurchaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */; };
 		AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */; };
 		AA11BB22CC33DD44EE55FF0D /* RecordingPlaybackLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */; };
@@ -72,6 +73,7 @@
 		AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultBookmarkRepositoryTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultReadingMarkRepositoryTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingChecklistLogicTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleBookReferenceTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleVersionPurchaseTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingRenameTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingPlaybackLogicTests.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 				AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */,
 				AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */,
 				AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */,
+				AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */,
 				AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */,
 				AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */,
 				AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */,
@@ -405,6 +408,7 @@
 				AA11BB22CC33DD44EE55FF03 /* DefaultBookmarkRepositoryTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF07 /* ReadingChecklistLogicTests.swift in Sources */,
+				AA11BB22CC33DD44EE55FF11 /* BibleBookReferenceTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF09 /* BibleVersionPurchaseTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF0D /* RecordingPlaybackLogicTests.swift in Sources */,

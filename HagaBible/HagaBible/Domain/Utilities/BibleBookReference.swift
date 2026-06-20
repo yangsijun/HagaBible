@@ -43,11 +43,69 @@ enum BibleBookReference {
         return aliasToBookCode[normalized]
     }
 
+    /// Minimum normalized query length for loose matching. Shorter queries (a
+    /// single Korean syllable or one Latin letter) match too many books to be
+    /// useful, so they are only honored by exact `bookCode(for:)` matching.
+    private static let minimumLooseQueryLength = 2
+
+    /// Resolves a partial book token to canonical `bookCode`s via loose matching,
+    /// ranked best-first, for as-you-type reference search (e.g. `"창세"` →
+    /// `["GEN"]`, `"고린"` → `["1CO", "2CO"]`, `"genes"` → `["GEN"]`).
+    ///
+    /// Ranking is deterministic:
+    /// 1. An exact alias match, if any, is always returned alone.
+    /// 2. Otherwise books whose alias *starts with* the query (prefix matches)
+    ///    rank ahead of books where the query only appears mid-alias (substring
+    ///    matches).
+    /// 3. Within each tier, books are ordered by canonical book order, so an
+    ///    ambiguous prefix resolves to the earliest book (`"요한"` → 요한복음).
+    ///
+    /// Returns an empty array for queries shorter than ``minimumLooseQueryLength``
+    /// or with no match. Callers that need a single result take `.first`.
+    static func looseBookCodes(for query: String) -> [String] {
+        let normalized = normalize(query)
+        guard normalized.count >= minimumLooseQueryLength else {
+            // Still honor an exact match for short but valid tokens (e.g. "약").
+            return aliasToBookCode[normalized].map { [$0] } ?? []
+        }
+
+        if let exact = aliasToBookCode[normalized] {
+            return [exact]
+        }
+
+        var prefixMatches: Set<String> = []
+        var substringMatches: Set<String> = []
+        for (alias, code) in aliasToBookCode {
+            if alias.hasPrefix(normalized) {
+                prefixMatches.insert(code)
+            } else if alias.contains(normalized) {
+                substringMatches.insert(code)
+            }
+        }
+
+        // Prefix matches outrank substring-only matches; never list a book twice.
+        let ranked = canonicalOrder.filter { prefixMatches.contains($0) }
+            + canonicalOrder.filter { substringMatches.contains($0) && !prefixMatches.contains($0) }
+        return ranked
+    }
+
     /// Lowercases and strips all whitespace so that `"1 Samuel"`, `"1Samuel"`, and
     /// `"  1 SAMUEL "` all match the same stored alias.
     private static func normalize(_ value: String) -> String {
         value.lowercased().filter { !$0.isWhitespace }
     }
+
+    /// Canonical book codes in scripture order, used to break ties deterministically
+    /// when a loose query matches more than one book.
+    private static let canonicalOrder: [String] = [
+        "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA",
+        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO",
+        "ECC", "SNG", "ISA", "JER", "LAM", "EZK", "DAN", "HOS", "JOL", "AMO",
+        "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL", "MAT",
+        "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH", "PHP",
+        "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE",
+        "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
+    ]
 
     /// Normalized aliases keyed by canonical `bookCode`, generated from the bundled
     /// version databases. Each entry is lowercased and whitespace-stripped.

@@ -94,4 +94,75 @@ struct BibleBookReferenceTests {
         #expect(BibleBookReference.bookCode(for: "NotABook") == nil)
         #expect(BibleBookReference.bookCode(for: "123") == nil)
     }
+
+    // MARK: - Loose partial / substring matching
+
+    @Test("a Korean prefix resolves to the book it begins")
+    func test_loose_koreanPrefix() {
+        #expect(BibleBookReference.looseBookCodes(for: "창세").first == "GEN")
+        #expect(BibleBookReference.looseBookCodes(for: "여호").first == "JOS")
+        #expect(BibleBookReference.looseBookCodes(for: "요한복").first == "JHN")
+    }
+
+    @Test("an English prefix resolves to the book it begins")
+    func test_loose_englishPrefix() {
+        #expect(BibleBookReference.looseBookCodes(for: "genes").first == "GEN")
+        #expect(BibleBookReference.looseBookCodes(for: "reve").first == "REV")
+        #expect(BibleBookReference.looseBookCodes(for: "philipp").first == "PHP")
+    }
+
+    @Test("an ambiguous prefix lists every match in canonical order, best first")
+    func test_loose_ambiguousOrdering() {
+        // 고린도전서(1CO) precedes 고린도후서(2CO).
+        #expect(BibleBookReference.looseBookCodes(for: "고린") == ["1CO", "2CO"])
+
+        // Every "요한…" book in canonical order: 요한복음(43) → 요한일서(62) →
+        // 요한이서(63) → 요한삼서(64) → 요한계시록(66). The reader preview takes
+        // `.first`, so an ambiguous "요한" still resolves to 요한복음.
+        #expect(BibleBookReference.looseBookCodes(for: "요한") == ["JHN", "1JN", "2JN", "3JN", "REV"])
+        #expect(BibleBookReference.looseBookCodes(for: "요한").first == "JHN")
+        #expect(BibleBookReference.looseBookCodes(for: "고린").first == "1CO")
+    }
+
+    @Test("an exact alias short-circuits loose matching to a single book")
+    func test_loose_exactWins() {
+        // "창" is an exact abbreviation; it must not also drag in 창세기 as a tie.
+        #expect(BibleBookReference.looseBookCodes(for: "창") == ["GEN"])
+        #expect(BibleBookReference.looseBookCodes(for: "genesis") == ["GEN"])
+    }
+
+    @Test("a clean prefix query lists only its books in order")
+    func test_loose_prefixGroup() {
+        // 데살로니가전서(1TH) and 데살로니가후서(2TH) both begin with "데살".
+        #expect(BibleBookReference.looseBookCodes(for: "데살") == ["1TH", "2TH"])
+    }
+
+    @Test("a mid-word fragment still resolves via substring matching")
+    func test_loose_substringMatch() {
+        // No alias begins with "사야", but 이사야 contains it.
+        #expect(BibleBookReference.looseBookCodes(for: "사야").first == "ISA")
+    }
+
+    @Test("queries shorter than the minimum only honor exact matches")
+    func test_loose_minimumLength() {
+        // Single Korean syllable that is NOT an alias: no loose explosion.
+        #expect(BibleBookReference.looseBookCodes(for: "느").isEmpty == false) // 느 → 느헤미야? exact
+        // A one-character non-alias returns nothing rather than every match.
+        #expect(BibleBookReference.looseBookCodes(for: "ㄱ").isEmpty)
+    }
+
+    @Test("loose matching returns empty for unknown tokens")
+    func test_loose_unknownEmpty() {
+        #expect(BibleBookReference.looseBookCodes(for: "Zzzz").isEmpty)
+        #expect(BibleBookReference.looseBookCodes(for: "").isEmpty)
+    }
+
+    @Test("the parser book token feeds loose matching for partial references")
+    func test_loose_parsedPartialReference() {
+        let parsed = BibleReferenceParser.parse("창세 1:1")
+        #expect(BibleBookReference.looseBookCodes(for: parsed.book).first == "GEN")
+
+        let english = BibleReferenceParser.parse("philipp 4:13")
+        #expect(BibleBookReference.looseBookCodes(for: english.book).first == "PHP")
+    }
 }

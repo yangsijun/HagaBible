@@ -67,6 +67,12 @@ class SearchViewModel {
                 }
             }
 
+            // Last resort: loose partial/substring match (e.g. "창세" → 창세기,
+            // "genes" → Genesis), resolved to the best single canonical book.
+            if book == nil, let bookCode = BibleBookReference.looseBookCodes(for: parsed.book).first {
+                book = bibleReaderViewModel.bibleBookList.first(where: { $0.bookCode == bookCode })
+            }
+
             guard let book = book else {
                 bibleReferenceVerse = nil
                 bibleReferenceText = nil
