@@ -27,13 +27,13 @@ extension View {
         dismiss: @escaping () -> Void
     ) -> some View {
         contextMenu {
-            let others = viewModel.otherVersions(for: verse)
-            if others.isEmpty {
-                Label("No other versions", systemImage: "book.closed")
+            let versions = viewModel.availableVersions
+            if versions.isEmpty {
+                Label("No versions available", systemImage: "book.closed")
                     .disabled(true)
             } else {
                 Section("Open in Version") {
-                    ForEach(others, id: \.self) { version in
+                    ForEach(versions, id: \.self) { version in
                         Button {
                             viewModel.gotoVerse(verse: verse, versionCode: version.versionCode)
                             if addToHistory {
@@ -41,7 +41,12 @@ extension View {
                             }
                             dismiss()
                         } label: {
-                            Text(version.versionName)
+                            // Mark the version the verse is currently shown in.
+                            if version.versionCode == verse.versionCode {
+                                Label(version.versionName, systemImage: "checkmark")
+                            } else {
+                                Text(version.versionName)
+                            }
                         }
                     }
                 }

@@ -129,13 +129,6 @@ class SearchViewModel {
         }
     }
     
-    /// Returns the downloaded versions other than the verse's own, for offering
-    /// the same passage in another version. (`availableVersions` is already
-    /// filtered to downloaded versions.)
-    func otherVersions(for verse: BibleVerse) -> [BibleVersion] {
-        availableVersions.filter { $0.versionCode != verse.versionCode }
-    }
-
     func loadAvailableVersions() {
         Task {
             do {
