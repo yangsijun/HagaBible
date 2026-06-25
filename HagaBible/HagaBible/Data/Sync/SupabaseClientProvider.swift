@@ -18,7 +18,19 @@ enum SupabaseClientProvider {
     static func make() -> SupabaseClient {
         SupabaseClient(
             supabaseURL: AppConfig.supabaseURL,
-            supabaseKey: AppConfig.supabaseAnonKey
+            supabaseKey: AppConfig.supabaseAnonKey,
+            // Opt in to the next-major default (supabase/supabase-swift#822): emit the
+            // locally stored session as the initial session instead of refreshing it
+            // first. This silences the runtime warning AuthClient logs under the legacy
+            // default. Safe here — we read `auth.currentUser` synchronously and never
+            // subscribe to `authStateChanges`/`.initialSession`, so there's no opt-in
+            // logic that would need an extra `session.isExpired` check; token refresh
+            // still happens in the background via `autoRefreshToken` (default on).
+            options: SupabaseClientOptions(
+                auth: SupabaseClientOptions.AuthOptions(
+                    emitLocalSessionAsInitialSession: true
+                )
+            )
         )
     }
 }
