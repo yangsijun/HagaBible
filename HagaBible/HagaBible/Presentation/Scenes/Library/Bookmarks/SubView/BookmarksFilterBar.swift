@@ -68,9 +68,9 @@ struct BookmarksFilterBar: View {
                         )
                     } label: {
                         if viewModel.selectedBookCode == code {
-                            Label(code, systemImage: "checkmark")
+                            Label(viewModel.bookFilterDisplayName(for: code), systemImage: "checkmark")
                         } else {
-                            Text(code)
+                            Text(viewModel.bookFilterDisplayName(for: code))
                         }
                     }
                 }
@@ -79,7 +79,7 @@ struct BookmarksFilterBar: View {
             HStack(spacing: 4) {
                 Image(systemName: "book")
                     .font(.caption)
-                Text(viewModel.selectedBookCode ?? "Book")
+                Text(viewModel.selectedBookCode.map { viewModel.bookFilterDisplayName(for: $0) } ?? "Book")
                     .font(.caption)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))

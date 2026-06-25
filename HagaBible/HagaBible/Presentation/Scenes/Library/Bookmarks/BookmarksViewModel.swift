@@ -14,6 +14,9 @@ import OSLog
 final class BookmarksViewModel {
     var bookmarks: [Bookmark] = []
     var availableBookCodes: [String] = []
+    /// Book code -> display name in the current reading version, for the book
+    /// filter menu. Falls back to the raw code when the version has no name.
+    var availableBookNames: [String: String] = [:]
     var sortOrder: BookmarkSortOrder = .createdAtDesc
     var selectedColor: BookmarkColor?
     var selectedBookCode: String?
@@ -67,6 +70,7 @@ final class BookmarksViewModel {
         do {
             let all = try await bookmarkRepository.fetchAll(sortedBy: sortOrder)
             availableBookCodes = Array(NSOrderedSet(array: all.map { $0.bookCode })) as? [String] ?? []
+            await loadAvailableBookNames()
 
             let base: [Bookmark]
             if selectedColor != nil || selectedBookCode != nil {
@@ -125,6 +129,43 @@ final class BookmarksViewModel {
         } catch {
             Logger.repository.warning("BookmarksViewModel: failed to load bible versions: \(error.localizedDescription)")
         }
+    }
+
+    /// Display name for a book code in the current reading version, falling back
+    /// to the raw code when that version has no name for it (e.g. a book the
+    /// current version doesn't carry).
+    func bookFilterDisplayName(for code: String) -> String {
+        availableBookNames[code] ?? code
+    }
+
+    /// Build the book code -> name map for the current reading version, so the
+    /// filter menu shows e.g. "Genesis"/"창세기" instead of the raw "GEN".
+    private func loadAvailableBookNames() async {
+        do {
+            guard let versionCode = try await currentVersionCode() else {
+                availableBookNames = [:]
+                return
+            }
+            let books = try await bibleRepository.fetchBibleBookList(versionCode: versionCode)
+            availableBookNames = Dictionary(
+                books.map { ($0.bookCode, $0.bookName) },
+                uniquingKeysWith: { first, _ in first }
+            )
+        } catch {
+            Logger.repository.warning("BookmarksViewModel: failed to load current-version book names: \(error.localizedDescription)")
+            availableBookNames = [:]
+        }
+    }
+
+    /// The version to read names from: the one the user is currently reading,
+    /// else the first downloaded version. Mirrors `VerseTextLoader` so the filter
+    /// labels match the verse text shown in the list.
+    private func currentVersionCode() async throws -> String? {
+        if let current = appState.bibleReaderState.bibleVersion?.versionCode {
+            return current
+        }
+        let versions = try await bibleRepository.fetchBibleVersionList()
+        return versions.first(where: { $0.isDownloaded })?.versionCode
     }
 
     private struct ResolvedKeyword {
