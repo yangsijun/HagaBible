@@ -79,7 +79,7 @@ struct BookmarksFilterBar: View {
             HStack(spacing: 4) {
                 Image(systemName: "book")
                     .font(.caption)
-                Text(viewModel.selectedBookCode.map { viewModel.bookFilterDisplayName(for: $0) } ?? "Book")
+                Text(viewModel.selectedBookCode.map { viewModel.bookFilterDisplayName(for: $0) } ?? String(localized: "Book"))
                     .font(.caption)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))

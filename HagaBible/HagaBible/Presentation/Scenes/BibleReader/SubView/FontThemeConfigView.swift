@@ -93,7 +93,7 @@ struct ThemePickerView: View {
                         .stroke(Color(uiColor: theme.textColor), lineWidth: 1)
                         .frame(width: 30, height: 30)
                         .overlay(
-                            Text("T")
+                            Text(verbatim: "T")
                                 .foregroundStyle(Color(uiColor: theme.textColor))
                         )
                     Text(theme.themeName)

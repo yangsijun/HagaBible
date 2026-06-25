@@ -272,7 +272,7 @@ struct BibleNavigation2View: View {
             }
             .toolbar {
                 ToolbarItem(placement: .title) {
-                    Text(selectedVersion?.versionName ?? "Version")
+                    Text(selectedVersion?.versionName ?? String(localized: "Version"))
                 }
             }
         }

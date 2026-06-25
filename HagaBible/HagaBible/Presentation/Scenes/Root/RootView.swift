@@ -171,7 +171,7 @@ struct RootView: View {
 
         // Download versions
         for (index, version) in versionsToDownload.enumerated() {
-            downloadProgress = "Downloading \(version.versionName)... (\(index + 1)/\(versionsToDownload.count))"
+            downloadProgress = String(localized: "Downloading \(version.versionName)... (\(index + 1)/\(versionsToDownload.count))")
 
             do {
                 try await bibleFileRepository.downloadAndInstall(version: version)

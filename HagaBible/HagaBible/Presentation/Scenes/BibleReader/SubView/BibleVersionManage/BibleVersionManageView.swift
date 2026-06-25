@@ -119,7 +119,7 @@ struct BibleVersionManageView: View {
                 Button {
                     Task { await performAcquire(item) }
                 } label: {
-                    Text(displayPrice.isEmpty ? "Buy" : displayPrice)
+                    Text(displayPrice.isEmpty ? String(localized: "Buy") : displayPrice)
                         .font(.callout.weight(.semibold))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 6)

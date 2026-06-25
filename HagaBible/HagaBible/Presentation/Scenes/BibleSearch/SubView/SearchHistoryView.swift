@@ -31,7 +31,7 @@ struct SearchHistoryView: View {
                         viewModel.deleteSearchHistory(searchHistory)
                         viewModel.loadSearchHistory()
                     } label: {
-                        Label("삭제", systemImage: "trash")
+                        Label("Delete", systemImage: "trash")
                     }
                 }
             }

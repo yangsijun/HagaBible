@@ -92,7 +92,7 @@ struct BibleNavigationView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .title) {
-                    Text(selectedVersion?.versionName ?? "Version")
+                    Text(selectedVersion?.versionName ?? String(localized: "Version"))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: {

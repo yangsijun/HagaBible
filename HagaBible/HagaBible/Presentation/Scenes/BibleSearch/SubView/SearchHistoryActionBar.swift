@@ -14,14 +14,14 @@ struct SearchHistoryActionBar: View {
     var body: some View {
         ActionBar {
             ActionBarButton(action: { showClearSearchHistoryDialog = true }, systemImage: "trash")
-                .alert("검색 기록을 모두 삭제하시겠습니까?", isPresented: $showClearSearchHistoryDialog) {
-                    Button("삭제", role: .destructive) {
+                .alert("Delete all search history?", isPresented: $showClearSearchHistoryDialog) {
+                    Button("Delete", role: .destructive) {
                         viewModel.clearSearchHistory()
                         viewModel.loadSearchHistory()
                     }
-                    Button("취소", role: .cancel) {}
+                    Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("이 작업은 되돌릴 수 없습니다.")
+                    Text("This action cannot be undone.")
                 }
         }
     }

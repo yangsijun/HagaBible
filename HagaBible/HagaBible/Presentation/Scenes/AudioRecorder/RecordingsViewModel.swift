@@ -191,7 +191,7 @@ class RecordingsViewModel {
         let bibleChapter = appState.bibleReaderState.bibleChapter
         
         guard let bibleVersion, let bibleBook, let bibleChapter else {
-            return "성경 녹음"
+            return String(localized: "Bible Recording")
         }
         
         bibleReferenceText = "\(bibleBook.bookName) \(bibleChapter.chapter)"

@@ -35,7 +35,7 @@ struct TTSSettingsView: View {
                         HStack {
                             Text("Korean Voice")
                             Spacer()
-                            Text(ttsViewModel.selectedKoreanVoice?.name ?? "System Default")
+                            Text(ttsViewModel.selectedKoreanVoice?.name ?? String(localized: "System Default"))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -51,7 +51,7 @@ struct TTSSettingsView: View {
                         HStack {
                             Text("English Voice")
                             Spacer()
-                            Text(ttsViewModel.selectedEnglishVoice?.name ?? "System Default")
+                            Text(ttsViewModel.selectedEnglishVoice?.name ?? String(localized: "System Default"))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -209,7 +209,7 @@ private struct VoiceRow: View {
                         Text(voice.name)
                             .foregroundStyle(.primary)
                         if showRegion {
-                            Text("(UK)")
+                            Text(verbatim: "(UK)")
                                 .foregroundStyle(.secondary)
                         }
                     }

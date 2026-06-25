@@ -26,7 +26,7 @@ struct InitialLoadingView: View {
                 ProgressView()
                     .scaleEffect(1.2)
 
-                Text(progressText.isEmpty ? "Preparing..." : progressText)
+                Text(progressText.isEmpty ? String(localized: "Preparing...") : progressText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
