@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct SwipeGestureViewModifier: ViewModifier {
-    
+
+    @Environment(\.scenePhase) private var scenePhase
+
     @State var offset: CGSize = .zero
     @State var isDraggingHorizontally: Bool = false
-    
+
     var onLeftSwipe: () -> Void
     var onRightSwipe: () -> Void
     
@@ -55,6 +57,18 @@ struct SwipeGestureViewModifier: ViewModifier {
                         isDraggingHorizontally = false
                     }
             )
+            .onChange(of: scenePhase) { _, phase in
+                // If the app is backgrounded mid-drag, iOS cancels the touch but
+                // `DragGesture` does not deliver `.onEnded`, leaving
+                // `isDraggingHorizontally` stuck `true`. That keeps the wrapped
+                // content `.disabled(true)` on return — so scroll and chapter-swipe
+                // (both drags) die while taps outside this subtree still work.
+                // Clear the in-flight drag state whenever we leave the active phase.
+                if phase != .active {
+                    isDraggingHorizontally = false
+                    offset = .zero
+                }
+            }
     }
 }
 
