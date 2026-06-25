@@ -7,7 +7,11 @@
 
 import GRDB
 
-struct BookmarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
+// `nonisolated`: a pure data record used from GRDB's background database queue
+// (nonisolated `dbPool.read/write` closures). Without this it would inherit the
+// target's default `@MainActor` isolation, making its PersistableRecord
+// conformance unusable off the main actor (Swift 6 error).
+nonisolated struct BookmarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
     static let databaseTableName = "bookmarks"
 
     let id: String

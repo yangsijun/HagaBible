@@ -7,7 +7,10 @@
 
 import GRDB
 
-struct ReadingMarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
+// `nonisolated`: pure data record used from GRDB's background database queue;
+// see BookmarkRecord for the rationale. Kept symmetric so its PersistableRecord
+// conformance stays usable off the main actor.
+nonisolated struct ReadingMarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
     static let databaseTableName = "reading_marks"
 
     let id: String              // UUID as TEXT

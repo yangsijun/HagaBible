@@ -14,7 +14,9 @@
 
 import Foundation
 
-struct ReadingMarkDTO: Codable, Sendable, Equatable {
+// `nonisolated`: pure wire-format value built inside the `actor SyncEngine`'s
+// nonisolated `.map` closures; see BookmarkDTO for the rationale.
+nonisolated struct ReadingMarkDTO: Codable, Sendable, Equatable {
     let id: String
     let bookCode: String
     let bookOrder: Int
@@ -42,7 +44,9 @@ struct ReadingMarkDTO: Codable, Sendable, Equatable {
 
 extension ReadingMarkDTO {
     /// Build a push payload from a local row, stamping the signed-in user's id.
-    init(record: ReadingMarkRecord, userId: String) {
+    // `nonisolated`: built inside `actor SyncEngine`'s nonisolated `.map` closures.
+    // Members in an extension don't inherit the type's `nonisolated`, so annotate here.
+    nonisolated init(record: ReadingMarkRecord, userId: String) {
         self.id = record.id
         self.bookCode = record.bookCode
         self.bookOrder = record.bookOrder

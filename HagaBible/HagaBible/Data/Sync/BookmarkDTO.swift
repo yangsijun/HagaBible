@@ -14,7 +14,10 @@
 
 import Foundation
 
-struct BookmarkDTO: Codable, Sendable, Equatable {
+// `nonisolated`: a pure wire-format value built inside the `actor SyncEngine`'s
+// nonisolated `.map` closures. Without this it inherits the target's default
+// `@MainActor` isolation and its `init(record:userId:)` can't be called there.
+nonisolated struct BookmarkDTO: Codable, Sendable, Equatable {
     let id: String
     let bookCode: String
     let bookOrder: Int
@@ -50,7 +53,9 @@ extension BookmarkDTO {
     /// Build a push payload from a local row, stamping the signed-in user's id so
     /// the server row is scoped to the right account (the local row's `user_id` may
     /// still be NULL on the first sync after sign-in).
-    init(record: BookmarkRecord, userId: String) {
+    // `nonisolated`: built inside `actor SyncEngine`'s nonisolated `.map` closures.
+    // Members in an extension don't inherit the type's `nonisolated`, so annotate here.
+    nonisolated init(record: BookmarkRecord, userId: String) {
         self.id = record.id
         self.bookCode = record.bookCode
         self.bookOrder = record.bookOrder

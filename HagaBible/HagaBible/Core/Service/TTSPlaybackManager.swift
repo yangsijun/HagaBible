@@ -107,10 +107,15 @@ class TTSPlaybackManager: NSObject {
         synthesizer: SpeechSynthesizer,
         settingsRepository: TTSSettingsRepository,
         voiceProvider: VoiceProvider,
-        audioSessionConfigurator: AudioSessionConfigurable = SystemAudioSessionConfigurator(),
-        remoteCommandConfigurator: RemoteCommandConfigurable = SystemRemoteCommandConfigurator(),
-        interruptionObservable: InterruptionObservable = NotificationCenterInterruptionObserver(),
-        recordingStateProvider: RecordingStateProvider = AudioServiceRecordingStateProvider(),
+        // No default values here: the concrete providers are `@MainActor`-isolated
+        // (target default), so evaluating them as init default arguments — which are
+        // evaluated in a nonisolated context — warns. Every caller (DIContainer and
+        // the tests) injects these explicitly, and DIContainer registers the concrete
+        // providers itself, so requiring them costs nothing.
+        audioSessionConfigurator: AudioSessionConfigurable,
+        remoteCommandConfigurator: RemoteCommandConfigurable,
+        interruptionObservable: InterruptionObservable,
+        recordingStateProvider: RecordingStateProvider,
         nowPlayingInfoCenter: NowPlayingInfoCenterProtocol? = nil
     ) {
         self.synthesizer = synthesizer
