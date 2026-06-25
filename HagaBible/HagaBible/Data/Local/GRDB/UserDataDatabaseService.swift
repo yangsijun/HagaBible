@@ -103,6 +103,36 @@ final class UserDataDatabaseService {
             """)
         }
 
+        // Local-only dirty flag for push/pull sync. DEFAULT 1 means every row that
+        // exists at migration time is treated as pending upload — so on the first
+        // sign-in the user's pre-existing local data is claimed and pushed to the
+        // cloud. Local writes set it to 1; a successful push (and any pull-applied
+        // row) sets it to 0, which is what breaks the pull→push echo loop. The
+        // column is intentionally absent from the Supabase mirror tables — it is a
+        // per-device concept, not shared state.
+        migrator.registerMigration("v4_add_needs_sync") { db in
+            try db.execute(sql: """
+                ALTER TABLE bookmarks ADD COLUMN needs_sync INTEGER NOT NULL DEFAULT 1;
+                ALTER TABLE reading_marks ADD COLUMN needs_sync INTEGER NOT NULL DEFAULT 1;
+                CREATE INDEX idx_bookmarks_needs_sync ON bookmarks(needs_sync);
+                CREATE INDEX idx_reading_marks_needs_sync ON reading_marks(needs_sync);
+            """)
+        }
+
+        // Per-table delta-sync watermark: the `updated_at` of the newest row pulled
+        // so far. The next pull asks the server only for rows strictly newer than
+        // this, so sync is incremental. Kept in the same SQLite file (not
+        // UserDefaults) so it stays consistent with the data it tracks and is
+        // exercisable with a temp pool in tests.
+        migrator.registerMigration("v5_create_sync_state") { db in
+            try db.execute(sql: """
+                CREATE TABLE sync_state (
+                    table_name TEXT PRIMARY KEY NOT NULL,
+                    last_pulled_at REAL NOT NULL DEFAULT 0
+                );
+            """)
+        }
+
         return migrator
     }
 }

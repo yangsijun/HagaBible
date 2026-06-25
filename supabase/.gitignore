@@ -1,0 +1,4 @@
+# Supabase CLI local state — not for version control.
+.branches
+.temp
+.env

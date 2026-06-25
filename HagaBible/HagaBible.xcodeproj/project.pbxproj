@@ -13,14 +13,17 @@
 		0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */; settings = {ASSET_TAGS = (Bible_NKRV_2, ); }; };
 		0DE0B11D0000000000000005 /* Bible_WEB.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000005 /* Bible_WEB.sqlite */; settings = {ASSET_TAGS = (Bible_WEB_2, ); }; };
 		0DE0B11D0000000000000006 /* Bible_WEBBE.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */; settings = {ASSET_TAGS = (Bible_WEBBE_2, ); }; };
+		5BA0A0A0000000000000B3 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 5BA0A0A0000000000000B2 /* Supabase */; };
 		AA11BB22CC33DD44EE55FF01 /* UserDataDatabaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */; };
 		AA11BB22CC33DD44EE55FF03 /* DefaultBookmarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */; };
 		AA11BB22CC33DD44EE55FF05 /* DefaultReadingMarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */; };
 		AA11BB22CC33DD44EE55FF07 /* ReadingChecklistLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */; };
-		AA11BB22CC33DD44EE55FF11 /* BibleBookReferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */; };
 		AA11BB22CC33DD44EE55FF09 /* BibleVersionPurchaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */; };
 		AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */; };
 		AA11BB22CC33DD44EE55FF0D /* RecordingPlaybackLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */; };
+		AA11BB22CC33DD44EE55FF11 /* BibleBookReferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */; };
+		AA11BB22CC33DD44EE55FF21 /* MockRemoteSyncDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF20 /* MockRemoteSyncDataSource.swift */; };
+		AA11BB22CC33DD44EE55FF23 /* SyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF22 /* SyncEngineTests.swift */; };
 		B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */; };
 		DC4A9213679E53FEE00B337F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3AB6D737DA3C1366E4C3116 /* Foundation.framework */; };
 		DFA4A2FEEB7BE5EF8EEA11AF /* TTSPlaybackManagerNowPlayingSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */; };
@@ -69,14 +72,17 @@
 		0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_NKRV.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_NKRV.sqlite; sourceTree = SOURCE_ROOT; };
 		0DE0F11E0000000000000005 /* Bible_WEB.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_WEB.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_WEB.sqlite; sourceTree = SOURCE_ROOT; };
 		0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; name = Bible_WEBBE.sqlite; path = HagaBible/Data/Local/GRDB/SQLite/Bible_WEBBE.sqlite; sourceTree = SOURCE_ROOT; };
+		5BA0A0A0000000000000C1 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataDatabaseServiceTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultBookmarkRepositoryTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF06 /* DefaultReadingMarkRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultReadingMarkRepositoryTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF08 /* ReadingChecklistLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingChecklistLogicTests.swift; sourceTree = "<group>"; };
-		AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleBookReferenceTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleVersionPurchaseTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingRenameTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingPlaybackLogicTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleBookReferenceTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF20 /* MockRemoteSyncDataSource.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockRemoteSyncDataSource.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF22 /* SyncEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyncEngineTests.swift; sourceTree = "<group>"; };
 		CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HagaBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpyNowPlayingInfoCenter.swift; sourceTree = "<group>"; };
 		ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HagaBibleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -160,6 +166,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EDADAA8D2E1F365000CFCBE0 /* GRDB in Frameworks */,
+				5BA0A0A0000000000000B3 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -191,6 +198,7 @@
 				AA11BB22CC33DD44EE55FF0A /* BibleVersionPurchaseTests.swift */,
 				AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */,
 				AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */,
+				AA11BB22CC33DD44EE55FF22 /* SyncEngineTests.swift */,
 				F0D576F6426DF59DB3F00995 /* TestDoubles */,
 			);
 			path = HagaBibleTests;
@@ -224,6 +232,7 @@
 				ED6A820B2E15339A003E0D6E /* Products */,
 				7ADA05789BB77868C1A1FF88 /* HagaBibleTests */,
 				EDC04F165704E10D00000001 /* Configuration.storekit */,
+				EDCF54CF2FECF69500B6AD67 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -237,10 +246,19 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		EDCF54CF2FECF69500B6AD67 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				5BA0A0A0000000000000C1 /* Secrets.xcconfig */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		F0D576F6426DF59DB3F00995 /* TestDoubles */ = {
 			isa = PBXGroup;
 			children = (
 				E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */,
+				AA11BB22CC33DD44EE55FF20 /* MockRemoteSyncDataSource.swift */,
 			);
 			path = TestDoubles;
 			sourceTree = "<group>";
@@ -306,6 +324,7 @@
 			name = HagaBible;
 			packageProductDependencies = (
 				EDADAA8C2E1F365000CFCBE0 /* GRDB */,
+				5BA0A0A0000000000000B2 /* Supabase */,
 			);
 			productName = HagaBible;
 			productReference = ED6A820A2E15339A003E0D6E /* HagaBible.app */;
@@ -354,6 +373,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				EDADAA8B2E1F365000CFCBE0 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				5BA0A0A0000000000000B1 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ED6A820B2E15339A003E0D6E /* Products */;
@@ -412,6 +432,8 @@
 				AA11BB22CC33DD44EE55FF09 /* BibleVersionPurchaseTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */,
 				AA11BB22CC33DD44EE55FF0D /* RecordingPlaybackLogicTests.swift in Sources */,
+				AA11BB22CC33DD44EE55FF21 /* MockRemoteSyncDataSource.swift in Sources */,
+				AA11BB22CC33DD44EE55FF23 /* SyncEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -705,9 +727,11 @@
 		};
 		ED6A82162E15339A003E0D6E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5BA0A0A0000000000000C1 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = HagaBibleAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = HagaBible/HagaBible.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9ZMW52M7L5;
@@ -743,9 +767,11 @@
 		};
 		ED6A82172E15339A003E0D6E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5BA0A0A0000000000000C1 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = HagaBibleAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = HagaBible/HagaBible.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9ZMW52M7L5;
@@ -821,6 +847,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5BA0A0A0000000000000B1 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 		EDADAA8B2E1F365000CFCBE0 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift.git";
@@ -832,6 +866,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5BA0A0A0000000000000B2 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5BA0A0A0000000000000B1 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
 		EDADAA8C2E1F365000CFCBE0 /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = EDADAA8B2E1F365000CFCBE0 /* XCRemoteSwiftPackageReference "GRDB.swift" */;

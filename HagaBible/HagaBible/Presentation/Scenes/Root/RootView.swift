@@ -10,6 +10,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State private var appState = DIContainer.shared.resolve(type: AppState.self)
     @State private var ttsViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     @State private var search: String = ""
@@ -43,6 +44,16 @@ struct RootView: View {
             let service = DIContainer.shared.resolve(type: NotificationService.self)
             if await service.isAuthorized() {
                 await service.syncReadingReminders(appState.readingReminders)
+            }
+        }
+        .task {
+            // Pull/push on launch if a synced account is signed in (no-op otherwise).
+            await DIContainer.shared.resolveOptional(type: SyncAccountViewModel.self)?.sync()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task {
+                await DIContainer.shared.resolveOptional(type: SyncAccountViewModel.self)?.sync()
             }
         }
     }

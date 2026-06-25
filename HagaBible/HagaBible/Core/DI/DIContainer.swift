@@ -8,6 +8,7 @@
 import Foundation
 import OSLog
 import SwiftData
+import Supabase
 
 final class DIContainer {
     static let shared = DIContainer()
@@ -27,6 +28,12 @@ final class DIContainer {
             fatalError("\(key)가 등록되지 않았습니다. 앱 시작점에서 등록했는지 확인하세요.")
         }
         return component
+    }
+
+    /// Non-fatal lookup for optional dependencies (e.g. sync, which isn't wired in
+    /// the preview graph). Returns nil instead of crashing when unregistered.
+    func resolveOptional<Service>(type: Service.Type) -> Service? {
+        services[String(describing: type)] as? Service
     }
 }
 
@@ -57,6 +64,22 @@ extension DIContainer {
 
         container.register(type: BookmarkRepository.self, component: DefaultBookmarkRepository())
         container.register(type: ReadingMarkRepository.self, component: DefaultReadingMarkRepository())
+
+        // Cross-device sync (Supabase + Sign in with Apple). The client is always
+        // built so the Account screen resolves a view model; it only does network
+        // work once the user signs in and the anon key is configured.
+        let supabaseClient = SupabaseClientProvider.make()
+        let authService: AuthService = SupabaseAuthService(client: supabaseClient)
+        container.register(type: AuthService.self, component: authService)
+        let remoteSync: RemoteSyncDataSource = SupabaseRemoteSyncDataSource(client: supabaseClient)
+        if let userDataPool = container.resolve(type: UserDataDatabaseService.self).dbPool {
+            let syncEngine = SyncEngine(pool: userDataPool, remote: remoteSync)
+            container.register(type: SyncEngine.self, component: syncEngine)
+            container.register(
+                type: SyncAccountViewModel.self,
+                component: SyncAccountViewModel(authService: authService, syncEngine: syncEngine)
+            )
+        }
 
         container.register(type: ODRDataSource.self, component: ODRDataSource())
         container.register(type: FileSystemDataSource.self, component: FileSystemDataSource())

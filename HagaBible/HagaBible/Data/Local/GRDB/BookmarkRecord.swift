@@ -23,6 +23,8 @@ struct BookmarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
     // Sync-only fields — not surfaced on the domain `Bookmark`.
     let deletedAt: Double?
     let userId: String?
+    // Local-only dirty flag (1 = pending push). Never sent to the Supabase mirror.
+    let needsSync: Int
 
     private enum CodingKeys: String, CodingKey {
         case id = "id"
@@ -37,5 +39,6 @@ struct BookmarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord {
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
         case userId = "user_id"
+        case needsSync = "needs_sync"
     }
 }

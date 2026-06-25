@@ -42,6 +42,7 @@ struct BibleReaderView: View {
     @State private var showFontThemeConfig: Bool = false
     @State private var showLabs: Bool = false
     @State private var showReminder: Bool = false
+    @State private var showAccount: Bool = false
     @State private var addBookmarkRequest: AddBookmarkRequest?
     @State private var exportRequest: VerseExportRequest?
     @State private var shareItem: ShareTextItem?
@@ -116,6 +117,7 @@ struct BibleReaderView: View {
             || showFontThemeConfig
             || showLabs
             || showReminder
+            || showAccount
             || addBookmarkRequest != nil
             || exportRequest != nil
             || shareItem != nil
@@ -279,6 +281,7 @@ struct BibleReaderView: View {
                     isTTSEnabled: appState.isTTSEnabled,
                     onLabsTapped: { showLabs = true },
                     onReminderTapped: { showReminder = true },
+                    onAccountTapped: { showAccount = true },
                     onBookmarksTapped: {
                         appState.librarySection = .bookmarks
                         appState.selectedTab = .library
@@ -328,6 +331,11 @@ struct BibleReaderView: View {
             }
             .sheet(isPresented: $showReminder) {
                 ReadingReminderView(appState: appState)
+            }
+            .sheet(isPresented: $showAccount) {
+                NavigationStack {
+                    AccountSyncView(viewModel: DIContainer.shared.resolve(type: SyncAccountViewModel.self))
+                }
             }
             .sheet(item: $addBookmarkRequest) { request in
                 AddBookmarkSheet(

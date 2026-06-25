@@ -59,7 +59,7 @@ final class DefaultBookmarkRepository: BookmarkRepository {
             let now = Date().timeIntervalSince1970
             try await pool.write { db in
                 try db.execute(
-                    sql: "UPDATE bookmarks SET deleted_at = ?, updated_at = ? WHERE id = ?",
+                    sql: "UPDATE bookmarks SET deleted_at = ?, updated_at = ?, needs_sync = 1 WHERE id = ?",
                     arguments: [now, now, id.uuidString]
                 )
             }
@@ -154,7 +154,9 @@ final class DefaultBookmarkRepository: BookmarkRepository {
             // always "live" and unscoped. A server-assigned user_id is only set by
             // the (future) sync layer, which must not round-trip through `toRecord`.
             deletedAt: nil,
-            userId: nil
+            userId: nil,
+            // Every domain write is a local change that must be pushed.
+            needsSync: 1
         )
     }
 

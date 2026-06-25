@@ -76,12 +76,13 @@ final class DefaultReadingMarkRepository: ReadingMarkRepository {
         try db.execute(
             sql: """
                 INSERT INTO reading_marks
-                    (id, book_code, book_order, chapter, is_read, created_at, updated_at, deleted_at, user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)
+                    (id, book_code, book_order, chapter, is_read, created_at, updated_at, deleted_at, user_id, needs_sync)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 1)
                 ON CONFLICT(book_code, chapter) DO UPDATE SET
                     is_read = excluded.is_read,
                     updated_at = excluded.updated_at,
-                    deleted_at = NULL
+                    deleted_at = NULL,
+                    needs_sync = 1
                 WHERE reading_marks.is_read <> excluded.is_read
                    OR reading_marks.deleted_at IS NOT NULL
                 """,
@@ -103,7 +104,7 @@ final class DefaultReadingMarkRepository: ReadingMarkRepository {
             let now = Date().timeIntervalSince1970
             try await pool.write { db in
                 try db.execute(
-                    sql: "UPDATE reading_marks SET is_read = 0, updated_at = ? WHERE is_read = 1 AND deleted_at IS NULL",
+                    sql: "UPDATE reading_marks SET is_read = 0, updated_at = ?, needs_sync = 1 WHERE is_read = 1 AND deleted_at IS NULL",
                     arguments: [now]
                 )
             }

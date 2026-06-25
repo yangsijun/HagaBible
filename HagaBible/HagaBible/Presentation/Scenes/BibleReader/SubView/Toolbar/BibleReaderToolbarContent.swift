@@ -22,6 +22,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let isTTSEnabled: Bool
     let onLabsTapped: () -> Void
     let onReminderTapped: () -> Void
+    let onAccountTapped: () -> Void
     let onBookmarksTapped: () -> Void
     let onReadingChecklistTapped: () -> Void
     let comparableVersions: [BibleVersion]
@@ -79,6 +80,10 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 Button(action: onLabsTapped) {
                     Label("Labs", systemImage: "testtube.2")
                 }
+                Divider()
+                Button(action: onAccountTapped) {
+                    Label("Account & Sync", systemImage: "person.crop.circle")
+                }
             } label: {
                 Label("Other", systemImage: "ellipsis")
             }
@@ -103,6 +108,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     isTTSEnabled: true,
                     onLabsTapped: {},
                     onReminderTapped: {},
+                    onAccountTapped: {},
                     onBookmarksTapped: {},
                     onReadingChecklistTapped: {},
                     comparableVersions: [

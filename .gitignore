@@ -140,3 +140,8 @@ iOSInjectionProject/
 .sisyphus/
 buildServer.json
 
+# Secrets — the Supabase anon key etc. are injected via an untracked xcconfig.
+# Commit Secrets.xcconfig.example (placeholders only) instead.
+Secrets.xcconfig
+!Secrets.xcconfig.example
+

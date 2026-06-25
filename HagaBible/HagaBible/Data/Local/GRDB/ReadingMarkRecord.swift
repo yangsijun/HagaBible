@@ -20,6 +20,7 @@ struct ReadingMarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord 
     // Sync-only fields — not surfaced on the domain `ReadingMark`.
     let deletedAt: Double?      // Soft-delete tombstone (unused by the UI; kept for sync contract)
     let userId: String?         // Per-user scoping (nullable until auth)
+    let needsSync: Int          // Local-only dirty flag (1 = pending push). Never sent to Supabase.
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -31,5 +32,6 @@ struct ReadingMarkRecord: Sendable, Codable, FetchableRecord, PersistableRecord 
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
         case userId = "user_id"
+        case needsSync = "needs_sync"
     }
 }
