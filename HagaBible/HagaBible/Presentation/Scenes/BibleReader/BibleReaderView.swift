@@ -316,9 +316,7 @@ struct BibleReaderView: View {
                 ReadingReminderView(appState: appState)
             }
             .sheet(isPresented: $showAccount) {
-                NavigationStack {
-                    AccountSyncView(viewModel: DIContainer.shared.resolve(type: SyncAccountViewModel.self))
-                }
+                AccountSyncView(viewModel: DIContainer.shared.resolve(type: SyncAccountViewModel.self))
             }
             .sheet(item: $addBookmarkRequest) { request in
                 AddBookmarkSheet(

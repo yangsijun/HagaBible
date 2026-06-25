@@ -13,56 +13,64 @@ import AuthenticationServices
 
 struct AccountSyncView: View {
     @State private var viewModel: SyncAccountViewModel
+    @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
 
     init(viewModel: SyncAccountViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
-        Form {
-            Section {
-                statusRow
-            } header: {
-                Text("Sync")
-            } footer: {
-                Text("Sign in to sync your bookmarks and reading progress across your devices. Your data stays scoped to your account.")
-            }
+        // Styling matches the sibling Labs / Reading Reminders sheets: a transparent
+        // form over the themed page background, with accent-tinted controls.
+        NavigationStack {
+            Form {
+                Section {
+                    statusRow
+                } header: {
+                    Text("Sync")
+                } footer: {
+                    Text("Sign in to sync your bookmarks and reading progress across your devices. Your data stays scoped to your account.")
+                }
 
-            if AppConfig.isSupabaseConfigured {
-                if viewModel.isSignedIn {
-                    Section {
-                        Button {
-                            Task { await viewModel.sync() }
-                        } label: {
-                            Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                if AppConfig.isSupabaseConfigured {
+                    if viewModel.isSignedIn {
+                        Section {
+                            Button {
+                                Task { await viewModel.sync() }
+                            } label: {
+                                Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                            }
+                            .disabled(viewModel.status == .syncing)
+
+                            Button(role: .destructive) {
+                                Task { await viewModel.signOut() }
+                            } label: {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                    .foregroundStyle(.red)
+                            }
                         }
-                        .disabled(viewModel.status == .syncing)
-
-                        Button(role: .destructive) {
-                            Task { await viewModel.signOut() }
-                        } label: {
-                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                                .foregroundStyle(.red)
+                    } else {
+                        Section {
+                            signInButton
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .clipShape(Capsule())
+                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                .listRowBackground(Color.clear)
                         }
                     }
                 } else {
                     Section {
-                        signInButton
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .clipShape(Capsule())
-                            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                            .listRowBackground(Color.clear)
+                        Label("Sync is not configured in this build.", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.secondary)
                     }
                 }
-            } else {
-                Section {
-                    Label("Sync is not configured in this build.", systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.secondary)
-                }
             }
+            .scrollContentBackground(.hidden)
+            .navigationTitle("Account & Sync")
         }
-        .navigationTitle("Account & Sync")
+        .tint(.accent)
+        .presentationBackground(Color(uiColor: fontThemeManager.theme.backgroundColor))
     }
 
     // MARK: - Pieces
