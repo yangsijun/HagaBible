@@ -6,19 +6,21 @@
 import SwiftUI
 import UIKit
 
-/// Reports every touch that begins inside the view it's attached to, so the reader can
-/// treat *any* interaction — a tap, the start of a scroll, a chapter swipe — as activity
-/// and keep the dim countdown an idle timer rather than a fixed one.
+/// Reports when a touch begins and ends inside the view it's attached to, so the reader can
+/// treat *any* interaction — a tap, the start of a scroll, a chapter swipe — as activity and
+/// hold off the dim countdown for the whole touch rather than running a fixed timer that can
+/// fire under the user's finger.
 ///
 /// Why a UIKit recognizer instead of a SwiftUI gesture: on iOS 18+ SwiftUI gestures (even
 /// via `.simultaneousGesture`) hijack the touch from an enclosing `ScrollView`, so scrolling
 /// breaks. The fix mirrors `ReadingChapterGrid` — bridge a real `UIGestureRecognizer` that
-/// opts into simultaneous recognition. This one goes further: it *fails immediately* on
-/// every touch, so it observes interaction without ever delaying, cancelling, or competing
-/// with scrolling, taps, or swipes.
+/// opts into simultaneous recognition. This one is purely observational: it never transitions
+/// out of `.possible` (never recognizes) and keeps `cancelsTouchesInView`/`delaysTouchesBegan`
+/// off, so it watches the touch sequence without ever delaying, cancelling, or competing with
+/// scrolling, taps, or swipes — which also lets it observe touch *end*, not just touch-down.
 struct TouchActivityDetector: UIGestureRecognizerRepresentable {
-    /// Called once per touch-down on the attached view.
-    let onTouch: () -> Void
+    /// Called with `true` when the first finger lands and `false` when the last finger lifts.
+    let onTouchActiveChanged: (Bool) -> Void
 
     func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
         Coordinator()
@@ -26,7 +28,7 @@ struct TouchActivityDetector: UIGestureRecognizerRepresentable {
 
     func makeUIGestureRecognizer(context: Context) -> TouchActivityRecognizer {
         let recognizer = TouchActivityRecognizer()
-        recognizer.onTouch = onTouch
+        recognizer.onTouchActiveChanged = onTouchActiveChanged
         recognizer.delegate = context.coordinator
         // Observe only: never swallow or postpone touches meant for the content.
         recognizer.cancelsTouchesInView = false
@@ -36,12 +38,12 @@ struct TouchActivityDetector: UIGestureRecognizerRepresentable {
     }
 
     func updateUIGestureRecognizer(_ recognizer: TouchActivityRecognizer, context: Context) {
-        recognizer.onTouch = onTouch
+        recognizer.onTouchActiveChanged = onTouchActiveChanged
     }
 
     func handleUIGestureRecognizerAction(_ recognizer: TouchActivityRecognizer, context: Context) {
-        // Never called: the recognizer fails immediately and so never enters a
-        // recognized state. Interaction is reported through `onTouch` instead.
+        // Never called: the recognizer stays in `.possible` and never recognizes. Interaction
+        // is reported through `onTouchActiveChanged` instead.
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
@@ -54,16 +56,38 @@ struct TouchActivityDetector: UIGestureRecognizerRepresentable {
     }
 }
 
-/// A gesture recognizer that reports each touch-down and then fails right away. Failing
-/// means it bows out of the touch sequence without cancelling it, so the underlying
-/// scroll / tap / swipe proceeds untouched; UIKit resets it to `.possible` for the next
-/// touch, so every discrete touch-down fires `onTouch` again.
+/// A purely observational gesture recognizer: it counts active touches and reports when the
+/// surface goes from untouched → touched and back, but never leaves `.possible`, so the
+/// underlying scroll / tap / swipe proceeds untouched. Tracking begin *and* end (rather than
+/// failing on touch-down) is what lets the reader keep the screen lit for an entire touch.
 final class TouchActivityRecognizer: UIGestureRecognizer {
-    var onTouch: (() -> Void)?
+    var onTouchActiveChanged: ((Bool) -> Void)?
+
+    private var activeTouchCount = 0
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
-        onTouch?()
-        state = .failed
+        let wasInactive = activeTouchCount == 0
+        activeTouchCount += touches.count
+        if wasInactive {
+            onTouchActiveChanged?(true)
+        }
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesEnded(touches, with: event)
+        endTouches(touches)
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesCancelled(touches, with: event)
+        endTouches(touches)
+    }
+
+    private func endTouches(_ touches: Set<UITouch>) {
+        activeTouchCount = max(0, activeTouchCount - touches.count)
+        if activeTouchCount == 0 {
+            onTouchActiveChanged?(false)
+        }
     }
 }

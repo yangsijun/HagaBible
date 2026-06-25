@@ -33,6 +33,12 @@ final class ScreenWakeController {
     @ObservationIgnored private var rampTask: Task<Void, Never>?
     @ObservationIgnored private var brightnessBeforeDim: CGFloat?
 
+    /// `true` while at least one finger is on the reading surface. The dim
+    /// countdown is suppressed for the whole touch — so the screen never dims
+    /// mid-tap or mid-scroll (a slow drag emits no scroll-phase changes to keep
+    /// it awake) — and restarts only once the last finger lifts.
+    @ObservationIgnored private var isTouchActive = false
+
     /// Apply the current settings: set the idle-timer state, undim, and (re)arm
     /// the dim countdown. Call on appear and whenever a setting changes.
     func apply(keepScreenOn: Bool, dimAfterSeconds: Int) {
@@ -41,10 +47,27 @@ final class ScreenWakeController {
         scheduleDim(keepScreenOn: keepScreenOn, dimAfterSeconds: dimAfterSeconds)
     }
 
-    /// Reset on user interaction: undim (if needed) and restart the countdown.
+    /// Reset on a discrete interaction (e.g. a scroll-phase change): undim (if
+    /// needed) and restart the countdown. While a touch is active `scheduleDim`
+    /// no-ops, so this only undims until the finger lifts.
     func userDidInteract(keepScreenOn: Bool, dimAfterSeconds: Int) {
         restoreBrightness()
         scheduleDim(keepScreenOn: keepScreenOn, dimAfterSeconds: dimAfterSeconds)
+    }
+
+    /// Report a finger landing on / lifting off the reading surface. While a
+    /// touch is active the dim countdown is held off entirely (the screen can't
+    /// dim under the user's finger); when the last finger lifts the countdown
+    /// restarts so dimming measures genuine inactivity.
+    func setTouchActive(_ active: Bool, keepScreenOn: Bool, dimAfterSeconds: Int) {
+        isTouchActive = active
+        if active {
+            dimTask?.cancel()
+            dimTask = nil
+            restoreBrightness()
+        } else {
+            scheduleDim(keepScreenOn: keepScreenOn, dimAfterSeconds: dimAfterSeconds)
+        }
     }
 
     /// Restore brightness and pause the countdown without touching the idle
@@ -53,6 +76,7 @@ final class ScreenWakeController {
     func suspend() {
         dimTask?.cancel()
         dimTask = nil
+        isTouchActive = false
         restoreBrightness()
     }
 
@@ -61,6 +85,7 @@ final class ScreenWakeController {
     func teardown() {
         dimTask?.cancel()
         dimTask = nil
+        isTouchActive = false
         restoreBrightness()
         UIApplication.shared.isIdleTimerDisabled = false
     }
@@ -68,7 +93,9 @@ final class ScreenWakeController {
     private func scheduleDim(keepScreenOn: Bool, dimAfterSeconds: Int) {
         dimTask?.cancel()
         dimTask = nil
-        guard keepScreenOn, dimAfterSeconds > 0 else { return }
+        // Never arm the countdown under an active touch — it restarts when the
+        // finger lifts (`setTouchActive(false:)`).
+        guard keepScreenOn, dimAfterSeconds > 0, !isTouchActive else { return }
         // Created from a @MainActor context, so the task inherits MainActor
         // isolation and `dimNow()` runs on the main actor.
         dimTask = Task { [weak self] in

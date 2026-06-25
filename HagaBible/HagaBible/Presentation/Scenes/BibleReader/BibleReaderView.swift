@@ -140,23 +140,6 @@ struct BibleReaderView: View {
         )
     }
 
-    /// Full-screen transparent catcher shown only while the screen is dimmed; any
-    /// touch restores brightness and restarts the countdown (the device is never
-    /// locked, so resume is just a tap — no Face ID / passcode).
-    private var screenDimWakeCatcher: some View {
-        Color.black.opacity(0.001)
-            .ignoresSafeArea()
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0).onChanged { _ in
-                    screenWake.userDidInteract(
-                        keepScreenOn: appState.keepScreenOn,
-                        dimAfterSeconds: appState.screenDimAfterSeconds
-                    )
-                }
-            )
-    }
-
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -164,23 +147,23 @@ struct BibleReaderView: View {
                     verseList
                 }
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
-                .onScrollPhaseChange { _, newPhase in
-                    // Active scrolling counts as interaction — keep the screen lit
-                    // and restart the dim countdown.
-                    if newPhase != .idle {
-                        screenWake.userDidInteract(
-                            keepScreenOn: appState.keepScreenOn,
-                            dimAfterSeconds: appState.screenDimAfterSeconds
-                        )
-                    }
+                .onScrollPhaseChange { _, _ in
+                    // Every scroll-phase change — including the transition back to
+                    // .idle when momentum stops — counts as interaction, so the dim
+                    // countdown restarts the moment scrolling settles rather than mid-fling.
+                    screenWake.userDidInteract(
+                        keepScreenOn: appState.keepScreenOn,
+                        dimAfterSeconds: appState.screenDimAfterSeconds
+                    )
                 }
                 // Any touch on the reading surface — a tap, the start of a scroll or a
-                // chapter swipe — also counts, so the dim fires only after genuine
-                // inactivity rather than on a fixed timer. The recognizer observes
-                // without blocking scroll/taps (see `TouchActivityDetector`).
+                // chapter swipe — holds off dimming for its full duration: the screen
+                // can't dim under a finger, and a touch while dimmed undims *and* scrolls
+                // because the recognizer never blocks the touch (see `TouchActivityDetector`).
                 .gesture(
-                    TouchActivityDetector {
-                        screenWake.userDidInteract(
+                    TouchActivityDetector { active in
+                        screenWake.setTouchActive(
+                            active,
                             keepScreenOn: appState.keepScreenOn,
                             dimAfterSeconds: appState.screenDimAfterSeconds
                         )
@@ -401,11 +384,6 @@ struct BibleReaderView: View {
         }
         .onDisappear {
             screenWake.teardown()
-        }
-        .overlay {
-            if screenWake.isDimmed {
-                screenDimWakeCatcher
-            }
         }
     }
 
