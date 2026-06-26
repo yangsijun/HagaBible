@@ -24,6 +24,9 @@ struct BibleNavigation2View: View {
     @State var showDownloadConfirmation: Bool = false
     @State var pendingDownloadVersion: BibleVersion?
     @State var isDownloading: Bool = false
+    /// A user-facing message when an in-place download (from the version picker)
+    /// fails — e.g. a geo-restricted or unverified-purchase version.
+    @State var downloadErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -263,6 +266,17 @@ struct BibleNavigation2View: View {
                     Text("\(version.versionName) is not downloaded yet. Download now?")
                 }
             }
+            .alert(
+                "Something went wrong",
+                isPresented: Binding(
+                    get: { downloadErrorMessage != nil },
+                    set: { if !$0 { downloadErrorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { downloadErrorMessage = nil }
+            } message: {
+                Text(downloadErrorMessage ?? "")
+            }
             .overlay {
                 if isDownloading {
                     ProgressView("Downloading...")
@@ -342,6 +356,7 @@ struct BibleNavigation2View: View {
             }
         } catch {
             Logger.repository.error("Failed to download bible: \(error.localizedDescription)")
+            downloadErrorMessage = error.localizedDescription
         }
     }
 }
