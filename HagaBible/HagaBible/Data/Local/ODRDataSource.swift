@@ -98,7 +98,25 @@ class FileSystemDataSource {
         try fileManager.copyItem(at: srcURL, to: destURL)
         return destURL.path
     }
-    
+
+    /// 다운로드한 데이터를 Documents 폴더에 성경 파일로 설치 (덮어쓰기 지원).
+    /// Supabase 다운로드 경로용 — 기존 파일과 WAL/SHM 사이드카를 먼저 제거해
+    /// ATTACH 충돌을 방지한 뒤 원자적으로 기록한다.
+    @discardableResult
+    func installFile(data: Data, filename: String) throws -> String {
+        let destURL = documentsURL.appendingPathComponent(filename)
+
+        for suffix in ["", "-wal", "-shm"] {
+            let url = documentsURL.appendingPathComponent(filename + suffix)
+            if fileManager.fileExists(atPath: url.path) {
+                try fileManager.removeItem(at: url)
+            }
+        }
+
+        try data.write(to: destURL, options: .atomic)
+        return destURL.path
+    }
+
     /// 파일 삭제
     func removeFile(filename: String) throws {
         let fileURL = documentsURL.appendingPathComponent(filename)

@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0DE0B11D0000000000000001 /* Bible_KJV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000001 /* Bible_KJV.sqlite */; settings = {ASSET_TAGS = (Bible_KJV_2, ); }; };
 		0DE0B11D0000000000000002 /* Bible_KRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000002 /* Bible_KRV.sqlite */; settings = {ASSET_TAGS = (Bible_KRV_2, ); }; };
 		0DE0B11D0000000000000003 /* Bible_NIV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000003 /* Bible_NIV.sqlite */; settings = {ASSET_TAGS = (Bible_NIV_2, ); }; };
 		0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */; settings = {ASSET_TAGS = (Bible_NKRV_2, ); }; };
@@ -407,7 +406,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0DE0B11D0000000000000001 /* Bible_KJV.sqlite in Resources */,
 				0DE0B11D0000000000000002 /* Bible_KRV.sqlite in Resources */,
 				0DE0B11D0000000000000003 /* Bible_NIV.sqlite in Resources */,
 				0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */,

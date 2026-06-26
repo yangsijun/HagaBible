@@ -28,13 +28,47 @@ struct BibleVersionPurchaseCatalogTests {
     }
 }
 
+// MARK: - Delivery catalog (ODR vs Supabase, geo restriction)
+
+@Suite("BibleVersionDeliveryCatalog")
+struct BibleVersionDeliveryCatalogTests {
+    @Test("KJV is geo-restricted (UK) and therefore Supabase-only; others use ODR")
+    func kjvIsGeoRestrictedAndOffODR() {
+        #expect(BibleVersionDeliveryCatalog.isGeoRestricted("KJV") == true)
+        #expect(BibleVersionDeliveryCatalog.usesODR("KJV") == false)
+        #expect(BibleVersionDeliveryCatalog.restrictedRegions(for: "KJV").contains("GB"))
+        #expect(BibleVersionDeliveryCatalog.restrictedRegions(for: "KJV").contains("GBR"))
+
+        for code in ["KRV", "NIV", "NKRV", "WEB", "WEBBE"] {
+            #expect(BibleVersionDeliveryCatalog.isGeoRestricted(code) == false)
+            #expect(BibleVersionDeliveryCatalog.usesODR(code) == true)
+            #expect(BibleVersionDeliveryCatalog.restrictedRegions(for: code).isEmpty)
+        }
+    }
+}
+
+// MARK: - RegionService
+
+@Suite("RegionService")
+struct RegionServiceTests {
+    @Test("A UK region candidate restricts KJV; a US one does not")
+    func ukRestrictsKJV() async {
+        let uk = RegionService(overrideCandidates: ["GB"])
+        #expect(await uk.isDownloadRestricted(versionCode: "KJV") == true)
+        #expect(await uk.isDownloadRestricted(versionCode: "NIV") == false)
+
+        let us = RegionService(overrideCandidates: ["US", "USA"])
+        #expect(await us.isDownloadRestricted(versionCode: "KJV") == false)
+    }
+}
+
 // MARK: - LoadBibleVersionCatalogUseCase
 
 @MainActor
 @Suite("LoadBibleVersionCatalogUseCase")
 struct LoadBibleVersionCatalogUseCaseTests {
-    private func makeVersion(_ code: String) -> BibleVersion {
-        BibleVersion(versionCode: code, versionName: code, versionShortName: code, language: "English", isDownloaded: false)
+    private func makeVersion(_ code: String, downloaded: Bool = false) -> BibleVersion {
+        BibleVersion(versionCode: code, versionName: code, versionShortName: code, language: "English", isDownloaded: downloaded)
     }
 
     @Test("Free versions are .free, owned paid versions are .purchased, unowned paid versions are .locked with price")
@@ -51,7 +85,10 @@ struct LoadBibleVersionCatalogUseCaseTests {
             ],
             ownedProductIDs: ["dev.sijun.HagaBible.bible.nkrv"]
         )
-        let useCase = DefaultLoadBibleVersionCatalogUseCase(bibleRepository: repo, store: store)
+        // Force a non-UK region so the geo filter never hides KJV here.
+        let useCase = DefaultLoadBibleVersionCatalogUseCase(
+            bibleRepository: repo, store: store, regionService: RegionService(overrideCandidates: ["US"])
+        )
 
         let items = await useCase.execute()
 
@@ -59,6 +96,24 @@ struct LoadBibleVersionCatalogUseCaseTests {
         #expect(items.first { $0.id == "KJV" }?.availability == .free)
         #expect(items.first { $0.id == "NIV" }?.availability == .locked(displayPrice: "$2.99"))
         #expect(items.first { $0.id == "NKRV" }?.availability == .purchased)
+    }
+
+    @Test("In the UK, an undownloaded KJV is hidden; an already-downloaded KJV stays listed")
+    func ukHidesUndownloadedKJV() async {
+        let store = MockBibleVersionStore()
+        let uk = RegionService(overrideCandidates: ["GB"])
+
+        let hidden = await DefaultLoadBibleVersionCatalogUseCase(
+            bibleRepository: StubVersionListRepository(versions: [makeVersion("KJV"), makeVersion("WEB")]),
+            store: store, regionService: uk
+        ).execute()
+        #expect(hidden.map(\.id).sorted() == ["WEB"])
+
+        let kept = await DefaultLoadBibleVersionCatalogUseCase(
+            bibleRepository: StubVersionListRepository(versions: [makeVersion("KJV", downloaded: true), makeVersion("WEB")]),
+            store: store, regionService: uk
+        ).execute()
+        #expect(kept.map(\.id).sorted() == ["KJV", "WEB"])
     }
 }
 

@@ -82,6 +82,7 @@ extension DIContainer {
         }
 
         container.register(type: ODRDataSource.self, component: ODRDataSource())
+        container.register(type: RemoteBibleFileDataSource.self, component: RemoteBibleFileDataSource(client: supabaseClient))
         container.register(type: FileSystemDataSource.self, component: FileSystemDataSource())
         container.register(type: BibleFileRepository.self, component: DefaultBibleFileRepository())
         

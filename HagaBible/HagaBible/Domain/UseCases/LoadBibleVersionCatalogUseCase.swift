@@ -16,14 +16,29 @@ protocol LoadBibleVersionCatalogUseCase: Sendable {
 final class DefaultLoadBibleVersionCatalogUseCase: LoadBibleVersionCatalogUseCase {
     private let bibleRepository: BibleRepository
     private let store: BibleVersionStore
+    private let regionService: RegionService
 
-    init(bibleRepository: BibleRepository, store: BibleVersionStore) {
+    init(bibleRepository: BibleRepository, store: BibleVersionStore, regionService: RegionService = RegionService()) {
         self.bibleRepository = bibleRepository
         self.store = store
+        self.regionService = regionService
     }
 
     func execute() async -> [BibleVersionItem] {
-        let versions = (try? await bibleRepository.fetchBibleVersionList()) ?? []
+        var versions = (try? await bibleRepository.fetchBibleVersionList()) ?? []
+
+        // Client-side geo gate (UX only; the server is authoritative): hide a
+        // geo-restricted, not-yet-downloaded version when the current region is
+        // blocked, so the user isn't offered a download the server will refuse.
+        // Already-downloaded versions stay listed so they remain manageable.
+        let here = await regionService.currentRegionCandidates()
+        if !here.isEmpty {
+            versions = versions.filter { version in
+                let restricted = BibleVersionDeliveryCatalog.restrictedRegions(for: version.versionCode)
+                guard !restricted.isEmpty, !version.isDownloaded else { return true }
+                return here.isDisjoint(with: restricted)
+            }
+        }
 
         // Fetch prices and entitlements concurrently; degrade gracefully on failure.
         async let ownedTask = store.purchasedProductIDs()
