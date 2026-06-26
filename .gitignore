@@ -140,6 +140,9 @@ iOSInjectionProject/
 .sisyphus/
 buildServer.json
 
+# Supabase CLI local state (linked-project ref, temp credentials)
+**/supabase/.temp/
+
 # Secrets — the Supabase anon key etc. are injected via an untracked xcconfig.
 # Commit Secrets.xcconfig.example (placeholders only) instead.
 Secrets.xcconfig
