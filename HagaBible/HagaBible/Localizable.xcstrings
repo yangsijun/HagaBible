@@ -1,1304 +1,1344 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": ""
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
           }
         }
       }
     },
-    "%@ Voice": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ 음성"
+    "%@ is not downloaded yet. Download now?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@은(는) 아직 다운로드되지 않았습니다. 지금 다운로드할까요?"
           }
         }
       }
     },
-    "%@ is not downloaded yet. Download now?": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@은(는) 아직 다운로드되지 않았습니다. 지금 다운로드할까요?"
+    "%@ Voice" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 음성"
           }
         }
       }
     },
-    "%lld": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld"
+    "%lld" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
           }
         }
       }
     },
-    "%lld / %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld / %2$lld"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld / %2$lld"
-          }
-        }
-      }
-    },
-    "%lld verses": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld절"
-          }
-        }
-      }
-    },
-    "%lld/%lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld/%2$lld"
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld"
           }
         },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld/%2$lld"
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld"
           }
         }
       }
     },
-    "Account & Sync": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "계정 및 동기화"
+    "%lld verses" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld절"
           }
         }
       }
     },
-    "Add Reminder": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "리마인더 추가"
-          }
-        }
-      }
-    },
-    "Add a reminder to read the Bible at the time you choose.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "원하는 시간에 성경을 읽도록 리마인더를 추가하세요."
-          }
-        }
-      }
-    },
-    "Add bookmark": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "북마크 추가"
-          }
-        }
-      }
-    },
-    "All books": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "모든 책"
-          }
-        }
-      }
-    },
-    "Are you sure you want to delete %@?": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@을(를) 삭제하시겠습니까?"
-          }
-        }
-      }
-    },
-    "Bible": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "성경"
-          }
-        }
-      }
-    },
-    "Bible Recording": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "성경 녹음"
-          }
-        }
-      }
-    },
-    "Bible Reference": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "성경 구절"
-          }
-        }
-      }
-    },
-    "Biblical order": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "성경 순서"
-          }
-        }
-      }
-    },
-    "Book": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "책"
-          }
-        }
-      }
-    },
-    "BookPicker": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "책 선택"
-          }
-        }
-      }
-    },
-    "Bookmarks": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "북마크"
-          }
-        }
-      }
-    },
-    "Both": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "둘 다"
-          }
-        }
-      }
-    },
-    "Buy": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "구매"
-          }
-        }
-      }
-    },
-    "Cancel": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "취소"
-          }
-        }
-      }
-    },
-    "ChapterPicker": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "장 선택"
-          }
-        }
-      }
-    },
-    "Color": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "색상"
-          }
-        }
-      }
-    },
-    "Compare": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "대조"
-          }
-        }
-      }
-    },
-    "Copy to clipboard": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "클립보드에 복사"
-          }
-        }
-      }
-    },
-    "Delete": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "삭제"
-          }
-        }
-      }
-    },
-    "Delete Bible Version": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "역본 삭제"
-          }
-        }
-      }
-    },
-    "Delete Reminder": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "리마인더 삭제"
-          }
-        }
-      }
-    },
-    "Delete all search history?": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "검색 기록을 모두 삭제하시겠습니까?"
-          }
-        }
-      }
-    },
-    "Dim after": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "다음 시간 후 어둡게"
-          }
-        }
-      }
-    },
-    "Done": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "완료"
-          }
-        }
-      }
-    },
-    "Download": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "다운로드"
-          }
-        }
-      }
-    },
-    "Download Bible Version": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "역본 다운로드"
-          }
-        }
-      }
-    },
-    "Downloading %@... (%lld/%lld)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloading %1$@... (%2$lld/%3$lld)"
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
           }
         },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ 다운로드 중... (%2$lld/%3$lld)"
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
           }
         }
       }
     },
-    "Downloading...": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "다운로드 중..."
+    "Account & Sync" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정 및 동기화"
           }
         }
       }
     },
-    "Edit": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "편집"
+    "Add a reminder to read the Bible at the time you choose." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원하는 시간에 성경을 읽도록 리마인더를 추가하세요."
           }
         }
       }
     },
-    "Edit Reminder": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "리마인더 편집"
+    "Add bookmark" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "북마크 추가"
           }
         }
       }
     },
-    "English Voice": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "영어 음성"
+    "Add Reminder" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리마인더 추가"
           }
         }
       }
     },
-    "Error": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "오류"
+    "All books" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 책"
           }
         }
       }
     },
-    "Every %@": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@마다"
+    "Are you sure you want to delete %@?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@을(를) 삭제하시겠습니까?"
           }
         }
       }
     },
-    "Experimental Features": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "실험적 기능"
+    "Bible" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "성경"
           }
         }
       }
     },
-    "Faster": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "빠르게"
+    "Bible Recording" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "성경 녹음"
           }
         }
       }
     },
-    "Font": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "글꼴"
+    "Bible Reference" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "성경 구절"
           }
         }
       }
     },
-    "Font & Themes": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "글꼴 및 테마"
+    "Biblical order" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "성경 순서"
           }
         }
       }
     },
-    "Font Size:": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "글꼴 크기:"
+    "Book" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "책"
           }
         }
       }
     },
-    "Haga Bible": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Haga Bible"
+    "Bookmarks" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "북마크"
           }
         }
       }
     },
-    "HagaBible": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HagaBible"
+    "BookPicker" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "책 선택"
           }
         }
       }
     },
-    "Hide bookmark stripes": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "북마크 줄 숨기기"
+    "Both" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "둘 다"
           }
         }
       }
     },
-    "Keep screen on": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "화면 켜짐 유지"
+    "Buy" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "구매"
           }
         }
       }
     },
-    "Korean Voice": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "한국어 음성"
+    "Cancel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "취소"
           }
         }
       }
     },
-    "Label": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "라벨"
+    "ChapterPicker" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "장 선택"
           }
         }
       }
     },
-    "Labs": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "실험실"
+    "Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "색상"
           }
         }
       }
     },
-    "Library": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "서재"
+    "Compare" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대조"
           }
         }
       }
     },
-    "Library section": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "서재 섹션"
+    "Copy to clipboard" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클립보드에 복사"
           }
         }
       }
     },
-    "Line Spacing:": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "줄 간격:"
+    "Couldn't reach the download service. Please try again." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드 서비스에 연결하지 못했습니다. 다시 시도해 주세요."
           }
         }
       }
     },
-    "Listen": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "듣기"
+    "Delete" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "삭제"
           }
         }
       }
     },
-    "Manage Versions": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "역본 관리"
+    "Delete all search history?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "검색 기록을 모두 삭제하시겠습니까?"
           }
         }
       }
     },
-    "More voices can be downloaded in Settings > Accessibility > Spoken Content > Voices": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "더 많은 음성은 설정 > 손쉬운 사용 > 콘텐츠 말하기 > 음성에서 다운로드할 수 있습니다"
+    "Delete Bible Version" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "역본 삭제"
           }
         }
       }
     },
-    "No Reminders": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "리마인더 없음"
+    "Delete Reminder" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리마인더 삭제"
           }
         }
       }
     },
-    "No bible downloaded": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "다운로드된 성경 없음"
+    "Dim after" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 시간 후 어둡게"
           }
         }
       }
     },
-    "No bookmarks": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "북마크 없음"
+    "Done" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완료"
           }
         }
       }
     },
-    "No recordings yet.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "아직 녹음이 없습니다."
+    "Download" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드"
           }
         }
       }
     },
-    "No versions available": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "사용 가능한 역본 없음"
+    "Download Bible Version" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "역본 다운로드"
           }
         }
       }
     },
-    "Not signed in": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "로그인되지 않음"
+    "Downloading %@... (%lld/%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading %1$@... (%2$lld/%3$lld)"
           }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 다운로드 중... (%2$lld/%3$lld)"
+          }
+        }
+      }
+    },
+    "Downloading..." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드 중..."
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "편집"
+          }
+        }
+      }
+    },
+    "Edit Reminder" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리마인더 편집"
+          }
+        }
+      }
+    },
+    "English Voice" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "영어 음성"
+          }
+        }
+      }
+    },
+    "Error" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오류"
+          }
+        }
+      }
+    },
+    "Every %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@마다"
+          }
+        }
+      }
+    },
+    "Experimental Features" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실험적 기능"
+          }
+        }
+      }
+    },
+    "Faster" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빠르게"
+          }
+        }
+      }
+    },
+    "Font" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "글꼴"
+          }
+        }
+      }
+    },
+    "Font & Themes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "글꼴 및 테마"
+          }
+        }
+      }
+    },
+    "Font Size:" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "글꼴 크기:"
+          }
+        }
+      }
+    },
+    "Haga Bible" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haga Bible"
+          }
+        }
+      }
+    },
+    "HagaBible" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HagaBible"
+          }
+        }
+      }
+    },
+    "Hide bookmark stripes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "북마크 줄 숨기기"
+          }
+        }
+      }
+    },
+    "Keep screen on" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면 켜짐 유지"
+          }
+        }
+      }
+    },
+    "Korean Voice" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "한국어 음성"
+          }
+        }
+      }
+    },
+    "Label" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "라벨"
+          }
+        }
+      }
+    },
+    "Labs" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실험실"
+          }
+        }
+      }
+    },
+    "Library" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서재"
+          }
+        }
+      }
+    },
+    "Library section" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서재 섹션"
+          }
+        }
+      }
+    },
+    "Line Spacing:" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "줄 간격:"
+          }
+        }
+      }
+    },
+    "Listen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "듣기"
+          }
+        }
+      }
+    },
+    "Manage Versions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "역본 관리"
+          }
+        }
+      }
+    },
+    "More voices can be downloaded in Settings > Accessibility > Spoken Content > Voices" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 많은 음성은 설정 > 손쉬운 사용 > 콘텐츠 말하기 > 음성에서 다운로드할 수 있습니다"
+          }
+        }
+      }
+    },
+    "No bible downloaded" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드된 성경 없음"
+          }
+        }
+      }
+    },
+    "No bookmarks" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "북마크 없음"
+          }
+        }
+      }
+    },
+    "No recordings yet." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 녹음이 없습니다."
+          }
+        }
+      }
+    },
+    "No Reminders" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리마인더 없음"
+          }
+        }
+      }
+    },
+    "No versions available" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용 가능한 역본 없음"
+          }
+        }
+      }
+    },
+    "Not signed in" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인되지 않음"
+          }
+        }
+      }
+    },
+    "Notes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메모"
+          }
+        }
+      }
+    },
+    "Notifications are off" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알림이 꺼져 있습니다"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끔"
+          }
         }
       }
     },
-    "Notes": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "메모"
+    "OK" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인"
           }
         }
       }
     },
-    "Notifications are off": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "알림이 꺼져 있습니다"
+    "Open Haga Bible" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haga Bible 열기"
           }
         }
       }
     },
-    "OK": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "확인"
+    "Open Haga Bible app." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haga Bible 앱을 엽니다."
           }
         }
       }
     },
-    "Off": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "끔"
+    "Open in Version" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 역본으로 열기"
           }
         }
       }
     },
-    "Open Haga Bible": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Haga Bible 열기"
+    "Open Settings" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 열기"
           }
         }
       }
     },
-    "Open Haga Bible app.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Haga Bible 앱을 엽니다."
+    "Other" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기타"
           }
         }
       }
     },
-    "Open Settings": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "설정 열기"
+    "Overall" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체"
           }
         }
       }
     },
-    "Open in Version": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "다른 역본으로 열기"
+    "Preparing..." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "준비 중..."
           }
         }
       }
     },
-    "Other": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "기타"
+    "Quickly launch Haga Bible from Control Centre." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "제어 센터에서 Haga Bible을 빠르게 실행합니다."
           }
         }
       }
     },
-    "Overall": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "전체"
+    "Reading" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽기"
           }
         }
       }
     },
-    "Preparing...": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "준비 중..."
+    "Reading Checklist" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽기 체크리스트"
           }
         }
       }
     },
-    "Quickly launch Haga Bible from Control Centre.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "제어 센터에서 Haga Bible을 빠르게 실행합니다."
+    "Reading Reminder" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽기 리마인더"
           }
         }
       }
     },
-    "Reading": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽기"
+    "Reading Reminders" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽기 리마인더"
           }
         }
       }
     },
-    "Reading Checklist": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽기 체크리스트"
+    "Reading Speed" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽기 속도"
           }
         }
       }
     },
-    "Reading Reminder": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽기 리마인더"
+    "Recent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최근"
           }
         }
       }
     },
-    "Reading Reminders": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽기 리마인더"
+    "Recordings" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "녹음"
           }
         }
       }
     },
-    "Reading Speed": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽기 속도"
+    "Rename" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이름 변경"
           }
         }
       }
     },
-    "Recent": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "최근"
+    "Repeat" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "반복"
           }
         }
       }
     },
-    "Recordings": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "녹음"
+    "Reset" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재설정"
           }
         }
       }
     },
-    "Rename": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이름 변경"
+    "Reset all reading progress" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 읽기 진행 상황 재설정"
           }
         }
       }
     },
-    "Repeat": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "반복"
+    "Reset all reading progress?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 읽기 진행 상황을 재설정할까요?"
           }
         }
       }
     },
-    "Reset": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "재설정"
+    "Restore" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "복원"
           }
         }
       }
     },
-    "Reset all reading progress": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "모든 읽기 진행 상황 재설정"
+    "Restoring…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "복원 중…"
           }
         }
       }
     },
-    "Reset all reading progress?": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "모든 읽기 진행 상황을 재설정할까요?"
+    "Save" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장"
           }
         }
       }
     },
-    "Restore": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "복원"
+    "Screen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면"
           }
         }
       }
     },
-    "Restoring…": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "복원 중…"
+    "Search" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "검색"
           }
         }
       }
     },
-    "Save": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "저장"
+    "Search History" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "검색 기록"
           }
         }
       }
     },
-    "Screen": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "화면"
+    "Search notes or reference" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메모 또는 구절 검색"
           }
         }
       }
     },
-    "Search": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "검색"
+    "Search Results" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "검색 결과"
           }
         }
       }
     },
-    "Search History": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "검색 기록"
+    "Share" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공유"
           }
         }
       }
     },
-    "Search Results": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "검색 결과"
+    "Show bookmark stripes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "북마크 줄 표시"
           }
         }
       }
     },
-    "Search notes or reference": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "메모 또는 구절 검색"
+    "Sign in to sync your bookmarks and reading progress across your devices. Your data stays scoped to your account." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기기 간에 북마크와 읽기 진행 상황을 동기화하려면 로그인하세요. 데이터는 회원님의 계정에만 연결되어 보관됩니다."
           }
         }
       }
     },
-    "Share": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "공유"
+    "Sign Out" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그아웃"
           }
         }
       }
     },
-    "Show bookmark stripes": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "북마크 줄 표시"
+    "Signed in" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인됨"
           }
         }
       }
     },
-    "Sign Out": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "로그아웃"
+    "Signing in…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인 중…"
           }
         }
       }
     },
-    "Sign in to sync your bookmarks and reading progress across your devices. Your data stays scoped to your account.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "기기 간에 북마크와 읽기 진행 상황을 동기화하려면 로그인하세요. 데이터는 회원님의 계정에만 연결되어 보관됩니다."
+    "Slower" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "느리게"
           }
         }
       }
     },
-    "Signed in": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "로그인됨"
+    "Something went wrong" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "문제가 발생했습니다"
           }
         }
       }
     },
-    "Signing in…": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "로그인 중…"
+    "Sorting options" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정렬 옵션"
           }
         }
       }
     },
-    "Slower": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "느리게"
+    "Speed: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "속도: %@"
           }
         }
       }
     },
-    "Something went wrong": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "문제가 발생했습니다"
+    "Stop Listening" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "듣기 중지"
           }
         }
       }
     },
-    "Sorting options": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "정렬 옵션"
+    "Sync" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동기화"
           }
         }
       }
     },
-    "Speed: %@": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "속도: %@"
+    "Sync is not configured in this build." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 빌드에서는 동기화가 구성되어 있지 않습니다."
           }
         }
       }
     },
-    "Stop Listening": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "듣기 중지"
+    "Sync Now" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 동기화"
           }
         }
       }
     },
-    "Sync": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "동기화"
+    "Syncing…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동기화 중…"
           }
         }
       }
     },
-    "Sync Now": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "지금 동기화"
+    "System Default" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 기본값"
           }
         }
       }
     },
-    "Sync is not configured in this build.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이 빌드에서는 동기화가 구성되어 있지 않습니다."
+    "The download failed. Please try again." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드에 실패했습니다. 다시 시도해 주세요."
           }
         }
       }
     },
-    "Syncing…": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "동기화 중…"
+    "The screen stays on while reading. Optionally dim it after a period of inactivity to save power — tap the screen to restore." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽는 동안 화면이 켜진 상태로 유지됩니다. 전력 절약을 위해 일정 시간 사용하지 않으면 화면을 어둡게 할 수 있습니다 — 화면을 탭하면 복원됩니다."
           }
         }
       }
     },
-    "System Default": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "시스템 기본값"
+    "The screen turns off automatically using your device's Auto-Lock setting." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기기의 자동 잠금 설정에 따라 화면이 자동으로 꺼집니다."
           }
         }
       }
     },
-    "TTS Settings": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "TTS 설정"
+    "Theme" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "테마"
           }
         }
       }
     },
-    "The screen stays on while reading. Optionally dim it after a period of inactivity to save power — tap the screen to restore.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽는 동안 화면이 켜진 상태로 유지됩니다. 전력 절약을 위해 일정 시간 사용하지 않으면 화면을 어둡게 할 수 있습니다 — 화면을 탭하면 복원됩니다."
+    "These features are experimental and off by default. Turning one off only hides it — your recordings and settings are kept." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기능들은 실험적이며 기본적으로 꺼져 있습니다. 기능을 꺼도 숨겨질 뿐이며, 녹음과 설정은 그대로 유지됩니다."
           }
         }
       }
     },
-    "The screen turns off automatically using your device's Auto-Lock setting.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "기기의 자동 잠금 설정에 따라 화면이 자동으로 꺼집니다."
+    "This action cannot be undone." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 작업은 되돌릴 수 없습니다."
           }
         }
       }
     },
-    "Theme": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "테마"
+    "This marks every chapter unread. This cannot be undone." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 장을 읽지 않음으로 표시합니다. 이 작업은 되돌릴 수 없습니다."
           }
         }
       }
     },
-    "These features are experimental and off by default. Turning one off only hides it — your recordings and settings are kept.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이 기능들은 실험적이며 기본적으로 꺼져 있습니다. 기능을 꺼도 숨겨질 뿐이며, 녹음과 설정은 그대로 유지됩니다."
+    "This version isn't available for download in your region." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 역본은 현재 지역에서 다운로드할 수 없습니다."
           }
         }
       }
     },
-    "This action cannot be undone.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이 작업은 되돌릴 수 없습니다."
+    "Title" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "제목"
           }
         }
       }
     },
-    "This marks every chapter unread. This cannot be undone.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "모든 장을 읽지 않음으로 표시합니다. 이 작업은 되돌릴 수 없습니다."
+    "To get reading reminders, allow notifications for HagaBible in Settings." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "읽기 리마인더를 받으려면 설정에서 HagaBible의 알림을 허용하세요."
           }
         }
       }
     },
-    "Title": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "제목"
+    "TTS Settings" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TTS 설정"
           }
         }
       }
     },
-    "To get reading reminders, allow notifications for HagaBible in Settings.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "읽기 리마인더를 받으려면 설정에서 HagaBible의 알림을 허용하세요."
+    "Use system volume controls" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 볼륨 컨트롤 사용"
           }
         }
       }
     },
-    "Use system volume controls": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "시스템 볼륨 컨트롤 사용"
+    "Verse" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "절"
           }
         }
       }
     },
-    "Verse": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "절"
+    "VersePicker" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "절 선택"
           }
         }
       }
     },
-    "VersePicker": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "절 선택"
+    "Version" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "역본"
           }
         }
       }
     },
-    "Version": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "역본"
+    "Voice" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음성"
           }
         }
       }
     },
-    "Voice": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "음성"
+    "We couldn't confirm your purchase of this version. Please try again or restore your purchases." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 역본의 구매 내역을 확인하지 못했습니다. 다시 시도하거나 구매를 복원해 주세요."
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

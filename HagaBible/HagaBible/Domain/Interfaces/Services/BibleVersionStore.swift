@@ -27,6 +27,12 @@ protocol BibleVersionStore: Sendable {
     /// Begin a purchase for the given product identifier.
     func purchase(productID: String) async throws -> PurchaseResult
 
+    /// The Apple-signed transaction (JWS representation) for the user's current
+    /// entitlement to `productID`, or `nil` if the version isn't owned. Sent to
+    /// the download Edge Function so it can verify the purchase server-side
+    /// before issuing a signed URL for a paid version.
+    func entitlementJWS(for productID: String) async -> String?
+
     /// Restore/sync entitlements from the App Store (`AppStore.sync()`).
     func restore() async throws
 }

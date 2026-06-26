@@ -65,8 +65,9 @@ class DefaultBibleFileRepository: BibleFileRepository {
         throw lastError ?? URLError(.unknown)
     }
 
-    /// Supabase Storage path, with retry. A region restriction (HTTP 403 from the
-    /// geo gate) is terminal and is NOT retried.
+    /// Supabase Storage path, with retry. Server-side gate rejections — a region
+    /// restriction (HTTP 403) or an unverified purchase (HTTP 402) — are terminal
+    /// and are NOT retried.
     private func downloadFromServer(_ version: BibleVersion) async throws {
         let code = version.versionCode
         let filename = BibleDatabaseService.fileName(for: code)
@@ -80,6 +81,8 @@ class DefaultBibleFileRepository: BibleFileRepository {
                 return
             } catch BibleDownloadError.regionRestricted {
                 throw BibleDownloadError.regionRestricted // hard block — do not retry
+            } catch BibleDownloadError.notPurchased {
+                throw BibleDownloadError.notPurchased // hard block — do not retry
             } catch {
                 lastError = error
                 Logger.repository.warning("Supabase attempt \(attempt)/\(self.maxRetryCount) failed for \(code): \(error.localizedDescription)")

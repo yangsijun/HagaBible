@@ -82,7 +82,16 @@ extension DIContainer {
         }
 
         container.register(type: ODRDataSource.self, component: ODRDataSource())
-        container.register(type: RemoteBibleFileDataSource.self, component: RemoteBibleFileDataSource(client: supabaseClient))
+        container.register(type: RemoteBibleFileDataSource.self, component: RemoteBibleFileDataSource(
+            client: supabaseClient,
+            // Resolved lazily at call time: the StoreKit store is registered
+            // later in this same graph. Maps a paid version's code → its
+            // Apple-signed entitlement (JWS) for the server-side purchase gate.
+            entitlementProvider: { code in
+                guard let productID = BibleVersionPurchaseCatalog.productID(for: code) else { return nil }
+                return await DIContainer.shared.resolve(type: BibleVersionStore.self).entitlementJWS(for: productID)
+            }
+        ))
         container.register(type: FileSystemDataSource.self, component: FileSystemDataSource())
         container.register(type: BibleFileRepository.self, component: DefaultBibleFileRepository())
         

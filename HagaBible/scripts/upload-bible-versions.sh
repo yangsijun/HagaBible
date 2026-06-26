@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 #
 # Uploads the Bible_*.sqlite files to Supabase Storage for the ODR→Supabase
-# FALLBACK path and the geo-gated KJV path.
+# FALLBACK path and the gated (geo / purchase) paths.
 #
 # Two buckets:
-#   - bible-versions             (PUBLIC)  : KRV, NIV, NKRV, WEB, WEBBE
+#   - bible-versions             (PUBLIC)  : KRV, WEB, WEBBE  (free, public domain)
 #                                            ODR fallback downloads these directly.
-#   - bible-versions-restricted  (PRIVATE) : KJV only
-#                                            served only via the bible-version-url
-#                                            Edge Function (signed URL, UK blocked).
+#   - bible-versions-restricted  (PRIVATE) : KJV, NIV, NKRV
+#                                            served ONLY via the bible-version-url
+#                                            Edge Function (signed URL). KJV is
+#                                            UK-geo-blocked; NIV/NKRV require a
+#                                            verified StoreKit purchase. Paid
+#                                            content must never sit at a public
+#                                            URL, so these are private.
 #
 # Prereq: create both buckets in the Supabase dashboard (public/private as above).
 # Auth:   SUPABASE_SERVICE_ROLE_KEY (Project Settings → API → service_role).
@@ -40,16 +44,22 @@ upload() { # $1=bucket $2=code
     -w "    HTTP %{http_code}\n" -o /dev/null
 }
 
-# Public (ODR-fallback) versions
-for code in KRV NIV NKRV WEB WEBBE; do upload "$PUBLIC_BUCKET" "$code"; done
+# Free, public-domain versions (ODR fallback downloads these directly).
+for code in KRV WEB WEBBE; do upload "$PUBLIC_BUCKET" "$code"; done
 
-# Geo-restricted version (private; served via Edge Function only)
-upload "$PRIVATE_BUCKET" KJV
+# Gated versions (private; served via Edge Function only).
+#   KJV  → UK-geo-blocked
+#   NIV/NKRV → require a verified StoreKit purchase
+for code in KJV NIV NKRV; do upload "$PRIVATE_BUCKET" "$code"; done
 
 echo
 echo "Done. Verify:"
 echo "  public:  curl -I $PROJECT_URL/storage/v1/object/public/$PUBLIC_BUCKET/Bible_WEB.sqlite   # 200"
-echo "  private: KJV must NOT be public — this should 400/404:"
+echo "  private: paid/geo versions must NOT be public — these should 400/404:"
 echo "           curl -I $PROJECT_URL/storage/v1/object/public/$PRIVATE_BUCKET/Bible_KJV.sqlite"
-echo "  gate:    deploy the Edge Function, then from a non-UK IP:"
+echo "           curl -I $PROJECT_URL/storage/v1/object/public/$PRIVATE_BUCKET/Bible_NIV.sqlite"
+echo "  gate:    deploy the Edge Function, then:"
+echo "           # KJV from a non-UK IP → {url}; from UK → 403"
 echo "           curl -X POST $PROJECT_URL/functions/v1/bible-version-url -H 'Content-Type: application/json' -d '{\"code\":\"KJV\"}'"
+echo "           # NIV without a valid transaction → 402"
+echo "           curl -X POST $PROJECT_URL/functions/v1/bible-version-url -H 'Content-Type: application/json' -d '{\"code\":\"NIV\"}'"

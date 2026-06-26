@@ -45,6 +45,25 @@ struct BibleVersionDeliveryCatalogTests {
             #expect(BibleVersionDeliveryCatalog.restrictedRegions(for: code).isEmpty)
         }
     }
+
+    @Test("Paid versions need server-side purchase verification and never use the public bucket")
+    func paidVersionsAreVerifiedAndPrivate() {
+        for code in ["NIV", "NKRV"] {
+            #expect(BibleVersionDeliveryCatalog.requiresPurchaseVerification(code) == true)
+            #expect(BibleVersionDeliveryCatalog.usesPublicBucket(code) == false)
+        }
+    }
+
+    @Test("Free, public-domain versions use the public bucket; geo/paid versions do not")
+    func onlyFreePublicDomainVersionsUseThePublicBucket() {
+        for code in ["KRV", "WEB", "WEBBE"] {
+            #expect(BibleVersionDeliveryCatalog.requiresPurchaseVerification(code) == false)
+            #expect(BibleVersionDeliveryCatalog.usesPublicBucket(code) == true)
+        }
+        // KJV (geo) and the paid versions are served from the private bucket.
+        #expect(BibleVersionDeliveryCatalog.usesPublicBucket("KJV") == false)
+        #expect(BibleVersionDeliveryCatalog.usesPublicBucket("NIV") == false)
+    }
 }
 
 // MARK: - RegionService

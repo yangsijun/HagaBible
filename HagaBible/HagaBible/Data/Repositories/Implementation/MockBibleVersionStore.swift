@@ -20,6 +20,8 @@ final class MockBibleVersionStore: BibleVersionStore, @unchecked Sendable {
     var nextPurchaseResult: PurchaseResult
     /// Error thrown by `purchase` / `restore`, if set.
     var purchaseError: Error?
+    /// Stub JWS handed back by `entitlementJWS(for:)` for owned products.
+    var entitlementJWSByProductID: [String: String] = [:]
 
     /// Records of calls, for test assertions.
     private(set) var purchaseCallProductIDs: [String] = []
@@ -44,6 +46,11 @@ final class MockBibleVersionStore: BibleVersionStore, @unchecked Sendable {
 
     func purchasedProductIDs() async -> Set<String> {
         ownedProductIDs
+    }
+
+    func entitlementJWS(for productID: String) async -> String? {
+        guard ownedProductIDs.contains(productID) else { return nil }
+        return entitlementJWSByProductID[productID] ?? "mock-jws-\(productID)"
     }
 
     func purchase(productID: String) async throws -> PurchaseResult {
