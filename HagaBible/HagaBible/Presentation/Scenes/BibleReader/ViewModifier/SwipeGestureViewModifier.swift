@@ -7,13 +7,16 @@
 
 import SwiftUI
 
-struct SwipeGestureViewModifier: ViewModifier {
+struct SwipeGestureViewModifier<NavigationToken: Equatable>: ViewModifier {
 
     @Environment(\.scenePhase) private var scenePhase
 
     @State var offset: CGSize = .zero
     @State var isDraggingHorizontally: Bool = false
 
+    /// A value that changes on every chapter/book navigation. Used only to detect that the
+    /// reader content has been rebuilt so any stranded in-flight drag state can be cleared.
+    var navigationToken: NavigationToken
     var onLeftSwipe: () -> Void
     var onRightSwipe: () -> Void
     
@@ -69,16 +72,33 @@ struct SwipeGestureViewModifier: ViewModifier {
                     offset = .zero
                 }
             }
+            .onChange(of: navigationToken) { _, _ in
+                // Same failure mode as backgrounding, different trigger. A chapter/book
+                // change rebuilds the reader content (new verse list) and schedules a
+                // programmatic `scrollTo` animation; either can *cancel* an in-flight
+                // horizontal `DragGesture` without ever delivering `.onEnded`, stranding
+                // `isDraggingHorizontally` at `true`. The content then stays
+                // `.disabled(true)` and scrolling freezes until the app is backgrounded.
+                // Clearing the drag state on the navigation signal lifts the disable at
+                // the exact moment the content reloads, so no stranded lock can survive.
+                isDraggingHorizontally = false
+                offset = .zero
+            }
     }
 }
 
 extension View {
-    func swipeGesture(
+    /// - Parameter navigationToken: any value that changes on every chapter/book navigation
+    ///   (e.g. the reader's `bibleNavigationUpdateTrigger`). It exists purely so the modifier
+    ///   can drop stranded drag state when the content is rebuilt — see the `.onChange` above.
+    func swipeGesture<NavigationToken: Equatable>(
+        navigationToken: NavigationToken,
         onLeftSwipe: @escaping () -> Void,
         onRightSwipe: @escaping () -> Void
     ) -> some View {
         modifier(
             SwipeGestureViewModifier(
+                navigationToken: navigationToken,
                 onLeftSwipe: onLeftSwipe,
                 onRightSwipe: onRightSwipe
             )

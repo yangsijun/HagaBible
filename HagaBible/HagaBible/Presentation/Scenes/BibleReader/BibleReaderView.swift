@@ -46,7 +46,6 @@ struct BibleReaderView: View {
     @State private var addBookmarkRequest: AddBookmarkRequest?
     @State private var exportRequest: VerseExportRequest?
     @State private var shareItem: ShareTextItem?
-    @State private var isDraggingHorizontally = false
     @State private var highlightTask: Task<Void, Error>?
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     @State private var screenWake = ScreenWakeController()
@@ -170,6 +169,7 @@ struct BibleReaderView: View {
                     }
                 )
                 .swipeGesture(
+                    navigationToken: viewModel.bibleNavigationUpdateTrigger,
                     onLeftSwipe: {
                         let wasActive = ttsViewModel.playbackState != .idle
                         Task {
