@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 @Observable
 @MainActor
@@ -60,28 +61,80 @@ class AppState {
         didSet { ReadingReminderPreferences.reminders = readingReminders }
     }
 
+    /// Live, in-memory reader position (full entities), consumed across the app. NOT the
+    /// persistence format — see `saveBibleReaderState()`.
     var bibleReaderState = BibleReaderState() {
         didSet {
             saveBibleReaderState()
         }
     }
-    
+
+    /// The reader's last position restored from disk as plain identifiers. The reader resolves
+    /// these into full entities on launch (`BibleReaderViewModel.init`). Persisting primitives
+    /// rather than the full Codable entities is deliberate: adding a field to `BibleVersion`/
+    /// `BibleBook`/… used to invalidate the whole saved blob (synthesized `Codable` throws on a
+    /// missing key), silently resetting the reader to WEBBE Genesis 1 after every schema-changing
+    /// update. Primitives can't be invalidated that way. `nil` when nothing is saved yet.
+    private(set) var restoredReaderPosition: PersistedReaderPosition?
+
     private let bibleReaderStateKey = "bibleReaderState"
-    
+
     init() {
         loadBibleReaderState()
     }
-    
+
     private func saveBibleReaderState() {
-        if let encodedData = try? JSONEncoder().encode(bibleReaderState) {
-            UserDefaults.standard.set(encodedData, forKey: bibleReaderStateKey)
+        let position = PersistedReaderPosition(
+            versionCode: bibleReaderState.bibleVersion?.versionCode,
+            bookCode: bibleReaderState.bibleBook?.bookCode,
+            chapter: bibleReaderState.bibleChapter?.chapter,
+            verse: bibleReaderState.bibleVerse?.verse
+        )
+        persist(position)
+    }
+
+    private func persist(_ position: PersistedReaderPosition) {
+        do {
+            let data = try JSONEncoder().encode(position)
+            UserDefaults.standard.set(data, forKey: bibleReaderStateKey)
+        } catch {
+            Logger.app.error("Failed to persist reader position: \(error.localizedDescription)")
         }
     }
 
     private func loadBibleReaderState() {
-        if let savedData = UserDefaults.standard.data(forKey: bibleReaderStateKey),
-           let decodedState = try? JSONDecoder().decode(BibleReaderState.self, from: savedData) {
-            self.bibleReaderState = decodedState
+        guard let savedData = UserDefaults.standard.data(forKey: bibleReaderStateKey) else { return }
+
+        // Order matters. The legacy full-entity format and the new primitive format have DISJOINT
+        // top-level keys ("bibleVersion"… vs "versionCode"…), so each decodes as the other with
+        // every field nil — a false success. So try the legacy shape first and only accept it when
+        // it actually carries a position; a new-format blob yields all-nil entities here and is
+        // skipped. Older builds stored the full Codable entities, which is the fragility we're
+        // migrating away from — salvage the identifiers and rewrite in the durable format.
+        if let legacy = try? JSONDecoder().decode(BibleReaderState.self, from: savedData),
+           legacy.bibleVersion != nil || legacy.bibleBook != nil
+            || legacy.bibleChapter != nil || legacy.bibleVerse != nil {
+            let salvaged = PersistedReaderPosition(
+                versionCode: legacy.bibleVersion?.versionCode,
+                bookCode: legacy.bibleBook?.bookCode,
+                chapter: legacy.bibleChapter?.chapter,
+                verse: legacy.bibleVerse?.verse
+            )
+            restoredReaderPosition = salvaged
+            persist(salvaged)
+            return
+        }
+
+        // The durable primitive format (all fields optional, so this only throws on genuinely
+        // corrupt data).
+        do {
+            restoredReaderPosition = try JSONDecoder().decode(PersistedReaderPosition.self, from: savedData)
+        } catch {
+            // Unreadable blob (e.g. a legacy entity whose schema changed so the full decode above
+            // threw). Start from the default position for this launch; the reader re-persists in
+            // the new format on first use.
+            Logger.app.error("Reader position blob unreadable; resetting to default position: \(error.localizedDescription)")
+            restoredReaderPosition = nil
         }
     }
 }
@@ -91,4 +144,13 @@ struct BibleReaderState: Codable, Equatable {
     var bibleBook: BibleBook?
     var bibleChapter: BibleChapter?
     var bibleVerse: BibleVerse?
+}
+
+/// Durable, schema-stable persistence shape for the reader's last position: plain identifiers
+/// only, resolved back into full entities on launch. See `AppState.restoredReaderPosition`.
+struct PersistedReaderPosition: Codable, Equatable {
+    var versionCode: String?
+    var bookCode: String?
+    var chapter: Int?
+    var verse: Int?
 }

@@ -113,10 +113,13 @@ class BibleReaderViewModel {
         self.bibleRepository = bibleRepository
         self.bookmarkRepository = bookmarkRepository
 
-        self.versionCode = appState.bibleReaderState.bibleVersion?.versionCode ?? "WEBBE"
-        self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? "GEN"
-        self.chapterNum = appState.bibleReaderState.bibleChapter?.chapter ?? 1
-        self.verseNum = appState.bibleReaderState.bibleVerse?.verse ?? 1
+        // Live in-memory state wins (a VM rebuilt mid-session resumes where the user is); the
+        // disk-restored position seeds a cold launch; the constants are the ultimate fallback.
+        let restored = appState.restoredReaderPosition
+        self.versionCode = appState.bibleReaderState.bibleVersion?.versionCode ?? restored?.versionCode ?? "WEBBE"
+        self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? restored?.bookCode ?? "GEN"
+        self.chapterNum = appState.bibleReaderState.bibleChapter?.chapter ?? restored?.chapter ?? 1
+        self.verseNum = appState.bibleReaderState.bibleVerse?.verse ?? restored?.verse ?? 1
         
         applyBibleSelection(
             versionCode: versionCode,
