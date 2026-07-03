@@ -21,10 +21,10 @@
 		AA11BB22CC33DD44EE55FF0B /* RecordingRenameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */; };
 		AA11BB22CC33DD44EE55FF0D /* RecordingPlaybackLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */; };
 		AA11BB22CC33DD44EE55FF11 /* BibleBookReferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */; };
-		BB22CC33DD44EE55FF66AA11 /* ReaderPositionPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF66AA10 /* ReaderPositionPersistenceTests.swift */; };
 		AA11BB22CC33DD44EE55FF21 /* MockRemoteSyncDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF20 /* MockRemoteSyncDataSource.swift */; };
 		AA11BB22CC33DD44EE55FF23 /* SyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF22 /* SyncEngineTests.swift */; };
 		B3AE62EFE9207D64D6806711 /* SpyNowPlayingInfoCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */; };
+		BB22CC33DD44EE55FF66AA11 /* ReaderPositionPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF66AA10 /* ReaderPositionPersistenceTests.swift */; };
 		DC4A9213679E53FEE00B337F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3AB6D737DA3C1366E4C3116 /* Foundation.framework */; };
 		DFA4A2FEEB7BE5EF8EEA11AF /* TTSPlaybackManagerNowPlayingSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058758744D6211DFDDEC1757 /* TTSPlaybackManagerNowPlayingSyncTests.swift */; };
 		ED3B587A2F05265000F17293 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED3B58792F05264F00F17293 /* WidgetKit.framework */; };
@@ -81,9 +81,9 @@
 		AA11BB22CC33DD44EE55FF0C /* RecordingRenameTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingRenameTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF0E /* RecordingPlaybackLogicTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingPlaybackLogicTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF10 /* BibleBookReferenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BibleBookReferenceTests.swift; sourceTree = "<group>"; };
-		BB22CC33DD44EE55FF66AA10 /* ReaderPositionPersistenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReaderPositionPersistenceTests.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF20 /* MockRemoteSyncDataSource.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockRemoteSyncDataSource.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF22 /* SyncEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyncEngineTests.swift; sourceTree = "<group>"; };
+		BB22CC33DD44EE55FF66AA10 /* ReaderPositionPersistenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReaderPositionPersistenceTests.swift; sourceTree = "<group>"; };
 		CA7DEC77CFE8EACA617CFE17 /* HagaBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HagaBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7326020A55C6C513EC12624 /* SpyNowPlayingInfoCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpyNowPlayingInfoCenter.swift; sourceTree = "<group>"; };
 		ED3B58772F05264F00F17293 /* HagaBibleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HagaBibleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -609,6 +609,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -676,6 +677,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
