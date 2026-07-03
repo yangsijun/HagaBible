@@ -72,12 +72,14 @@ final class StoreKitBibleVersionStore: BibleVersionStore {
     }
 
     func entitlementJWS(for productID: String) async -> String? {
-        // `currentEntitlement(for:)` returns the user's active (non-consumable)
-        // entitlement, Apple-signed. We forward the raw JWS so the server can
-        // verify it; only hand over a verified, non-revoked entitlement.
-        guard let result = await Transaction.currentEntitlement(for: productID) else { return nil }
-        guard case .verified(let transaction) = result, transaction.revocationDate == nil else { return nil }
-        return result.jwsRepresentation
+        // `currentEntitlements(for:)` yields the user's active entitlements for the
+        // product, Apple-signed (a regular IAP yields at most one). We forward the raw
+        // JWS so the server can verify it; only hand over a verified, non-revoked one.
+        for await result in Transaction.currentEntitlements(for: productID) {
+            guard case .verified(let transaction) = result, transaction.revocationDate == nil else { continue }
+            return result.jwsRepresentation
+        }
+        return nil
     }
 
     func purchase(productID: String) async throws -> PurchaseResult {

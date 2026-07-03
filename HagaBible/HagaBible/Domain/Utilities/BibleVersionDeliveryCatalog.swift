@@ -31,22 +31,26 @@
 //
 
 enum BibleVersionDeliveryCatalog {
+    // Pure, immutable lookups over Sendable constant data. Marked `nonisolated` so they can be
+    // read from any actor context (the module builds with default MainActor isolation, which would
+    // otherwise pin these to the main actor and warn at Data-layer/non-isolated call sites).
+
     /// `versionCode` → ISO region codes (both alpha-2 and alpha-3 forms, so the
     /// client can match either a `Locale` region or a StoreKit storefront) in
     /// which the version must NOT be downloadable. Absent = no geo limit.
-    static let geoRestrictedRegions: [String: Set<String>] = [
+    nonisolated static let geoRestrictedRegions: [String: Set<String>] = [
         "KJV": ["GB", "GBR"],
     ]
 
     /// Regions where `versionCode` may not be downloaded (empty = unrestricted).
-    static func restrictedRegions(for versionCode: String) -> Set<String> {
+    nonisolated static func restrictedRegions(for versionCode: String) -> Set<String> {
         geoRestrictedRegions[versionCode] ?? []
     }
 
     /// Whether the version is geographically restricted anywhere. Geo-restricted
     /// versions are delivered Supabase-only (never via ODR) so the server can
     /// enforce the territory block at download time.
-    static func isGeoRestricted(_ versionCode: String) -> Bool {
+    nonisolated static func isGeoRestricted(_ versionCode: String) -> Bool {
         !restrictedRegions(for: versionCode).isEmpty
     }
 
@@ -54,14 +58,14 @@ enum BibleVersionDeliveryCatalog {
     /// fallback). Geo-restricted versions are excluded from ODR. Paid versions
     /// KEEP ODR as their primary path — only their *fallback* is hardened (it
     /// goes through the purchase-verifying Edge Function, not the public bucket).
-    static func usesODR(_ versionCode: String) -> Bool {
+    nonisolated static func usesODR(_ versionCode: String) -> Bool {
         !isGeoRestricted(versionCode)
     }
 
     /// Whether downloading this version from Supabase requires proving a
     /// StoreKit purchase to the server (the Edge Function verifies the signed
     /// transaction before issuing a signed URL). True for every paid version.
-    static func requiresPurchaseVerification(_ versionCode: String) -> Bool {
+    nonisolated static func requiresPurchaseVerification(_ versionCode: String) -> Bool {
         !BibleVersionPurchaseCatalog.isFree(versionCode)
     }
 
@@ -69,7 +73,7 @@ enum BibleVersionDeliveryCatalog {
     /// (no server-side gate). Only free, public-domain versions qualify; geo- or
     /// purchase-gated versions are served from the private bucket via the Edge
     /// Function so they are never exposed at a plain, predictable public URL.
-    static func usesPublicBucket(_ versionCode: String) -> Bool {
+    nonisolated static func usesPublicBucket(_ versionCode: String) -> Bool {
         !isGeoRestricted(versionCode) && !requiresPurchaseVerification(versionCode)
     }
 }

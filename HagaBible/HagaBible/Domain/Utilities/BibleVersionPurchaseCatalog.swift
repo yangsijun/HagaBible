@@ -19,24 +19,28 @@
 /// - Free (public domain): KJV, WEB, WEBBE, KRV (개역한글)
 /// - Paid (copyright): NIV, NKRV (개역개정)
 enum BibleVersionPurchaseCatalog {
+    // Pure, immutable lookups over Sendable constant data. Marked `nonisolated` so they can be
+    // read from any actor context (the module builds with default MainActor isolation, which would
+    // otherwise pin these to the main actor and warn at Data-layer/non-isolated call sites).
+
     /// `versionCode` → App Store product identifier, for PAID versions only.
-    static let paidProductIDs: [String: String] = [
+    nonisolated static let paidProductIDs: [String: String] = [
         "NIV": "dev.sijun.HagaBible.bible.niv",
         "NKRV": "dev.sijun.HagaBible.bible.nkrv",
     ]
 
     /// The product identifier for a paid version, or `nil` if the version is free.
-    static func productID(for versionCode: String) -> String? {
+    nonisolated static func productID(for versionCode: String) -> String? {
         paidProductIDs[versionCode]
     }
 
     /// Whether a version requires no purchase.
-    static func isFree(_ versionCode: String) -> Bool {
+    nonisolated static func isFree(_ versionCode: String) -> Bool {
         paidProductIDs[versionCode] == nil
     }
 
     /// All product identifiers the app needs to query from the store.
-    static var allProductIDs: Set<String> {
+    nonisolated static var allProductIDs: Set<String> {
         Set(paidProductIDs.values)
     }
 }

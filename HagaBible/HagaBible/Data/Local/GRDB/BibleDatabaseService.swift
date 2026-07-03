@@ -28,7 +28,9 @@ final class BibleDatabaseService {
     }
 
     /// ODR 태그에서 파일 이름 추출 (예: Bible_KJV.sqlite)
-    static func fileName(for versionCode: String) -> String {
+    /// `nonisolated`: a pure string map, read from the non-isolated Data layer
+    /// (`RemoteBibleFileDataSource`) under the module's default MainActor isolation.
+    nonisolated static func fileName(for versionCode: String) -> String {
         return "Bible_\(versionCode).sqlite"
     }
 
