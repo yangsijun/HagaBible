@@ -13,5 +13,6 @@ struct HagaBibleWidgetBundle: WidgetBundle {
     var body: some Widget {
         HagaBibleWidget()
         HagaBibleWidgetControl()
+        HagaBibleSearchControl()
     }
 }

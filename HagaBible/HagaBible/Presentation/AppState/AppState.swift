@@ -21,6 +21,18 @@ class AppState {
     /// set by the reader's "Reading Checklist" toolbar action; cleared once consumed.
     var pendingReadingScrollBookOrder: Int?
 
+    /// Search text an external entry point (App Shortcut / Siri / Spotlight) wants the
+    /// Search tab to run. Set by `SearchBibleTextIntent`; `RootView` copies it into the
+    /// `.searchable` field (which fires the existing search pipeline) and clears it.
+    /// Consume-once, mirroring `pendingReadingScrollBookOrder`.
+    var pendingSearchQuery: String?
+
+    /// Request that the Search tab's search field take focus (raise the keyboard, ready
+    /// to type). Set by `OpenBibleSearchIntent` (the Control Center control) so a tap opens
+    /// the app straight into an active search field. `RootView` drives the `.searchable`
+    /// `isPresented` binding from it and clears it. Consume-once.
+    var pendingSearchFocus: Bool = false
+
     /// 초기 다운로드 완료 후 BibleReaderView 리로드 트리거
     var initialDownloadCompleted: Bool = false
 

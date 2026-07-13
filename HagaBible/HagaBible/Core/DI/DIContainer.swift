@@ -38,6 +38,17 @@ final class DIContainer {
 }
 
 extension DIContainer {
+    /// Registers the full dependency graph only if it hasn't been already. App Intents
+    /// (Siri / Spotlight / Control) can execute in the app's process in the background —
+    /// where the SwiftUI `App.init()` may not have run — so an intent calls this at the
+    /// top of `perform()` to guarantee the graph exists. Idempotent: re-running
+    /// `registerDependencies()` would build a second `ModelContainer` and crash, so this
+    /// guards on `AppState` already being registered.
+    static func registerDependenciesIfNeeded() {
+        guard DIContainer.shared.resolveOptional(type: AppState.self) == nil else { return }
+        registerDependencies()
+    }
+
     static func registerDependencies() {
         let container = DIContainer.shared
         

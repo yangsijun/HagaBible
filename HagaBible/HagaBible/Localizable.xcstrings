@@ -173,6 +173,12 @@
         }
       }
     },
+    "Bible Search" : {
+
+    },
+    "Bible Translation" : {
+
+    },
     "Biblical order" : {
       "localizations" : {
         "ko" : {
@@ -283,6 +289,9 @@
         }
       }
     },
+    "Couldn't find that verse." : {
+
+    },
     "Couldn't reach the download service. Please try again." : {
       "localizations" : {
         "ko" : {
@@ -292,6 +301,9 @@
           }
         }
       }
+    },
+    "Couldn't recognize that Bible reference." : {
+
     },
     "Delete" : {
       "localizations" : {
@@ -609,6 +621,15 @@
         }
       }
     },
+    "Look up a Bible reference and show the verse text." : {
+
+    },
+    "Look Up a Bible Verse" : {
+
+    },
+    "Look Up a Verse" : {
+
+    },
     "Manage Versions" : {
       "localizations" : {
         "ko" : {
@@ -638,6 +659,9 @@
           }
         }
       }
+    },
+    "No Bible translation is downloaded yet. Open the app first." : {
+
     },
     "No bookmarks" : {
       "localizations" : {
@@ -729,6 +753,18 @@
         }
       }
     },
+    "Open a Bible Verse" : {
+
+    },
+    "Open a specific Bible reference in the reader." : {
+
+    },
+    "Open a Verse" : {
+
+    },
+    "Open Bible Search" : {
+
+    },
     "Open Haga Bible" : {
       "localizations" : {
         "ko" : {
@@ -739,6 +775,9 @@
         }
       }
     },
+    "Open Haga Bible and start searching." : {
+
+    },
     "Open Haga Bible app." : {
       "localizations" : {
         "ko" : {
@@ -748,6 +787,9 @@
           }
         }
       }
+    },
+    "Open in Reader" : {
+
     },
     "Open in Version" : {
       "localizations" : {
@@ -979,6 +1021,9 @@
         }
       }
     },
+    "Search Bible verses for a word or phrase." : {
+
+    },
     "Search History" : {
       "localizations" : {
         "ko" : {
@@ -1008,6 +1053,12 @@
           }
         }
       }
+    },
+    "Search Text" : {
+
+    },
+    "Search the Bible" : {
+
     },
     "Share" : {
       "localizations" : {
@@ -1269,6 +1320,9 @@
         }
       }
     },
+    "Translation" : {
+
+    },
     "TTS Settings" : {
       "localizations" : {
         "ko" : {
@@ -1338,6 +1392,12 @@
           }
         }
       }
+    },
+    "What would you like to search for?" : {
+
+    },
+    "Which verse? (e.g. John 3:16)" : {
+
     }
   },
   "version" : "1.0"

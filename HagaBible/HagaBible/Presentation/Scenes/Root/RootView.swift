@@ -14,6 +14,7 @@ struct RootView: View {
     @State private var appState = DIContainer.shared.resolve(type: AppState.self)
     @State private var ttsViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     @State private var search: String = ""
+    @State private var searchPresented: Bool = false
 
     @State private var showLoadingView: Bool = false
     @State private var downloadProgress: String = ""
@@ -77,7 +78,7 @@ struct RootView: View {
             Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
                 SearchView(searchText: $search)
                     .environment(\.horizontalSizeClass, horizontalSizeClass)
-                    .searchable(text: $search)
+                    .searchable(text: $search, isPresented: $searchPresented)
             }
         }
         .applyTabBarMinimizeBehavior()
@@ -103,6 +104,36 @@ struct RootView: View {
                 // the TabView isn't left on a now-missing tab.
                 appState.selectedTab = .bibleReader
             }
+        }
+        // An App Shortcut / Siri / Spotlight text search sets `pendingSearchQuery`; copy
+        // it into the `.searchable` field (which fires the existing search pipeline) and
+        // clear it. Applied both on change and on appear so a value the intent set before
+        // this view existed (cold launch) still lands.
+        .onChange(of: appState.pendingSearchQuery) { _, _ in applyPendingSearchIfNeeded() }
+        // The Control Center "Bible Search" control asks for the search field to take focus.
+        .onChange(of: appState.pendingSearchFocus) { _, _ in applyPendingSearchFocusIfNeeded() }
+        .onAppear {
+            applyPendingSearchIfNeeded()
+            applyPendingSearchFocusIfNeeded()
+        }
+    }
+
+    private func applyPendingSearchIfNeeded() {
+        guard let query = appState.pendingSearchQuery else { return }
+        search = query
+        appState.selectedTab = .search
+        appState.pendingSearchQuery = nil
+    }
+
+    private func applyPendingSearchFocusIfNeeded() {
+        guard appState.pendingSearchFocus else { return }
+        appState.selectedTab = .search
+        appState.pendingSearchFocus = false
+        // Defer so the Search tab's `.searchable` field is installed before we focus it —
+        // on a cold launch from the control the flag is set before this view (and the tab)
+        // exists, so focusing synchronously would no-op.
+        Task { @MainActor in
+            searchPresented = true
         }
     }
 
