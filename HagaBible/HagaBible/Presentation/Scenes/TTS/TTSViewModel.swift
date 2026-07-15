@@ -166,4 +166,11 @@ class TTSViewModel {
     func refreshVoices() {
         ttsManager.refreshVoices()
     }
+
+    /// Forwarded to the manager on app foreground so a session that iOS silently
+    /// deactivated while suspended (mini player visible, "playing", but no audio)
+    /// recovers instead of sitting stalled at the current verse.
+    func handleForegroundTransition() {
+        ttsManager.handleForegroundTransition()
+    }
 }

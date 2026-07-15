@@ -53,6 +53,9 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            // Recover a TTS session that iOS silently deactivated while the app was
+            // suspended (mini player shows, marked "playing", but no audio comes out).
+            ttsViewModel.handleForegroundTransition()
             Task {
                 await DIContainer.shared.resolveOptional(type: SyncAccountViewModel.self)?.sync()
             }

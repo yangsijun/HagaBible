@@ -25,6 +25,12 @@ protocol SpeechSynthesizerDelegate: AnyObject {
     func speechDidResetEngine()
 }
 
+extension SpeechSynthesizer {
+    /// 기본 구현 — 별도 오디오 엔진을 구동하지 않는 구현체는 `isSpeaking`이 곧 실제 재생
+    /// 여부이므로 그대로 폴백한다. AVAudioEngine 기반 구현만 엔진 실행 상태를 별도로 노출한다.
+    var isActuallyPlaying: Bool { isSpeaking }
+}
+
 extension SpeechSynthesizerDelegate {
     /// 기본 구현 — 시작 콜백이 필요 없는 구현체를 위해 비워둔다.
     func speechDidStart() {}
@@ -43,6 +49,12 @@ protocol SpeechSynthesizer: AnyObject {
 
     /// 현재 발화 중인지
     var isSpeaking: Bool { get }
+
+    /// 오디오 엔진이 실제로 오디오를 출력하고 있는지.
+    /// iOS가 (백그라운드 suspend 등으로) 오디오 세션을 내려버려 앱 상태만 "재생 중"으로
+    /// 남고 소리는 나지 않는 경우를 구분하는 데 쓴다. 엔진을 직접 구동하지 않는 구현체는
+    /// `isSpeaking`으로 폴백한다(기본 구현 참조).
+    var isActuallyPlaying: Bool { get }
 
     /// 텍스트를 음성으로 읽기
     /// - Parameters:

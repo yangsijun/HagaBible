@@ -31,6 +31,13 @@ final class AVAudioEngineSpeechSynthesizer: NSObject, SpeechSynthesizer, @unchec
     private(set) var isPaused: Bool = false
     private(set) var isSpeaking: Bool = false
 
+    /// True only while the engine is running AND the player node is actively playing.
+    /// Unlike `isSpeaking` (which we flip in our own transport calls), this reflects the
+    /// real graph, so it reads `false` when iOS tore the session/engine down underneath
+    /// us during background suspension — the signal the manager uses to detect a stalled
+    /// "playing" session on foreground. Transport properties are thread-safe.
+    var isActuallyPlaying: Bool { engine.isRunning && playerNode.isPlaying }
+
     // MARK: - Audio graph (transport controls are thread-safe)
 
     private let engine = AVAudioEngine()

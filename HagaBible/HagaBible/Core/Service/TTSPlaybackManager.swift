@@ -177,7 +177,8 @@ class TTSPlaybackManager: NSObject {
             synthesizer.stop()
             synthesizer.recreate()
 
-            setupAudioSession()
+            // Session activation now lives in speakCurrentVerse (the single choke point
+            // for all playback starts), so it no longer needs a dedicated call here.
             speakCurrentVerse()
         }
     }
@@ -248,6 +249,12 @@ class TTSPlaybackManager: NSObject {
 
     func resume() {
         guard !isSynthesizerBusy else { return }
+
+        // Reactivate the session before resuming: an interruption end (.ended) or a
+        // resume after background suspension can find the session deactivated, and the
+        // `synthesizer.isPaused` branch below calls `synthesizer.resume()` directly
+        // (bypassing speakCurrentVerse), so it would otherwise resume onto a dead session.
+        setupAudioSession()
 
         nextChapterTask?.cancel()
         nextChapterTask = nil
@@ -436,6 +443,37 @@ class TTSPlaybackManager: NSObject {
         synthesizer.clearVoiceCache()
     }
 
+    /// Reconciles the in-memory playback state with the real audio engine when the app
+    /// returns to the foreground. iOS tears the audio session/engine down when it suspends
+    /// the app during a silent stretch — most often the 3s inter-chapter gap or a background
+    /// pause — leaving `playbackState == .playing` and the mini player visible while no audio
+    /// flows. This detects that stalled state (playing, but the engine isn't actually
+    /// producing audio) and re-speaks the current verse on a freshly reactivated session.
+    ///
+    /// Deliberately narrow to avoid harming healthy playback and other apps' audio:
+    /// - Idle sessions and a `.paused` state are left untouched (a paused session is revived
+    ///   on demand by `resume()`, so we never grab the audio route while the user is paused).
+    /// - If the engine reports it is genuinely still playing (`isActuallyPlaying`), background
+    ///   playback survived and we do nothing.
+    func handleForegroundTransition() {
+        guard !PlatformHelper.isRunningOnMac else { return }
+        guard isSessionActive, playbackState == .playing else { return }
+        guard !isSynthesizerBusy, !isRestarting else { return }
+        // Engine is genuinely running → background playback survived; don't disturb it.
+        guard !synthesizer.isActuallyPlaying else { return }
+
+        Logger.tts.info("Foreground: TTS state is .playing but the engine is not producing audio — recovering at verse \(self.currentVerseIndex + 1)")
+
+        isSynthesizerBusy = true
+        isRestarting = true
+        synthesizer.stop()
+        synthesizer.recreate()
+        isRestarting = false
+        isSynthesizerBusy = false
+        // speakCurrentVerse reactivates the (possibly system-deactivated) session.
+        speakCurrentVerse()
+    }
+
     // MARK: - Private Methods
 
     private func updateSpeechRate(_ rate: Float) {
@@ -466,6 +504,14 @@ class TTSPlaybackManager: NSObject {
         while currentVerseIndex < verses.count {
             let verse = verses[currentVerseIndex]
             if let text = verse.verseText, !text.isEmpty {
+                // Reactivate the audio session at the single choke point through which ALL
+                // playback starts (start / resume / switch chapter / skip / engine-reset
+                // recovery). iOS deactivates the session when it suspends the app during a
+                // silent moment (most often the 3s inter-chapter gap), and only startReading
+                // used to re-activate it — so a resumed/auto-advanced session played silently.
+                // setActive(true) is idempotent and does not reconfigure hardware when the
+                // session is already active, so this is safe to call per verse.
+                setupAudioSession()
                 synthesizer.speak(text: text, voice: currentVoice, rate: settings.speechRate)
                 updateNowPlayingInfo()
                 return
