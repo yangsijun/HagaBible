@@ -86,6 +86,7 @@ struct RootView: View {
         }
         .applyTabBarMinimizeBehavior()
         .applyTTSBottomAccessory(isEnabled: appState.isTTSEnabled, ttsViewModel: ttsViewModel, showFullPlayer: $showFullPlayer)
+        .applyTTSPiPHost(isEnabled: appState.isTTSEnabled, ttsViewModel: ttsViewModel)
         .environment(\.horizontalSizeClass, .compact)
         .onAppear {
             ttsViewModel.onChapterFinished = { [ttsViewModel] in
@@ -227,6 +228,27 @@ extension View {
     func applyTabBarMinimizeBehavior() -> some View {
         if #available(iOS 26.0, *) {
             self.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
+        }
+    }
+
+    /// Embeds the near-invisible layer host that lets a Picture-in-Picture window open
+    /// (auto-showing the text being read) when the user leaves the app mid-TTS session.
+    /// Gated on `isSessionActive` — NOT `playbackState` — for the same re-host reason as
+    /// the bottom accessory below: the host must survive play↔pause toggles, since
+    /// recreating it would tear down the PiP controller mid-session.
+    @ViewBuilder
+    func applyTTSPiPHost(isEnabled: Bool, ttsViewModel: TTSViewModel) -> some View {
+        if isEnabled, ttsViewModel.isSessionActive {
+            self.background(alignment: .bottomTrailing) {
+                TTSPiPLayerHostView(service: DIContainer.shared.resolve(type: TTSPictureInPictureService.self))
+                    .frame(width: 1, height: 1)
+                    // Not fully transparent: AVKit refuses PiP from an invisible layer.
+                    .opacity(0.02)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
         } else {
             self
         }

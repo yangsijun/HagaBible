@@ -140,6 +140,10 @@ extension DIContainer {
             audioServiceProvider: { container.resolve(type: AudioService.self) }
         ))
 
+        // Registered before the TTS graph: TTSPictureInPictureService takes it in its
+        // initializer (it starts observing theme/font state immediately).
+        container.register(type: FontThemeManager.self, component: FontThemeManager())
+
         // TTS Dependencies
         let voiceProvider = AVVoiceProvider()
         container.register(type: VoiceProvider.self, component: voiceProvider)
@@ -168,6 +172,11 @@ extension DIContainer {
         container.register(type: TTSViewModel.self, component: TTSViewModel(
             ttsManager: ttsManager,
             bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
+        ))
+
+        container.register(type: TTSPictureInPictureService.self, component: TTSPictureInPictureService(
+            ttsManager: ttsManager,
+            fontThemeManager: container.resolve(type: FontThemeManager.self)
         ))
 
         let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
@@ -199,8 +208,6 @@ extension DIContainer {
             bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self),
             searchHistoryRepository: container.resolve(type: SearchHistoryRepository.self)
         ))
-        
-        container.register(type: FontThemeManager.self, component: FontThemeManager())
     }
 
     /// Wires the in-app purchase store and its version-acquisition use cases +
@@ -275,6 +282,10 @@ extension DIContainer {
             audioServiceProvider: { container.resolve(type: AudioService.self) }
         ))
 
+        // Registered before the TTS graph: TTSPictureInPictureService takes it in its
+        // initializer (it starts observing theme/font state immediately).
+        container.register(type: FontThemeManager.self, component: FontThemeManager())
+
         // TTS Dependencies
         let voiceProvider = AVVoiceProvider()
         container.register(type: VoiceProvider.self, component: voiceProvider)
@@ -303,6 +314,11 @@ extension DIContainer {
         container.register(type: TTSViewModel.self, component: TTSViewModel(
             ttsManager: ttsManager,
             bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
+        ))
+
+        container.register(type: TTSPictureInPictureService.self, component: TTSPictureInPictureService(
+            ttsManager: ttsManager,
+            fontThemeManager: container.resolve(type: FontThemeManager.self)
         ))
 
         let schema = Schema([Recording.self, RecordingFolder.self, SearchHistory.self])
@@ -334,7 +350,5 @@ extension DIContainer {
             bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self),
             searchHistoryRepository: container.resolve(type: SearchHistoryRepository.self)
         ))
-        
-        container.register(type: FontThemeManager.self, component: FontThemeManager())
     }
 }
