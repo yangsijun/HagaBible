@@ -102,6 +102,13 @@ class AppState {
             chapter: bibleReaderState.bibleChapter?.chapter,
             verse: bibleReaderState.bibleVerse?.verse
         )
+        // Never let a transient loading state clobber the durable position. While entities
+        // resolve one by one (and in headless App Intent launches, where the reader UI never
+        // loads, they resolve to nil and STAY nil), this didSet fires with partial/empty
+        // state; writing that to disk is how the reader kept resetting to WEBBE Genesis 1.
+        // Persist only once the position is meaningful. `verse` may be nil (it falls back to
+        // 1 on restore), so it doesn't gate the write.
+        guard position.versionCode != nil, position.bookCode != nil, position.chapter != nil else { return }
         persist(position)
     }
 

@@ -124,4 +124,75 @@ struct AppStateReaderPositionRestoreTests {
             #expect(AppState().restoredReaderPosition == nil)
         }
     }
+
+    // MARK: - Transient-state clobber protection
+
+    /// Regression: headless App Intent launches (Siri/Spotlight/Control Center) build the DI
+    /// graph, whose eager `BibleReaderViewModel.init` runs the fetch chain against an empty
+    /// `availableVersions` — every entity resolves to nil and `bibleReaderState`'s didSet
+    /// fires with an empty state. That write used to overwrite the saved position on disk,
+    /// resetting the reader to WEBBE Genesis 1 on the next real launch.
+    @Test("An all-nil reader state never overwrites the saved position")
+    func test_emptyStateDoesNotClobberSavedPosition() throws {
+        let saved = try JSONEncoder().encode(
+            PersistedReaderPosition(versionCode: "GAE", bookCode: "PSA", chapter: 23, verse: 1)
+        )
+        withPersistedBlob(saved) {
+            let appState = AppState()
+            appState.bibleReaderState = BibleReaderState()
+
+            let blob = UserDefaults.standard.data(forKey: Self.key)
+            let onDisk = blob.flatMap { try? JSONDecoder().decode(PersistedReaderPosition.self, from: $0) }
+            #expect(onDisk?.versionCode == "GAE")
+            #expect(onDisk?.bookCode == "PSA")
+            #expect(onDisk?.chapter == 23)
+            #expect(onDisk?.verse == 1)
+        }
+    }
+
+    /// While entities resolve one by one on launch, the state passes through partial shapes
+    /// (version set, book/chapter still nil). Those must not touch the disk either.
+    @Test("A partially resolved reader state does not overwrite the saved position")
+    func test_partialStateDoesNotClobberSavedPosition() throws {
+        let saved = try JSONEncoder().encode(
+            PersistedReaderPosition(versionCode: "GAE", bookCode: "PSA", chapter: 23, verse: 1)
+        )
+        withPersistedBlob(saved) {
+            let appState = AppState()
+            appState.bibleReaderState = BibleReaderState(
+                bibleVersion: BibleVersion(versionCode: "NIV", versionName: "NIV", versionShortName: "NIV", language: "English", isDownloaded: true)
+            )
+
+            let blob = UserDefaults.standard.data(forKey: Self.key)
+            let onDisk = blob.flatMap { try? JSONDecoder().decode(PersistedReaderPosition.self, from: $0) }
+            #expect(onDisk?.versionCode == "GAE")
+            #expect(onDisk?.bookCode == "PSA")
+            #expect(onDisk?.chapter == 23)
+        }
+    }
+
+    /// The happy path still persists: once version/book/chapter are all resolved the
+    /// position is written (verse may be nil — restore falls back to verse 1).
+    @Test("A resolved reader state persists the new position")
+    func test_resolvedStatePersists() throws {
+        let saved = try JSONEncoder().encode(
+            PersistedReaderPosition(versionCode: "GAE", bookCode: "PSA", chapter: 23, verse: 1)
+        )
+        withPersistedBlob(saved) {
+            let appState = AppState()
+            appState.bibleReaderState = BibleReaderState(
+                bibleVersion: BibleVersion(versionCode: "NIV", versionName: "NIV", versionShortName: "NIV", language: "English", isDownloaded: true),
+                bibleBook: BibleBook(bookCode: "JHN", bookName: "John", bookOrder: 43, totalChapters: 21, versionCode: "NIV"),
+                bibleChapter: BibleChapter(bookCode: "JHN", bookOrder: 43, chapter: 3, totalVerses: 36, versionCode: "NIV"),
+                bibleVerse: BibleVerse(bookCode: "JHN", bookName: "John", bookOrder: 43, chapter: 3, verse: 16, verseText: nil, versionCode: "NIV")
+            )
+
+            let blob = UserDefaults.standard.data(forKey: Self.key)
+            let onDisk = blob.flatMap { try? JSONDecoder().decode(PersistedReaderPosition.self, from: $0) }
+            #expect(onDisk?.versionCode == "NIV")
+            #expect(onDisk?.bookCode == "JHN")
+            #expect(onDisk?.chapter == 3)
+            #expect(onDisk?.verse == 16)
+        }
+    }
 }
