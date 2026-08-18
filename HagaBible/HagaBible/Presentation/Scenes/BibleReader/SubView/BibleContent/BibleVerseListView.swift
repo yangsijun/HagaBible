@@ -30,7 +30,12 @@ struct BibleVerseListView: View {
 
     @Binding var selectStartIndex: Int?
     @Binding var selectEndIndex: Int?
-    
+
+    /// Measured list width, fed to the context-menu preview: the preview is laid
+    /// out in a detached window where `AdvancedText` gets no width proposal (and
+    /// would size to a single infinite line), so it needs a definite width.
+    @State private var listWidth: CGFloat = 0
+
     var body: some View {
         VStack(spacing: 0) {
             Color.clear
@@ -42,6 +47,11 @@ struct BibleVerseListView: View {
                 }
             }
             .padding(.vertical, 16)
+        }
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width
+        } action: { width in
+            listWidth = width
         }
     }
 
@@ -187,25 +197,83 @@ struct BibleVerseListView: View {
 
     @ViewBuilder
     private func contextMenuPreview(for index: Int) -> some View {
-        if let start = selectStartIndex, let end = selectEndIndex, start <= index && index <= end {
-            NavigationStack {
-                VStack(spacing: 0) {
-                    ForEach(start...end, id: \.self) { idx in
-                        makeVerseView(at: idx)
-                            .padding(8)
-                            .padding(.horizontal, 8)
-                            .background(Color.accentColor.opacity(0.25))
-                    }
-                }
-            }
-        } else {
-            NavigationStack {
-                makeVerseView(at: index)
+        // A definite width lets AdvancedText compute its wrapped height, so the
+        // preview hugs its content instead of taking the system's default size.
+        // When the content is taller than the space the context menu allows, the
+        // system shrinks only the preview container and re-lays the SwiftUI
+        // content out at full size (clipping it), so we scale the whole content
+        // down ourselves to keep every selected verse visible.
+        let (start, end) = getSelectIndexFromContextMenuIndex(index)
+        let width = max(listWidth, 1)
+        let contentHeight = estimatedPreviewHeight(start: start, end: end, width: width)
+        let maxHeight = Self.screenHeight * 0.55
+        let scale = min(1, maxHeight / max(contentHeight, 1))
+        let content = VStack(spacing: 0) {
+            ForEach(start...end, id: \.self) { idx in
+                makeVerseView(at: idx)
                     .padding(8)
                     .padding(.horizontal, 8)
                     .background(Color.accentColor.opacity(0.25))
             }
         }
+        .frame(width: width)
+        .background(Color(uiColor: theme.backgroundColor))
+        if scale >= 1 {
+            content
+        } else {
+            content
+                .scaleEffect(scale, anchor: .topLeading)
+                .frame(width: width * scale, height: contentHeight * scale, alignment: .topLeading)
+                .background(Color(uiColor: theme.backgroundColor))
+        }
+    }
+
+    /// Screen height resolved through a connected window scene (UIScreen.main is
+    /// deprecated on iOS 26); the fallback only matters before any scene exists.
+    private static var screenHeight: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }
+            .first ?? 844
+    }
+
+    /// Height the preview's verse stack will lay out at for a given width,
+    /// mirroring `verseRow`'s paddings and `AdvancedText`'s UITextView sizing so
+    /// the scaled-down preview frame matches the rendered content.
+    private func estimatedPreviewHeight(start: Int, end: Int, width: CGFloat) -> CGFloat {
+        guard verses.indices.contains(start), verses.indices.contains(end), start <= end else { return 1 }
+        let bodyFont = getUIFontFromFontConfiguration(fontConfiguration, language: language)
+            ?? .systemFont(ofSize: CGFloat(fontConfiguration.size))
+        let metricScale = bodyFont.pointSize / BibleVerseView.baseBodyFontSize
+        let numberFontSize = 12 * metricScale
+        let numberMinHeight = 22 * metricScale
+        let numberMinWidth = BibleVerseView.verseNumberColumnWidth(forBodyFontSize: bodyFont.pointSize)
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = fontConfiguration.alignment[language]?.nsAlignment ?? .natural
+        paragraphStyle.lineSpacing = CGFloat(fontConfiguration.lineSpacing)
+
+        let scratch = UITextView()
+        scratch.isScrollEnabled = false
+        scratch.textContainer.lineFragmentPadding = 0
+        scratch.textContainerInset = .zero
+
+        var total: CGFloat = 0
+        for idx in start...end {
+            // Standard-width digits overestimate the condensed verse-number
+            // column slightly, which errs toward a shorter text column — a
+            // taller estimate letterboxes instead of clipping.
+            let numberWidth = max(
+                numberMinWidth,
+                ceil(("\(idx + 1)" as NSString).size(withAttributes: [.font: UIFont.systemFont(ofSize: numberFontSize)]).width)
+            )
+            let textWidth = width - 32 - numberWidth - BibleVerseView.verseNumberSpacing
+            scratch.attributedText = NSAttributedString(
+                string: verses[idx].verseText ?? "",
+                attributes: [.font: bodyFont, .paragraphStyle: paragraphStyle]
+            )
+            let textHeight = scratch.sizeThatFits(CGSize(width: textWidth, height: .greatestFiniteMagnitude)).height
+            total += max(textHeight, numberMinHeight) + 16
+        }
+        return total
     }
     
     private func getVerseTextsFromContextMenuIndex(_ index: Int) -> String {
