@@ -19,7 +19,7 @@ final class BibleDatabaseService {
 
     // ODR Bible file schema version - increment when Bible_*.sqlite schema/content changes
     // Also used as ODR tag suffix to invalidate cache (e.g., Bible_KJV_2)
-    static let odrSchemaVersion = "2"
+    static let odrSchemaVersion = "3"
     private let odrSchemaVersionKeyPrefix = "odrSchemaVersion_"
 
     /// ODR 태그 생성 (예: Bible_KJV_2)

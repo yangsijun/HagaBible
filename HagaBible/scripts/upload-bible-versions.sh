@@ -18,6 +18,8 @@
 # Auth:   SUPABASE_SERVICE_ROLE_KEY (Project Settings → API → service_role).
 #         SECRET — never commit. Run, e.g.:
 #           SUPABASE_SERVICE_ROLE_KEY=... ./scripts/upload-bible-versions.sh
+#         Optional args limit the upload to specific versions (default: all six):
+#           SUPABASE_SERVICE_ROLE_KEY=... ./scripts/upload-bible-versions.sh NKRV KRV
 #
 # Object paths match BibleDatabaseService.fileName(for:) → "Bible_<CODE>.sqlite".
 #
@@ -44,13 +46,21 @@ upload() { # $1=bucket $2=code
     -w "    HTTP %{http_code}\n" -o /dev/null
 }
 
-# Free, public-domain versions (ODR fallback downloads these directly).
-for code in KRV WEB WEBBE; do upload "$PUBLIC_BUCKET" "$code"; done
+# Bucket per version:
+#   public  → KRV WEB WEBBE (free, public domain; ODR fallback downloads these directly)
+#   private → KJV (UK-geo-blocked), NIV/NKRV (require a verified StoreKit purchase);
+#             served via the Edge Function only.
+bucket_for() {
+  case "$1" in
+    KRV|WEB|WEBBE) echo "$PUBLIC_BUCKET" ;;
+    KJV|NIV|NKRV)  echo "$PRIVATE_BUCKET" ;;
+    *) echo "!! unknown version code: $1" >&2; exit 1 ;;
+  esac
+}
 
-# Gated versions (private; served via Edge Function only).
-#   KJV  → UK-geo-blocked
-#   NIV/NKRV → require a verified StoreKit purchase
-for code in KJV NIV NKRV; do upload "$PRIVATE_BUCKET" "$code"; done
+codes=("$@")
+if [[ ${#codes[@]} -eq 0 ]]; then codes=(KRV WEB WEBBE KJV NIV NKRV); fi
+for code in "${codes[@]}"; do upload "$(bucket_for "$code")" "$code"; done
 
 echo
 echo "Done. Verify:"

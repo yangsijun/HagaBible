@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0DE0B11D0000000000000002 /* Bible_KRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000002 /* Bible_KRV.sqlite */; settings = {ASSET_TAGS = (Bible_KRV_2, ); }; };
-		0DE0B11D0000000000000003 /* Bible_NIV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000003 /* Bible_NIV.sqlite */; settings = {ASSET_TAGS = (Bible_NIV_2, ); }; };
-		0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */; settings = {ASSET_TAGS = (Bible_NKRV_2, ); }; };
-		0DE0B11D0000000000000005 /* Bible_WEB.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000005 /* Bible_WEB.sqlite */; settings = {ASSET_TAGS = (Bible_WEB_2, ); }; };
-		0DE0B11D0000000000000006 /* Bible_WEBBE.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */; settings = {ASSET_TAGS = (Bible_WEBBE_2, ); }; };
+		0DE0B11D0000000000000002 /* Bible_KRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000002 /* Bible_KRV.sqlite */; settings = {ASSET_TAGS = (Bible_KRV_3, ); }; };
+		0DE0B11D0000000000000003 /* Bible_NIV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000003 /* Bible_NIV.sqlite */; settings = {ASSET_TAGS = (Bible_NIV_3, ); }; };
+		0DE0B11D0000000000000004 /* Bible_NKRV.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000004 /* Bible_NKRV.sqlite */; settings = {ASSET_TAGS = (Bible_NKRV_3, ); }; };
+		0DE0B11D0000000000000005 /* Bible_WEB.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000005 /* Bible_WEB.sqlite */; settings = {ASSET_TAGS = (Bible_WEB_3, ); }; };
+		0DE0B11D0000000000000006 /* Bible_WEBBE.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = 0DE0F11E0000000000000006 /* Bible_WEBBE.sqlite */; settings = {ASSET_TAGS = (Bible_WEBBE_3, ); }; };
 		5BA0A0A0000000000000B3 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 5BA0A0A0000000000000B2 /* Supabase */; };
 		AA11BB22CC33DD44EE55FF01 /* UserDataDatabaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF02 /* UserDataDatabaseServiceTests.swift */; };
 		AA11BB22CC33DD44EE55FF03 /* DefaultBookmarkRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF04 /* DefaultBookmarkRepositoryTests.swift */; };
@@ -343,15 +343,15 @@
 					Bible_KJV,
 					Bible_KJV_2,
 					Bible_KRV,
-					Bible_KRV_2,
+					Bible_KRV_3,
 					Bible_NIV,
-					Bible_NIV_2,
+					Bible_NIV_3,
 					Bible_NKRV,
-					Bible_NKRV_2,
+					Bible_NKRV_3,
 					Bible_WEB,
 					Bible_WEBBE,
-					Bible_WEBBE_2,
-					Bible_WEB_2,
+					Bible_WEBBE_3,
+					Bible_WEB_3,
 				);
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2650;
