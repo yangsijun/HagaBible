@@ -10,7 +10,7 @@
 
 import Foundation
 
-protocol RemoteSyncDataSource: Sendable {
+nonisolated protocol RemoteSyncDataSource: Sendable {
     /// Upsert local changes. Bookmarks conflict on `id`; reading marks conflict on
     /// the natural key (user_id, book_code, chapter).
     func pushBookmarks(_ rows: [BookmarkDTO]) async throws
