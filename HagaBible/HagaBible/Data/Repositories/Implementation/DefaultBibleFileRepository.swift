@@ -95,9 +95,9 @@ class DefaultBibleFileRepository: BibleFileRepository {
         throw lastError ?? URLError(.unknown)
     }
 
-    /// Records the schema version and reloads the GRDB pool to ATTACH the file.
+    /// Records the installed content version and reloads the GRDB pool to ATTACH the file.
     private func finishInstall(code: String) throws {
-        dbService.saveODRSchemaVersion(for: code)
+        dbService.saveInstalledContentVersion(for: code)
         try dbService.reloadDatabasePool()
     }
     
@@ -106,8 +106,8 @@ class DefaultBibleFileRepository: BibleFileRepository {
         let filename = "Bible_\(version.versionCode).sqlite"
         try fileDataSource.removeFile(filename: filename)
 
-        // 2. 스키마 버전 정보 삭제
-        dbService.removeODRSchemaVersion(for: version.versionCode)
+        // 2. 설치된 콘텐츠 버전 정보 삭제
+        dbService.removeInstalledContentVersion(for: version.versionCode)
 
         // 3. DB Pool 재로딩 (Detach 반영)
         // 파일이 없어진 상태에서 Pool이 갱신되면 자동으로 Detach 상태가 됨

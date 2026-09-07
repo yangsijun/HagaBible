@@ -64,6 +64,48 @@ struct BibleVersionDeliveryCatalogTests {
         #expect(BibleVersionDeliveryCatalog.usesPublicBucket("KJV") == false)
         #expect(BibleVersionDeliveryCatalog.usesPublicBucket("NIV") == false)
     }
+
+    @Test("Every deliverable version has a content version, and the ODR tag embeds it")
+    @MainActor
+    func contentVersionsArePerVersionAndDriveTheODRTag() {
+        for code in ["KJV", "KRV", "NIV", "NKRV", "WEB", "WEBBE"] {
+            #expect(BibleVersionDeliveryCatalog.contentVersions[code] != nil, "\(code) has no content version")
+            let version = BibleVersionDeliveryCatalog.contentVersion(for: code)
+            #expect(BibleDatabaseService.odrTag(for: code) == "Bible_\(code)_\(version)")
+        }
+        // Bumping one version must not be tied to the others: the 2026-09 NKRV/KRV
+        // re-crawl moved only those two to "3" while the rest stayed at "2".
+        #expect(BibleVersionDeliveryCatalog.contentVersion(for: "NKRV") == "3")
+        #expect(BibleVersionDeliveryCatalog.contentVersion(for: "WEB") == "2")
+    }
+
+    /// The ODR tag is only useful if project.pbxproj tags the sqlite file with the
+    /// same name, so this reads the project file next to the test sources and checks
+    /// every ODR-delivered version's ASSET_TAGS / KnownAssetTags against the catalog.
+    /// Forgetting to rename the pbxproj tag after bumping `contentVersions` (or the
+    /// reverse) fails here instead of as a silent ODR miss on devices.
+    @Test("project.pbxproj asset tags match the catalog's ODR tags")
+    @MainActor
+    func pbxprojAssetTagsMatchCatalog() throws {
+        let pbxproj = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // HagaBibleTests/
+            .deletingLastPathComponent()   // HagaBible/ (project dir)
+            .appendingPathComponent("HagaBible.xcodeproj/project.pbxproj")
+        let project = try String(contentsOf: pbxproj, encoding: .utf8)
+        let lines = project.split(separator: "\n")
+
+        for code in BibleVersionDeliveryCatalog.contentVersions.keys.sorted()
+        where BibleVersionDeliveryCatalog.usesODR(code) {
+            let tag = BibleDatabaseService.odrTag(for: code)
+            let buildFileLine = try #require(
+                lines.first { $0.contains("/* Bible_\(code).sqlite in Resources */ = {") },
+                "Bible_\(code).sqlite has no PBXBuildFile entry")
+            #expect(buildFileLine.contains("ASSET_TAGS = (\(tag), );"),
+                    "Bible_\(code).sqlite is not tagged \(tag) in project.pbxproj")
+            #expect(lines.contains { $0.trimmingCharacters(in: .whitespaces) == "\(tag)," },
+                    "\(tag) is missing from KnownAssetTags")
+        }
+    }
 }
 
 // MARK: - RegionService

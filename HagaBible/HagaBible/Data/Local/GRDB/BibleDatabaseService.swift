@@ -17,14 +17,15 @@ final class BibleDatabaseService {
     private let dbVersionKey = "dbVersion"
     private let currentDBVersion = "1.6"
 
-    // ODR Bible file schema version - increment when Bible_*.sqlite schema/content changes
-    // Also used as ODR tag suffix to invalidate cache (e.g., Bible_KJV_2)
-    static let odrSchemaVersion = "3"
-    private let odrSchemaVersionKeyPrefix = "odrSchemaVersion_"
+    // Per-version content versions live in BibleVersionDeliveryCatalog.contentVersions:
+    // bump the entry for the Bible_*.sqlite that changed (plus its pbxproj ASSET_TAGS).
+    // The UserDefaults key prefix is historical ("odrSchemaVersion_") and must stay as is —
+    // installed devices already hold their per-version values under it.
+    private let contentVersionKeyPrefix = "odrSchemaVersion_"
 
-    /// ODR 태그 생성 (예: Bible_KJV_2)
+    /// ODR 태그 생성 (예: Bible_NKRV_3): 파일 이름 + 그 역본의 콘텐츠 버전.
     static func odrTag(for versionCode: String) -> String {
-        return "Bible_\(versionCode)_\(odrSchemaVersion)"
+        return "Bible_\(versionCode)_\(BibleVersionDeliveryCatalog.contentVersion(for: versionCode))"
     }
 
     /// ODR 태그에서 파일 이름 추출 (예: Bible_KJV.sqlite)
@@ -193,21 +194,23 @@ final class BibleDatabaseService {
         return migrator
     }
 
-    // MARK: - ODR Schema Version Management
+    // MARK: - Installed Content Version Management
 
-    /// Saves the current ODR schema version for a downloaded Bible file
-    func saveODRSchemaVersion(for versionCode: String) {
-        let key = odrSchemaVersionKeyPrefix + versionCode
-        UserDefaults.standard.set(Self.odrSchemaVersion, forKey: key)
+    /// Records which content version of `versionCode` was just installed.
+    func saveInstalledContentVersion(for versionCode: String) {
+        let key = contentVersionKeyPrefix + versionCode
+        UserDefaults.standard.set(BibleVersionDeliveryCatalog.contentVersion(for: versionCode), forKey: key)
     }
 
-    /// Removes the stored ODR schema version for a Bible file
-    func removeODRSchemaVersion(for versionCode: String) {
-        let key = odrSchemaVersionKeyPrefix + versionCode
+    /// Forgets the installed content version of `versionCode` (file deleted).
+    func removeInstalledContentVersion(for versionCode: String) {
+        let key = contentVersionKeyPrefix + versionCode
         UserDefaults.standard.removeObject(forKey: key)
     }
 
-    /// Checks and removes outdated Bible files that don't match the current schema version
+    /// Deletes installed Bible files whose recorded content version differs from the
+    /// one this build ships for that version. Each version is checked on its own, so
+    /// bumping one version's content never touches the others.
     private func removeOutdatedBibleFiles() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -220,15 +223,16 @@ final class BibleDatabaseService {
             let filename = url.deletingPathExtension().lastPathComponent
             if filename.starts(with: "Bible_") {
                 let versionCode = filename.replacingOccurrences(of: "Bible_", with: "")
-                let key = odrSchemaVersionKeyPrefix + versionCode
+                let key = contentVersionKeyPrefix + versionCode
                 let savedVersion = UserDefaults.standard.string(forKey: key)
+                let currentVersion = BibleVersionDeliveryCatalog.contentVersion(for: versionCode)
 
                 // If no version stored or version mismatch, delete the file
-                if savedVersion != Self.odrSchemaVersion {
+                if savedVersion != currentVersion {
                     try? fileManager.removeItem(at: url)
                     UserDefaults.standard.removeObject(forKey: key)
                     removedVersionCodes.append(versionCode)
-                    Logger.database.info("Removed outdated Bible file: \(filename) (stored: \(savedVersion ?? "none"), current: \(Self.odrSchemaVersion))")
+                    Logger.database.info("Removed outdated Bible file: \(filename) (stored: \(savedVersion ?? "none"), current: \(currentVersion))")
                 }
             }
         }

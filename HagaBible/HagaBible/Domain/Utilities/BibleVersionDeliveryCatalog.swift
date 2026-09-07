@@ -35,6 +35,41 @@ enum BibleVersionDeliveryCatalog {
     // read from any actor context (the module builds with default MainActor isolation, which would
     // otherwise pin these to the main actor and warn at Data-layer/non-isolated call sites).
 
+    /// `versionCode` → content version of the shipped `Bible_<code>.sqlite`.
+    ///
+    /// When you replace a Bible_*.sqlite (schema OR text change), bump ONLY the
+    /// entry for that version. The value is used in two places:
+    /// 1. As the ODR asset tag suffix (`Bible_<code>_<version>`, see
+    ///    `BibleDatabaseService.odrTag(for:)`) — rename that file's ASSET_TAGS and
+    ///    the KnownAssetTags entry in project.pbxproj to match. A unit test checks
+    ///    that they agree.
+    /// 2. As the value recorded per installed version at download time; on launch
+    ///    an installed copy whose recorded value differs is deleted and
+    ///    re-downloaded. Because every version is keyed separately, bumping one
+    ///    entry never invalidates the other installed versions.
+    ///
+    /// Supabase-only versions (KJV) still need an entry: it drives the launch
+    /// invalidation even though no ODR tag exists for them.
+    nonisolated static let contentVersions: [String: String] = [
+        "KJV": "2",
+        "KRV": "3",
+        "NIV": "2",
+        "NKRV": "3",
+        "WEB": "2",
+        "WEBBE": "2",
+    ]
+
+    /// The content version of `versionCode`'s shipped sqlite file. Every version the
+    /// app can download must be registered in `contentVersions`; an unregistered
+    /// code is a programming error and falls back to "1" in release builds.
+    nonisolated static func contentVersion(for versionCode: String) -> String {
+        guard let version = contentVersions[versionCode] else {
+            assertionFailure("No content version registered for Bible version \(versionCode)")
+            return "1"
+        }
+        return version
+    }
+
     /// `versionCode` → ISO region codes (both alpha-2 and alpha-3 forms, so the
     /// client can match either a `Locale` region or a StoreKit storefront) in
     /// which the version must NOT be downloadable. Absent = no geo limit.
