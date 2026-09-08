@@ -35,7 +35,7 @@ struct TTSFollowScrollTests {
 
     @Test("Row too tall to sit on the line is bottom-clamped, never past 1")
     func tallRowClampsToBottom() {
-        // 0.3·H / (H − h) > 1 once h > 0.7·H.
+        // line·H / (H − h) > 1 once h > (1 − line)·H.
         let anchor = TTSFollowScroll.anchor(rowHeight: 500, visibleHeight: 596)
         #expect(anchor.y == 1)
     }

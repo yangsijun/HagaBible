@@ -10,16 +10,17 @@ import SwiftUI
 /// Where the reader parks the verse being read aloud while TTS auto-follows.
 ///
 /// `ScrollViewProxy.scrollTo(_:anchor:)` aligns the *same* unit point of the target row
-/// and of the visible area, so a fixed anchor of 0.3 keeps the row's own 30% point on
-/// the line — and the row's top edge then drifts upward by 30% of the row height,
-/// i.e. long verses sit visibly higher than short ones. `anchor(rowHeight:visibleHeight:)`
-/// solves for the unit point that puts the row's **top edge** on the line instead, so
-/// every verse starts at the same height regardless of how many lines it spans.
+/// and of the visible area, so a fixed anchor equal to `line` keeps the row's *own*
+/// `line` point on the line — and the row's top edge then drifts upward by that
+/// fraction of the row height, i.e. long verses sit visibly higher than short ones.
+/// `anchor(rowHeight:visibleHeight:)` solves for the unit point that puts the row's
+/// **top edge** on the line instead, so every verse starts at the same height
+/// regardless of how many lines it spans.
 nonisolated enum TTSFollowScroll {
     /// Fraction of the visible reading area (below the toolbar, above the action bar)
     /// at which the spoken verse's top edge rests: a verse or two of context above,
     /// the upcoming verses filling the rest, lyrics-style.
-    static let line: CGFloat = 0.3
+    static let line: CGFloat = 0.2
 
     /// Anchor for `scrollTo` that places the row's top edge at `line`.
     ///
