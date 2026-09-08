@@ -56,6 +56,9 @@ struct RootView: View {
             // Recover a TTS session that iOS silently deactivated while the app was
             // suspended (mini player shows, marked "playing", but no audio comes out).
             ttsViewModel.handleForegroundTransition()
+            // The reader is on screen again, so close the TTS PiP window that opened
+            // when the user left (iOS keeps it floating over the app otherwise).
+            DIContainer.shared.resolve(type: TTSPictureInPictureService.self).stopForForegroundReturn()
             Task {
                 await DIContainer.shared.resolveOptional(type: SyncAccountViewModel.self)?.sync()
             }

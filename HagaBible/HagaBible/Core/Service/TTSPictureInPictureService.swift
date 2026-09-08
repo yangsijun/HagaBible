@@ -91,6 +91,21 @@ final class TTSPictureInPictureService: NSObject {
         Logger.tts.debug("PiP: controller detached")
     }
 
+    // MARK: - Foreground Return (called by RootView on scenePhase == .active)
+
+    /// Closes the floating window once the app itself is back in front: the reader is
+    /// visible again, so a PiP copy of it would only cover the text. iOS leaves an
+    /// auto-started PiP window open when the user returns through the Home Screen or
+    /// app switcher — only the window's own restore button closes it — so the scene's
+    /// transition to `.active` has to do it. That restore path also lands here, where
+    /// the window is already stopping and the extra call is a no-op. Going to the
+    /// background again re-opens PiP automatically as before.
+    func stopForForegroundReturn() {
+        guard let pipController, pipController.isPictureInPictureActive else { return }
+        pipController.stopPictureInPicture()
+        Logger.tts.debug("PiP: stopped because the app returned to the foreground")
+    }
+
     // MARK: - TTS Observation
 
     /// Re-arming `withObservationTracking` loop over the playback manager's state.
