@@ -9,6 +9,9 @@ import SwiftUI
 
 struct WaveformView: View {
     let samples: [CGFloat]
+    /// Height of a bar for a full-scale (1.0) sample. Keep it below the frame height the
+    /// caller gives the view so the loudest bars do not spill out of it.
+    var maxBarHeight: CGFloat = 100
     
     var body: some View {
         HStack(spacing: 2) {
@@ -17,7 +20,7 @@ struct WaveformView: View {
                     .frame(
                         width: 3,
                         // 샘플 값(0.0 ~ 1.0)에 따라 높이를 조절하고, 최소 높이를 1로 설정
-                        height: max(1, CGFloat(samples[index]) * 100)
+                        height: max(1, CGFloat(samples[index]) * maxBarHeight)
                     )
                     .foregroundColor(.primary)
             }

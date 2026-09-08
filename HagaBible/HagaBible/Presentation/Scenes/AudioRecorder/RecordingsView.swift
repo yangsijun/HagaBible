@@ -21,6 +21,9 @@ struct RecordingsView: View {
     @State private var recordingPendingRename: Recording?
     @State private var renameText = ""
 
+    /// `.compact` only on iPhone in landscape; iPad stays `.regular` in every orientation.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -80,28 +83,10 @@ struct RecordingsView: View {
             }
             .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
             .safeAreaBar(edge: .bottom, alignment: .center) {
-                HStack {
-                    VStack(spacing: 8) {
-                        if viewModel.isRecording {
-                            VStack(spacing: 4) {
-                                Text(viewModel.recordingTimeText)
-                                    .font(.body)
-                                WaveformView(samples: viewModel.recordingSamples)
-                                    .frame(height: 150)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 32)
-                            .padding(.bottom, 8)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
-                        RecordButton(
-                            isRecording: viewModel.isRecording,
-                            action: toggleRecording
-                        )
-                        .glassEffect()
-                        .padding()
-                    }
-                    .animation(.easeInOut, value: viewModel.isRecording)
+                if verticalSizeClass == .compact {
+                    landscapeRecordingBar
+                } else {
+                    portraitRecordingBar
                 }
             }
             .navigationTitle("Recordings")
@@ -112,6 +97,59 @@ struct RecordingsView: View {
         }
     }
     
+    // MARK: - Recording bar
+
+    /// Timer and waveform stacked above the record button.
+    private var portraitRecordingBar: some View {
+        VStack(spacing: 8) {
+            if viewModel.isRecording {
+                VStack(spacing: 4) {
+                    Text(viewModel.recordingTimeText)
+                        .font(.body)
+                    WaveformView(samples: viewModel.recordingSamples)
+                        .frame(height: 150)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 32)
+                .padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            RecordButton(
+                isRecording: viewModel.isRecording,
+                action: toggleRecording
+            )
+            .glassEffect()
+            .padding()
+        }
+        .animation(.easeInOut, value: viewModel.isRecording)
+    }
+
+    /// One row — timer, short waveform, record button — so the bar leaves room for the
+    /// list on an iPhone in landscape, where the stacked layout covered nearly the whole
+    /// screen height.
+    private var landscapeRecordingBar: some View {
+        HStack(spacing: 16) {
+            if viewModel.isRecording {
+                HStack(spacing: 16) {
+                    Text(viewModel.recordingTimeText)
+                        .font(.body)
+                        .monospacedDigit()
+                    WaveformView(samples: viewModel.recordingSamples, maxBarHeight: 56)
+                        .frame(height: 60)
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+            RecordButton(
+                isRecording: viewModel.isRecording,
+                action: toggleRecording
+            )
+            .glassEffect()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .animation(.easeInOut, value: viewModel.isRecording)
+    }
+
     private func beginRename(_ recording: Recording) {
         recordingPendingRename = recording
         renameText = recording.title
