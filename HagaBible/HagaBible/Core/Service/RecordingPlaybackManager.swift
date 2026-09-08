@@ -167,7 +167,7 @@ final class RecordingPlaybackManager: NSObject {
             guard generation == self.transportGeneration, self.playbackState == .playing else { return }
             // Off main as well: after a natural finish the player's audio queue is gone,
             // so this play() re-allocates it and re-activates the session.
-            try? await AudioSessionQueue.run { box.object.play() }
+            try? await AudioSessionQueue.run { _ = box.object.play() }
             if generation != self.transportGeneration || self.playbackState != .playing {
                 // Paused or stopped while play() was in flight.
                 box.object.pause()

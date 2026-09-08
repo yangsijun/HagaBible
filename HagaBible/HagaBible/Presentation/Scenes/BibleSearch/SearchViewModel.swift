@@ -87,8 +87,14 @@ class SearchViewModel {
             let chapterNum = parsed.chapter ?? 1
             let verseNum = parsed.verse ?? 1
 
-            bibleReferenceVerse = try await bibleRepository.fetchBibleVerse(versionCode: bibleVersion.versionCode, bookCode: book.bookCode, chapter: chapterNum, verse: verseNum)
-            bibleReferenceText = "\(bookName) \(chapterNum):\(verseNum)"
+            do {
+                bibleReferenceVerse = try await bibleRepository.fetchBibleVerse(versionCode: bibleVersion.versionCode, bookCode: book.bookCode, chapter: chapterNum, verse: verseNum)
+                bibleReferenceText = "\(bookName) \(chapterNum):\(verseNum)"
+            } catch {
+                Logger.search.error("Failed to fetch referenced verse: \(error.localizedDescription)")
+                bibleReferenceVerse = nil
+                bibleReferenceText = nil
+            }
         }
     }
     
