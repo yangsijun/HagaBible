@@ -93,6 +93,9 @@ struct BibleReaderView: View {
             onAddBookmark: { start, end in
                 requestAddBookmark(start: start, end: end)
             },
+            onRowHeightChange: { index, height in
+                verseRowHeights[index] = height
+            },
             selectStartIndex: $selectStartIndex,
             selectEndIndex: $selectEndIndex
         )
@@ -139,12 +142,16 @@ struct BibleReaderView: View {
         )
     }
 
-    /// Where the verse being read aloud is kept while TTS auto-follows: its 30% point
-    /// aligned to the viewport's 30% point (lyrics-style), so a verse or two of context
-    /// stays above it and the upcoming verses fill the rest. `scrollTo` clamps to the
-    /// content bounds, so the first verses simply rest at the top and the last ones at
-    /// the bottom instead of being forced to this line.
-    private static let ttsFollowAnchor = UnitPoint(x: 0.5, y: 0.3)
+    /// Laid-out height of each verse row by index, fed by the list. Read together with
+    /// `visibleReadingHeight` to compute a per-verse anchor that parks the spoken verse's
+    /// top edge on `TTSFollowScroll.line` (see that type for why a fixed anchor drifts).
+    /// Entries are never cleared: on-screen rows re-report as soon as a chapter changes,
+    /// and a not-yet-laid-out row just falls back to the plain fraction for one scroll.
+    @State private var verseRowHeights: [Int: CGFloat] = [:]
+    /// Height of the scroll view's visible area (`ScrollGeometry.containerSize.height`):
+    /// the region between the toolbar and the action bar that `scrollTo` anchors are
+    /// measured in.
+    @State private var visibleReadingHeight: CGFloat = 0
 
     var body: some View {
         NavigationStack {
@@ -153,6 +160,14 @@ struct BibleReaderView: View {
                     verseList
                 }
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+                // `containerSize` is already the visible reading area (nav bar bottom to
+                // the bottom safe-area inset), which is the same rect `scrollTo(anchor:)`
+                // aligns against. Do not subtract `contentInsets` again.
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.containerSize.height
+                } action: { _, height in
+                    visibleReadingHeight = height
+                }
                 .onScrollPhaseChange { _, _ in
                     // Every scroll-phase change — including the transition back to
                     // .idle when momentum stops — counts as interaction, so the dim
@@ -217,8 +232,16 @@ struct BibleReaderView: View {
                     if ttsViewModel.playbackState != .idle {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             // `currentVerseIndex` is 0-based; +1 targets the spoken verse's
-                            // own row (not the one before it) and parks it at the follow line.
-                            proxy.scrollTo(newIndex + 1, anchor: Self.ttsFollowAnchor)
+                            // own row (not the one before it). The anchor is solved per verse
+                            // from the row's height so its top edge lands on the follow line;
+                            // `scrollTo` still clamps at the chapter's start and end.
+                            proxy.scrollTo(
+                                newIndex + 1,
+                                anchor: TTSFollowScroll.anchor(
+                                    rowHeight: verseRowHeights[newIndex],
+                                    visibleHeight: visibleReadingHeight
+                                )
+                            )
                         }
                     }
                 }

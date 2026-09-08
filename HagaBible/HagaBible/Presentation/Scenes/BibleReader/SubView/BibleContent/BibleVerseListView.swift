@@ -25,6 +25,10 @@ struct BibleVerseListView: View {
     var onCompareCopy: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
     var onCompareShare: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
     var onAddBookmark: (_ startIndex: Int, _ endIndex: Int) -> Void = { _, _ in }
+    /// Reports the laid-out height of the row at `index` (the same frame `.id` targets,
+    /// padding and highlight included) whenever it changes; the reader uses it to place
+    /// the spoken verse's top edge on a fixed line during TTS auto-follow.
+    var onRowHeightChange: (_ index: Int, _ height: CGFloat) -> Void = { _, _ in }
 
     var bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
 
@@ -37,11 +41,13 @@ struct BibleVerseListView: View {
     @State private var listWidth: CGFloat = 0
 
     var body: some View {
-        // Scroll-target ids are 1-based verse ordinals (`verseRow` sets `.id(index + 1)`)
-        // and `0` is this zero-height spacer marking the true top of the list. The
-        // explicit ids take precedence over the ForEach's 0-based identity when
-        // `ScrollViewProxy.scrollTo` resolves a target (verified on iOS 26.5), so callers
-        // must pass verse ordinals: `scrollTo(n - 1)` deliberately parks the verse
+        // Scroll-target ids are 1-based verse ordinals and `0` is this zero-height
+        // spacer marking the true top of the list. The ForEach iterates the same
+        // ordinals so its identity and the explicit `.id(index + 1)` on each row agree:
+        // iOS 26 resolves `ScrollViewProxy.scrollTo` through the explicit id, but iOS 27
+        // resolves it through the ForEach identity, and with a 0-based ForEach that
+        // landed every scroll one verse off (verified on the 26.5 and 27.0 simulators).
+        // Callers pass verse ordinals: `scrollTo(n - 1)` deliberately parks the verse
         // *before* n at the top (one line of context above n), `scrollTo(0)` goes to
         // the top, and `scrollTo(n)` targets verse n itself.
         VStack(spacing: 0) {
@@ -49,8 +55,8 @@ struct BibleVerseListView: View {
                 .frame(height: 0)
                 .id(0)
             LazyVStack(spacing: 0) {
-                ForEach(0..<verses.count, id: \.self) { index in
-                    verseRow(at: index)
+                ForEach(1..<verses.count + 1, id: \.self) { ordinal in
+                    verseRow(at: ordinal - 1)
                 }
             }
             .padding(.vertical, 16)
@@ -85,9 +91,23 @@ struct BibleVerseListView: View {
             .background(highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear)
             .background(ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear)
             .background(isSelected(index) ? Color.accentColor.opacity(0.25) : .clear)
-            // Scroll-target id (1-based, see `body`). Attached to the padded, highlighted
-            // row rather than the bare text so an anchored scroll aligns the highlight
-            // band itself instead of clipping its top padding.
+            // Row height for the TTS follow-scroll anchor. This measures exactly the frame
+            // `.id(index + 1)` below scrolls to (padding + highlight, no bottom gap), so
+            // the anchor math and the scroll target agree.
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                onRowHeightChange(index, height)
+            }
+            // Scroll-target id (1-based, equal to the ForEach identity; see `body`).
+            // Attached to the padded, highlighted row rather than the bare text so an
+            // anchored scroll aligns the highlight band itself instead of clipping its
+            // top padding.
+            //
+            // Keep this AFTER `.onGeometryChange`: on iOS 26 a geometry-change modifier
+            // applied outside the id hides it from `ScrollViewProxy.scrollTo` (verified
+            // on the 26.5 simulator). The `.contentShape`/`.contextMenu`/`.padding`/
+            // `.overlay` chain that follows does not have that effect.
             .id(index + 1)
             .contentShape(.rect)
             .contextMenu {
