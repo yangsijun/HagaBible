@@ -35,7 +35,8 @@ struct RootView: View {
                 mainContent
             }
         }
-        .task {
+        // Re-runs when the reader's empty-state "Retry" bumps the request counter.
+        .task(id: appState.bibleDownloadRetryRequest) {
             await downloadDefaultVersionsIfNeeded()
         }
         .task {
@@ -144,72 +145,96 @@ struct RootView: View {
         }
     }
 
+    /// Brings the on-device Bible files in line with this build at launch.
+    ///
+    /// Two kinds of work, and the user experience differs on purpose:
+    /// - **Missing defaults** (`defaultVersions` not downloaded). When *nothing* is
+    ///   downloaded — a fresh install — the app has nothing to show, so the full-screen
+    ///   loading view covers the download. When some version is readable the download
+    ///   runs in the background instead.
+    /// - **Outdated files** (`BibleDatabaseService.outdatedVersionCodes`: installed, but
+    ///   from an older content version). The old file stays readable while the new one
+    ///   downloads; the install swaps the file and re-attaches it, then
+    ///   `bibleContentRevision` tells the reader to re-fetch. A failure leaves the old file
+    ///   in place and the same check retries on the next launch, so the reader is never
+    ///   blank because of an update.
     private func downloadDefaultVersionsIfNeeded() async {
         let bibleFileRepository = DIContainer.shared.resolve(type: BibleFileRepository.self)
         let bibleRepository = DIContainer.shared.resolve(type: BibleRepository.self)
         let bibleDatabaseService = DIContainer.shared.resolve(type: BibleDatabaseService.self)
 
-        // Delayed loading indicator - only shows after 200ms if still working
-        let showLoadingAfterDelayTask = Task {
-            try? await Task.sleep(for: .milliseconds(200))
-            if !Task.isCancelled {
-                showLoadingView = true
-            }
-        }
-
-        // Check which versions need to be downloaded
-        var versionsToDownload: [BibleVersion] = []
+        var missingVersions: [BibleVersion] = []
+        var outdatedVersions: [BibleVersion] = []
+        var hasReadableVersion = false
 
         do {
             let allVersions = try await bibleRepository.fetchBibleVersionList()
+            hasReadableVersion = allVersions.contains(where: \.isDownloaded)
 
-            // Default versions
             for versionCode in defaultVersions {
                 if let version = allVersions.first(where: { $0.versionCode == versionCode }),
                    !version.isDownloaded {
-                    versionsToDownload.append(version)
+                    missingVersions.append(version)
                 }
             }
 
-            // Versions removed due to schema update (need re-download)
-            for versionCode in bibleDatabaseService.removedVersionCodes {
+            for versionCode in bibleDatabaseService.outdatedVersionCodes {
                 if let version = allVersions.first(where: { $0.versionCode == versionCode }),
-                   !versionsToDownload.contains(where: { $0.versionCode == versionCode }) {
-                    versionsToDownload.append(version)
+                   !missingVersions.contains(where: { $0.versionCode == versionCode }) {
+                    outdatedVersions.append(version)
                 }
             }
 
             // Entitlement gate: never auto-download a paid version the user does
-            // not own. Free versions always pass; paid versions only re-download
-            // when the on-device entitlement is present (e.g. a previously
-            // purchased version removed by a schema update).
-            let paidCodes = versionsToDownload.filter { !BibleVersionPurchaseCatalog.isFree($0.versionCode) }
-            if !paidCodes.isEmpty {
+            // not own. Free versions always pass; paid versions only (re)download
+            // when the on-device entitlement is present. An outdated paid file that
+            // fails the gate simply stays as it is.
+            let candidates = missingVersions + outdatedVersions
+            if candidates.contains(where: { !BibleVersionPurchaseCatalog.isFree($0.versionCode) }) {
                 let store = DIContainer.shared.resolve(type: BibleVersionStore.self)
                 let owned = await store.purchasedProductIDs()
-                versionsToDownload = versionsToDownload.filter { version in
+                let isAllowed: (BibleVersion) -> Bool = { version in
                     guard let productID = BibleVersionPurchaseCatalog.productID(for: version.versionCode) else {
                         return true // free
                     }
                     return owned.contains(productID)
                 }
+                missingVersions = missingVersions.filter(isAllowed)
+                outdatedVersions = outdatedVersions.filter(isAllowed)
             }
         } catch {
             Logger.repository.error("Failed to fetch version list: \(error.localizedDescription)")
-            showLoadingAfterDelayTask.cancel()
-            return
-        }
-
-        // Skip if no downloads are needed
-        if versionsToDownload.isEmpty {
-            showLoadingAfterDelayTask.cancel()
             appState.initialDownloadCompleted = true
+            appState.bibleContentRevision += 1
             return
         }
 
-        // Download versions
-        for (index, version) in versionsToDownload.enumerated() {
-            downloadProgress = String(localized: "Downloading \(version.versionName)... (\(index + 1)/\(versionsToDownload.count))")
+        let queue = missingVersions + outdatedVersions
+        if queue.isEmpty {
+            appState.initialDownloadCompleted = true
+            appState.bibleContentRevision += 1
+            return
+        }
+
+        // Only a device with nothing to read gets the blocking loading view.
+        let isBlocking = !hasReadableVersion && !missingVersions.isEmpty
+        let showLoadingAfterDelayTask = Task {
+            // Delayed so a fast download never flashes the loading view.
+            try? await Task.sleep(for: .milliseconds(200))
+            if !Task.isCancelled, isBlocking {
+                showLoadingView = true
+            }
+        }
+
+        for (index, version) in queue.enumerated() {
+            let isUpdate = outdatedVersions.contains(where: { $0.versionCode == version.versionCode })
+            let status = isUpdate
+                ? String(localized: "Updating \(version.versionName)...")
+                : String(localized: "Downloading \(version.versionName)... (\(index + 1)/\(queue.count))")
+            downloadProgress = status
+            if !isBlocking {
+                appState.bibleContentUpdateStatus = status
+            }
 
             do {
                 try await bibleFileRepository.downloadAndInstall(version: version)
@@ -220,9 +245,11 @@ struct RootView: View {
 
         showLoadingAfterDelayTask.cancel()
         showLoadingView = false
-
-        // 다운로드 완료 후 BibleReaderView 리로드 트리거
+        appState.bibleContentUpdateStatus = nil
         appState.initialDownloadCompleted = true
+        // Always bump: even a failed batch may leave a different set of readable
+        // versions than the reader assumed at first fetch.
+        appState.bibleContentRevision += 1
     }
 }
 

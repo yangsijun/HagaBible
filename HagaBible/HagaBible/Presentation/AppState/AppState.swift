@@ -33,8 +33,25 @@ class AppState {
     /// `isPresented` binding from it and clears it. Consume-once.
     var pendingSearchFocus: Bool = false
 
-    /// 초기 다운로드 완료 후 BibleReaderView 리로드 트리거
+    /// True once the launch-time Bible download routine (`RootView`) has finished at
+    /// least once, whether or not it installed anything. The reader waits for it before
+    /// concluding that no version is downloaded (otherwise the first launch would flash
+    /// the empty state while the defaults are still arriving).
     var initialDownloadCompleted: Bool = false
+
+    /// Bumped whenever Bible content files may have changed on disk — after the launch
+    /// routine and after a background update replaced a file. The reader re-fetches on
+    /// change so a swapped-in file (e.g. re-crawled 개역개정) shows without a relaunch.
+    var bibleContentRevision: Int = 0
+
+    /// Text for the reader's small progress banner while versions download in the
+    /// background (an outdated file being replaced, a missing default being fetched);
+    /// `nil` when nothing is in flight.
+    var bibleContentUpdateStatus: String?
+
+    /// Bumped by the reader's "Retry" button when nothing is downloaded; `RootView`
+    /// re-runs the launch download routine on change.
+    var bibleDownloadRetryRequest: Int = 0
 
     /// Whether the per-verse bookmark indicator is shown in the reader. Single,
     /// observable source of truth so a toggle (e.g. from the bookmarks sheet)

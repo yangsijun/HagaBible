@@ -48,7 +48,14 @@ class DefaultBibleFileRepository: BibleFileRepository {
         for attempt in 1...maxRetryCount {
             do {
                 let tempURL = try await odrDataSource.fetchResource(tag: tag, resourceName: resourceName)
-                _ = try fileDataSource.moveFileToDocuments(from: tempURL, filename: filename)
+                do {
+                    try replaceFileWithPoolClosed {
+                        _ = try fileDataSource.moveFileToDocuments(from: tempURL, filename: filename)
+                    }
+                } catch {
+                    await odrDataSource.releaseResource(tag: tag)
+                    throw error
+                }
                 await odrDataSource.releaseResource(tag: tag)
                 try finishInstall(code: code)
                 return
@@ -76,7 +83,9 @@ class DefaultBibleFileRepository: BibleFileRepository {
         for attempt in 1...maxRetryCount {
             do {
                 let data = try await remoteDataSource.download(versionCode: code)
-                _ = try fileDataSource.installFile(data: data, filename: filename)
+                try replaceFileWithPoolClosed {
+                    _ = try fileDataSource.installFile(data: data, filename: filename)
+                }
                 try finishInstall(code: code)
                 return
             } catch BibleDownloadError.regionRestricted {
@@ -95,6 +104,22 @@ class DefaultBibleFileRepository: BibleFileRepository {
         throw lastError ?? URLError(.unknown)
     }
 
+    /// Runs `swap` — which deletes or replaces a `Bible_*.sqlite` — with every GRDB
+    /// connection closed. The file may currently be ATTACHed (a content update replaces
+    /// the version the user is reading), and unlinking an open database makes Apple's
+    /// SQLite invalidate the connection and refuse the path afterwards (see
+    /// `BibleDatabaseService.closeDatabasePool`). The pool is reopened by the caller's
+    /// `reloadDatabasePool()`; if `swap` throws it is reopened here so reads resume.
+    private func replaceFileWithPoolClosed(_ swap: () throws -> Void) throws {
+        dbService.closeDatabasePool()
+        do {
+            try swap()
+        } catch {
+            try? dbService.reloadDatabasePool()
+            throw error
+        }
+    }
+
     /// Records the installed content version and reloads the GRDB pool to ATTACH the file.
     private func finishInstall(code: String) throws {
         dbService.saveInstalledContentVersion(for: code)
@@ -102,9 +127,11 @@ class DefaultBibleFileRepository: BibleFileRepository {
     }
     
     func delete(version: BibleVersion) async throws {
-        // 1. 파일 삭제
+        // 1. 파일 삭제 (풀을 닫은 상태에서 — 열린 DB 파일을 지우면 SQLite가 커넥션을 무효화함)
         let filename = "Bible_\(version.versionCode).sqlite"
-        try fileDataSource.removeFile(filename: filename)
+        try replaceFileWithPoolClosed {
+            try fileDataSource.removeFile(filename: filename)
+        }
 
         // 2. 설치된 콘텐츠 버전 정보 삭제
         dbService.removeInstalledContentVersion(for: version.versionCode)

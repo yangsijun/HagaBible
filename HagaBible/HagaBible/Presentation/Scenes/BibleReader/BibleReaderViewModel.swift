@@ -137,8 +137,24 @@ class BibleReaderViewModel {
         }
     }
     
+    /// Set when the reader had to open a different version than the one it wanted
+    /// because that file is not on the device. The view shows it once as a banner and
+    /// clears it.
+    var versionFallbackNotice: String?
+
+    /// Resolves `versionCode` against the catalog. A version whose file is missing is
+    /// swapped for a readable one (same language first) so the page is never blank; the
+    /// swap is persisted through `versionCode`/`bibleVersion` so it does not flip back on
+    /// the next fetch. Nothing changes while the catalog is still empty.
     func fetchBibleVersion() async {
-        bibleVersion = availableVersions.first { $0.versionCode == versionCode }
+        let resolved = BibleVersionFallback.resolve(preferred: versionCode, among: availableVersions)
+        if let resolved, resolved.versionCode != versionCode {
+            let wantedName = availableVersions.first { $0.versionCode == versionCode }?.versionName ?? versionCode
+            Logger.repository.notice("\(self.versionCode) is not downloaded; opening \(resolved.versionCode) instead")
+            versionFallbackNotice = String(localized: "\(wantedName) is not available. Showing \(resolved.versionName).")
+            versionCode = resolved.versionCode
+        }
+        bibleVersion = resolved
         if let versionCode = bibleVersion?.versionCode {
             await fetchBibleBookList(versionCode: versionCode)
         }

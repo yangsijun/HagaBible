@@ -35,8 +35,16 @@ final class BibleDatabaseService {
         return "Bible_\(versionCode).sqlite"
     }
 
-    // Version codes that were removed due to schema update (need re-download)
-    private(set) var removedVersionCodes: [String] = []
+    /// Installed Bible files whose recorded content version differs from the one this
+    /// build ships for that version (`BibleVersionDeliveryCatalog.contentVersions`).
+    ///
+    /// They stay on disk and ATTACHed — the user keeps reading the old text — while
+    /// `RootView` re-downloads them in the background; the install replaces the file and
+    /// reloads the pool, after which the code drops out of this list. Deleting up front
+    /// (the previous behaviour) left the reader blank whenever the download failed.
+    /// This relies on a content bump never changing the attached file's schema; a bump
+    /// that does needs a separate compatibility check before the old file is attached.
+    private(set) var outdatedVersionCodes: [String] = []
     
     private var mainDatabaseURL: URL {
         try! FileManager.default
@@ -140,10 +148,10 @@ final class BibleDatabaseService {
         defer { lock.unlock() }
 
         // 기존 연결 해제
-        dbPool = nil
+        closeCurrentPool()
 
-        // 스키마 버전이 맞지 않는 파일 삭제
-        removeOutdatedBibleFiles()
+        // 콘텐츠 버전이 맞지 않는 파일은 삭제하지 않고 기록만 남긴다 (백그라운드 재다운로드 대상).
+        collectOutdatedBibleFiles()
 
         // A. 다운로드된 외부 성경 파일 스캔
         let fileManager = FileManager.default
@@ -165,16 +173,35 @@ final class BibleDatabaseService {
         let attachedConfigs = tempAttachedConfigs
         
         // B. GRDB Configuration 설정 (ATTACH)
+        //
+        // Reader connections ATTACH here. The writer must NOT: `DatabasePool.init` runs an
+        // unqualified `PRAGMA journal_mode = WAL` on the writer right after this hook, and
+        // SQLite applies an unqualified journal_mode to every attached database. That flips
+        // the header of each Bible file to WAL without creating its `-wal`/`-shm`, and a
+        // read-only connection cannot open such a file (SQLITE_CANTOPEN 14 on ATTACH) — the
+        // reader went blank after a background content update. Attaching the writer after
+        // init keeps the Bible files in their shipped rollback-journal mode, untouched.
         var config = Configuration()
         config.prepareDatabase { [attachedConfigs] db in
-            // 외부 성경 파일들 Attach
-            for attachment in attachedConfigs {
-                try db.execute(sql: "ATTACH DATABASE ? AS \(attachment.alias)", arguments: [attachment.path])
-            }
+            guard db.configuration.readonly else { return }
+            try Self.attachBibleFiles(attachedConfigs, to: db)
         }
         
-        // C. Pool 생성
+        // C. Pool 생성 (+ writer ATTACH, WAL 전환 이후)
         let pool = try DatabasePool(path: mainDatabaseURL.path, configuration: config)
+        try pool.writeWithoutTransaction { db in
+            try Self.attachBibleFiles(attachedConfigs, to: db)
+            // Earlier builds attached the writer before the WAL pragma, so files installed by
+            // them carry a WAL header. Put those back once; readers then never depend on
+            // `-wal`/`-shm` side files that vanish whenever the last connection closes.
+            for attachment in attachedConfigs {
+                let mode = try String.fetchOne(db, sql: "PRAGMA \(attachment.alias).journal_mode")
+                if mode?.lowercased() == "wal" {
+                    _ = try String.fetchOne(db, sql: "PRAGMA \(attachment.alias).journal_mode = DELETE")
+                    Logger.database.info("Restored rollback journal mode for \(attachment.alias, privacy: .public)")
+                }
+            }
+        }
         self.dbPool = pool
         
         // D. 마이그레이션 실행 (메인 DB 대상)
@@ -182,6 +209,36 @@ final class BibleDatabaseService {
         try migrator.migrate(pool)
         
         Logger.database.info("Database pool reloaded. Attached: \(attachedConfigs.map { $0.alias })")
+    }
+
+    private static func attachBibleFiles(_ attachments: [(path: String, alias: String)], to db: Database) throws {
+        for attachment in attachments {
+            try db.execute(sql: "ATTACH DATABASE ? AS \(attachment.alias)", arguments: [attachment.path])
+        }
+    }
+
+    /// Closes every connection so a `Bible_*.sqlite` can be replaced or deleted.
+    ///
+    /// Apple's libsqlite3 treats a database file that is unlinked while a connection
+    /// still has it open as an API violation ("BUG IN CLIENT OF libsqlite3.dylib:
+    /// vnode unlinked while in use") and invalidates the open file descriptors, so the
+    /// swap must happen with the pool closed, followed by `reloadDatabasePool()`.
+    /// `close()` waits for in-flight reads/writes to finish.
+    func closeDatabasePool() {
+        lock.lock()
+        defer { lock.unlock() }
+        closeCurrentPool()
+    }
+
+    private func closeCurrentPool() {
+        if let pool = dbPool {
+            do {
+                try pool.close()
+            } catch {
+                Logger.database.error("Failed to close database pool cleanly: \(error.localizedDescription)")
+            }
+        }
+        dbPool = nil
     }
 
     private var migrator: DatabaseMigrator {
@@ -208,33 +265,41 @@ final class BibleDatabaseService {
         UserDefaults.standard.removeObject(forKey: key)
     }
 
-    /// Deletes installed Bible files whose recorded content version differs from the
-    /// one this build ships for that version. Each version is checked on its own, so
-    /// bumping one version's content never touches the others.
-    private func removeOutdatedBibleFiles() {
+    /// Compares each installed Bible file's recorded content version with the one this
+    /// build ships and records the mismatches in `outdatedVersionCodes`. Each version is
+    /// checked on its own, so bumping one version's content never touches the others.
+    private func collectOutdatedBibleFiles() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
 
         guard let fileURLs = try? fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil) else {
+            outdatedVersionCodes = []
             return
         }
 
+        var installedCodes: [String] = []
+        var savedVersions: [String: String] = [:]
         for url in fileURLs where url.pathExtension == "sqlite" {
             let filename = url.deletingPathExtension().lastPathComponent
-            if filename.starts(with: "Bible_") {
-                let versionCode = filename.replacingOccurrences(of: "Bible_", with: "")
-                let key = contentVersionKeyPrefix + versionCode
-                let savedVersion = UserDefaults.standard.string(forKey: key)
-                let currentVersion = BibleVersionDeliveryCatalog.contentVersion(for: versionCode)
-
-                // If no version stored or version mismatch, delete the file
-                if savedVersion != currentVersion {
-                    try? fileManager.removeItem(at: url)
-                    UserDefaults.standard.removeObject(forKey: key)
-                    removedVersionCodes.append(versionCode)
-                    Logger.database.info("Removed outdated Bible file: \(filename) (stored: \(savedVersion ?? "none"), current: \(currentVersion))")
-                }
+            guard filename.starts(with: "Bible_") else { continue }
+            let versionCode = filename.replacingOccurrences(of: "Bible_", with: "")
+            installedCodes.append(versionCode)
+            if let saved = UserDefaults.standard.string(forKey: contentVersionKeyPrefix + versionCode) {
+                savedVersions[versionCode] = saved
             }
+        }
+
+        outdatedVersionCodes = Self.outdatedVersionCodes(installed: installedCodes, savedVersions: savedVersions)
+        for versionCode in outdatedVersionCodes {
+            Logger.database.info("Bible file for \(versionCode) is outdated (stored: \(savedVersions[versionCode] ?? "none"), current: \(BibleVersionDeliveryCatalog.contentVersion(for: versionCode))); keeping it until the update lands")
+        }
+    }
+
+    /// The installed version codes whose saved content version is missing or differs
+    /// from the catalog's current one. Pure so it can be unit-tested.
+    nonisolated static func outdatedVersionCodes(installed: [String], savedVersions: [String: String]) -> [String] {
+        installed.filter { code in
+            savedVersions[code] != BibleVersionDeliveryCatalog.contentVersion(for: code)
         }
     }
 }

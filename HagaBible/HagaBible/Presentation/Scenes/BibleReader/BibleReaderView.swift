@@ -153,6 +153,14 @@ struct BibleReaderView: View {
     /// measured in.
     @State private var visibleReadingHeight: CGFloat = 0
 
+    /// True once the reader has re-fetched after the launch download routine finished,
+    /// so `bibleVersion == nil` means "nothing is downloaded" rather than "not loaded yet".
+    @State private var hasResolvedContent = false
+    /// The fallback notice currently on screen (copied out of the view model so it can
+    /// be dismissed on a timer without racing a later fetch).
+    @State private var fallbackNotice: String?
+    @State private var fallbackNoticeTask: Task<Void, Never>?
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -160,6 +168,15 @@ struct BibleReaderView: View {
                     verseList
                 }
                 .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+                .overlay {
+                    if hasResolvedContent, viewModel.bibleVersion == nil {
+                        noBibleDownloadedView
+                    }
+                }
+                .overlay(alignment: .top) {
+                    contentStatusBanner
+                        .animation(.easeInOut(duration: 0.25), value: appState.bibleContentUpdateStatus)
+                }
                 // `containerSize` is already the visible reading area (nav bar bottom to
                 // the bottom safe-area inset), which is the same rect `scrollTo(anchor:)`
                 // aligns against. Do not subtract `contentInsets` again.
@@ -398,26 +415,77 @@ struct BibleReaderView: View {
             }
         }
         .task {
-            await viewModel.fetchAvailableVersions()
-            await viewModel.fetchBibleVersion()
-            await viewModel.fetchBibleBook()
-            await viewModel.fetchBibleChapter()
-            viewModel.fetchBibleVerse()
+            await reloadContent()
         }
-        .onChange(of: appState.initialDownloadCompleted) { _, completed in
-            if completed {
-                // 초기 다운로드 완료 후 데이터 리로드
-                Task {
-                    await viewModel.fetchAvailableVersions()
-                    await viewModel.fetchBibleVersion()
-                    await viewModel.fetchBibleBook()
-                    await viewModel.fetchBibleChapter()
-                    viewModel.fetchBibleVerse()
-                }
+        .onChange(of: appState.bibleContentRevision) { _, _ in
+            // Bible files changed on disk (launch routine finished, or a background
+            // update swapped a file in): re-resolve the version and reload the chapter.
+            Task { await reloadContent() }
+        }
+        .onChange(of: viewModel.versionFallbackNotice) { _, notice in
+            guard let notice else { return }
+            viewModel.versionFallbackNotice = nil
+            fallbackNoticeTask?.cancel()
+            withAnimation { fallbackNotice = notice }
+            fallbackNoticeTask = Task {
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled else { return }
+                withAnimation { fallbackNotice = nil }
             }
         }
         .onDisappear {
             screenWake.teardown()
+        }
+    }
+
+    // MARK: - Content availability
+
+    /// Re-resolves the version (with fallback) and reloads the chapter. Shared by the
+    /// first appearance and every `bibleContentRevision` bump: after a fresh install the
+    /// reader is created only once the blocking loading view goes away, so the bump that
+    /// ended the download has already happened and only the `.task` path runs.
+    private func reloadContent() async {
+        await viewModel.fetchAvailableVersions()
+        await viewModel.fetchBibleVersion()
+        await viewModel.fetchBibleBook()
+        await viewModel.fetchBibleChapter()
+        viewModel.fetchBibleVerse()
+        if appState.initialDownloadCompleted {
+            hasResolvedContent = true
+        }
+    }
+
+    /// Small floating capsule under the toolbar: progress while a version downloads or
+    /// updates in the background, or the one-off notice that the reader fell back to
+    /// another version. Nothing when neither applies.
+    @ViewBuilder
+    private var contentStatusBanner: some View {
+        if let status = appState.bibleContentUpdateStatus {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text(status)
+            }
+            .modifier(StatusBannerStyle())
+        } else if let fallbackNotice {
+            Label(fallbackNotice, systemImage: "arrow.triangle.2.circlepath")
+                .modifier(StatusBannerStyle())
+        }
+    }
+
+    /// Shown instead of a blank page when no Bible version is on the device (first
+    /// launch offline, or every download failed). "Retry" re-runs the launch download.
+    private var noBibleDownloadedView: some View {
+        ContentUnavailableView {
+            Label("No Bible Downloaded", systemImage: "book.closed")
+        } description: {
+            Text("Connect to the internet to download a Bible version.")
+        } actions: {
+            Button("Retry") {
+                hasResolvedContent = false
+                appState.bibleDownloadRetryRequest += 1
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 
@@ -489,4 +557,21 @@ struct BibleReaderView: View {
 #Preview {
     DIContainer.registerForPreview()
     return BibleReaderView()
+}
+
+/// Capsule chrome for the reader's transient status banner.
+private struct StatusBannerStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.footnote)
+            .lineLimit(2)
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .glassEffect(.regular, in: .capsule)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .allowsHitTesting(false)
+    }
 }

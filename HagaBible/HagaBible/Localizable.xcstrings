@@ -11,6 +11,22 @@
         }
       }
     },
+    "%@ is not available. Showing %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is not available. Showing %2$@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@을(를) 사용할 수 없어 %2$@을(를) 표시합니다."
+          }
+        }
+      }
+    },
     "%@ is not downloaded yet. Download now?" : {
       "localizations" : {
         "ko" : {
@@ -275,6 +291,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "대조"
+          }
+        }
+      }
+    },
+    "Connect to the internet to download a Bible version." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인터넷에 연결하면 성경 역본을 다운로드합니다."
           }
         }
       }
@@ -660,6 +686,16 @@
         }
       }
     },
+    "No Bible Downloaded" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드된 성경이 없습니다"
+          }
+        }
+      }
+    },
     "No Bible translation is downloaded yet. Open the app first." : {
 
     },
@@ -987,6 +1023,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "복원 중…"
+          }
+        }
+      }
+    },
+    "Retry" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다시 시도"
           }
         }
       }
@@ -1329,6 +1375,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "TTS 설정"
+          }
+        }
+      }
+    },
+    "Updating %@..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updating %@..."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 업데이트 중..."
           }
         }
       }
