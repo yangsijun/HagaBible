@@ -103,16 +103,27 @@ final class RecordingPlaybackManager: NSObject {
             guard generation == self.transportGeneration else { return }
 
             do {
-                let newPlayer = try AVAudioPlayer(contentsOf: url)
-                newPlayer.delegate = self
-                newPlayer.prepareToPlay()
+                // Built, prepared and started on AudioSessionQueue, not here: prepareToPlay
+                // allocates the audio queue, which re-activates the session on the calling
+                // thread — the same blocking call activatePlaybackSession keeps off main.
+                let box = try await AudioSessionQueue.run { [weak self] in
+                    let newPlayer = try AVAudioPlayer(contentsOf: url)
+                    newPlayer.delegate = self
+                    newPlayer.prepareToPlay()
+                    newPlayer.play()
+                    return PlayerBox(player: newPlayer)
+                }
+                let newPlayer = box.player
+                guard generation == self.transportGeneration else {
+                    // pause/stop or a newer play arrived while the player was being built.
+                    newPlayer.stop()
+                    return
+                }
 
                 self.player = newPlayer
                 self.currentRecordingID = recording.id
                 self.duration = newPlayer.duration
                 self.currentTime = 0
-
-                newPlayer.play()
                 self.playbackState = .playing
                 self.startTick()
                 Logger.audio.info("Playing recording: \(recording.title)")
@@ -149,11 +160,18 @@ final class RecordingPlaybackManager: NSObject {
         startTick()
         transportGeneration += 1
         let generation = transportGeneration
+        let box = PlayerBox(player: player)
         Task { @MainActor [weak self] in
             guard let self else { return }
             await self.activatePlaybackSession()
             guard generation == self.transportGeneration, self.playbackState == .playing else { return }
-            player.play()
+            // Off main as well: after a natural finish the player's audio queue is gone,
+            // so this play() re-allocates it and re-activates the session (see PlayerBox).
+            try? await AudioSessionQueue.run { box.player.play() }
+            if generation != self.transportGeneration || self.playbackState != .playing {
+                // Paused or stopped while play() was in flight.
+                box.player.pause()
+            }
         }
     }
 
@@ -281,6 +299,16 @@ final class RecordingPlaybackManager: NSObject {
             break
         }
     }
+}
+
+// MARK: - PlayerBox
+
+/// Carries an `AVAudioPlayer` across the hop to `AudioSessionQueue`. `AVAudioPlayer`
+/// is not `Sendable`, but it is only touched from one place at a time: built/prepared/
+/// started on the queue, then handed back to the main actor, which owns it from there
+/// (`play()` on resume is the one later call that goes back through the queue).
+private struct PlayerBox: @unchecked Sendable {
+    let player: AVAudioPlayer
 }
 
 // MARK: - AVAudioPlayerDelegate

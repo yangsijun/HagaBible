@@ -20,10 +20,14 @@ import Foundation
 nonisolated enum AudioSessionQueue {
     private static let queue = DispatchQueue(label: "com.hagabible.audio-session", qos: .userInitiated)
 
-    /// Runs `body` on the audio-session queue and resumes the caller once it has
-    /// returned or thrown.
-    static func run(_ body: @escaping @Sendable () throws -> Void) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+    /// Runs `body` on the audio-session queue and resumes the caller with its result
+    /// once it has returned or thrown.
+    ///
+    /// Also the place for `AVAudioPlayer` setup and transport: `prepareToPlay()`, and
+    /// `play()` after a stop or a natural finish, allocate the player's audio queue,
+    /// which re-activates the session on the calling thread (same hang risk).
+    static func run<T: Sendable>(_ body: @escaping @Sendable () throws -> T) async throws -> T {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, any Error>) in
             queue.async {
                 continuation.resume(with: Result(catching: body))
             }
