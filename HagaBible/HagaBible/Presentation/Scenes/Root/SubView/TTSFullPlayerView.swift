@@ -35,6 +35,10 @@ struct TTSFullPlayerView: View {
         return gradientPalettes[index]
     }
 
+    /// `.compact` in iPhone landscape, where the portrait stack (300pt artwork over the
+    /// controls) is taller than the sheet and clips at both ends.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     var body: some View {
         ZStack {
             // Background gradient
@@ -45,156 +49,10 @@ struct TTSFullPlayerView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer()
-
-                // Artwork area
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 300, height: 300)
-                    .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 10)
-                    .overlay {
-                        Image(systemName: "book.fill")
-                            .font(.system(size: 100))
-                            .foregroundStyle(.thickMaterial)
-                    }
-
-                Spacer()
-
-                // Title and info section
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(ttsViewModel.chapterTitle)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .contentTransition(.numericText())
-                            .animation(.default, value: ttsViewModel.chapterNum)
-                    }
-
-                    Spacer()
-
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.title2)
-                            .foregroundStyle(.thinMaterial)
-                    }
-                }
-                .padding(.horizontal, 24)
-
-                Spacer()
-                    .frame(height: 24)
-
-                // Progress slider (Apple Music style)
-                VStack(spacing: 8) {
-                    GeometryReader { geometry in
-                        let totalVerses = max(ttsViewModel.totalVerses - 1, 1)
-                        let progress = sliderValue / Double(totalVerses)
-                        let trackHeight: CGFloat = isDragging ? 16 : 8
-                        // Floor the fill width at trackHeight so its leading cap stays a full
-                        // semicircle. A Capsule narrower than it is tall rounds by width/2,
-                        // leaving the track's rounded left end unfilled near verse 0.
-                        let fillWidth = progress > 0 ? max(trackHeight, geometry.size.width * progress) : 0
-
-                        ZStack(alignment: .leading) {
-                            // Background track
-                            Capsule()
-                                .fill(Color.white.opacity(0.3))
-                                .frame(height: trackHeight)
-
-                            // Progress track
-                            Capsule()
-                                .fill(Color.white)
-                                .frame(width: fillWidth, height: trackHeight)
-                        }
-                        .frame(height: geometry.size.height)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    isDragging = true
-                                    let newProgress = min(max(0, value.location.x / geometry.size.width), 1)
-                                    let rawValue = newProgress * Double(totalVerses)
-                                    sliderValue = rawValue.rounded() // Snap to integer
-                                }
-                                .onEnded { _ in
-                                    isDragging = false
-                                    ttsViewModel.skipToVerse(at: Int(sliderValue))
-                                }
-                        )
-                        .animation(.easeInOut(duration: 0.15), value: isDragging)
-                    }
-                    .frame(height: 20)
-
-                    HStack {
-                        Text("\(displayVerseIndex + 1)")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.6))
-                            .monospacedDigit()
-                        Spacer()
-                        Text("\(ttsViewModel.totalVerses) verses")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.6))
-                            .monospacedDigit()
-                    }
-                }
-                .padding(.horizontal, 24)
-                .onChange(of: ttsViewModel.currentVerseIndex) { _, newValue in
-                    if !isDragging {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            sliderValue = Double(newValue)
-                        }
-                    }
-                }
-                .onAppear {
-                    sliderValue = Double(ttsViewModel.currentVerseIndex)
-                }
-
-                Spacer()
-                    .frame(height: 24)
-
-                // Playback controls
-                HStack(spacing: 56) {
-                    Button {
-                        ttsViewModel.goToPreviousChapter()
-                    } label: {
-                        Image(systemName: "backward.fill")
-                            .font(.system(size: 32))
-                            .foregroundStyle(.thickMaterial)
-                    }
-
-                    Button {
-                        ttsViewModel.togglePlayPause()
-                    } label: {
-                        Image(systemName: ttsViewModel.playbackState == .playing
-                              ? "pause.fill"
-                              : "play.fill")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.white)
-                            .contentTransition(.symbolEffect(.replace.downUp))
-                            .animation(.smooth(duration: 0.3), value: ttsViewModel.playbackState)
-                    }
-
-                    Button {
-                        ttsViewModel.goToNextChapter()
-                    } label: {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 32))
-                            .foregroundStyle(.thickMaterial)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                // Volume slider (Apple Music style)
-                VolumeSliderView()
-                    .padding(.horizontal, 24)
-
-                Spacer()
+            if verticalSizeClass == .compact {
+                landscapeLayout
+            } else {
+                portraitLayout
             }
         }
         .preferredColorScheme(.light)
@@ -202,6 +60,208 @@ struct TTSFullPlayerView: View {
             TTSSettingsView(ttsViewModel: ttsViewModel)
         }
         .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Layouts
+
+    /// Apple Music-style stack: artwork, then title, progress, transport and volume.
+    private var portraitLayout: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            artwork
+                .frame(width: 300, height: 300)
+
+            Spacer()
+
+            titleRow
+                .padding(.horizontal, 24)
+
+            Spacer()
+                .frame(height: 24)
+
+            progressSection
+                .padding(.horizontal, 24)
+
+            Spacer()
+                .frame(height: 24)
+
+            playbackControls
+
+            Spacer()
+
+            VolumeSliderView()
+                .padding(.horizontal, 24)
+
+            Spacer()
+        }
+    }
+
+    /// Largest artwork tile in the compact-height layout. Current iPhones have room for
+    /// it at full size; the tile only shrinks below this if the sheet is shorter.
+    private static let landscapeArtworkMaxSize: CGFloat = 280
+
+    /// Compact-height layout, Apple Music style: a large artwork on the leading side
+    /// and the same controls stacked beside it, so everything fits in an iPhone
+    /// landscape sheet. Only iPhones in landscape have a compact vertical size class;
+    /// iPad stays on `portraitLayout`.
+    private var landscapeLayout: some View {
+        HStack(spacing: 32) {
+            artwork
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: Self.landscapeArtworkMaxSize, maxHeight: Self.landscapeArtworkMaxSize)
+
+            VStack(spacing: 20) {
+                titleRow
+                progressSection
+                playbackControls
+                VolumeSliderView()
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 28)
+    }
+
+    // MARK: - Sections
+
+    /// Placeholder artwork. Unsized so each layout decides how big it is; the glyph
+    /// scales with the tile (100pt at the portrait tile's 300pt).
+    private var artwork: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(.ultraThinMaterial)
+            .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 10)
+            .overlay {
+                GeometryReader { geometry in
+                    Image(systemName: "book.fill")
+                        .font(.system(size: geometry.size.width / 3))
+                        .foregroundStyle(.thickMaterial)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                }
+            }
+    }
+
+    private var titleRow: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(ttsViewModel.chapterTitle)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .animation(.default, value: ttsViewModel.chapterNum)
+            }
+
+            Spacer()
+
+            Button {
+                showSettings = true
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.title2)
+                    .foregroundStyle(.thinMaterial)
+            }
+        }
+    }
+
+    /// Progress slider (Apple Music style) with the verse counters beneath it.
+    private var progressSection: some View {
+        VStack(spacing: 8) {
+            GeometryReader { geometry in
+                let totalVerses = max(ttsViewModel.totalVerses - 1, 1)
+                let progress = sliderValue / Double(totalVerses)
+                let trackHeight: CGFloat = isDragging ? 16 : 8
+                // Floor the fill width at trackHeight so its leading cap stays a full
+                // semicircle. A Capsule narrower than it is tall rounds by width/2,
+                // leaving the track's rounded left end unfilled near verse 0.
+                let fillWidth = progress > 0 ? max(trackHeight, geometry.size.width * progress) : 0
+
+                ZStack(alignment: .leading) {
+                    // Background track
+                    Capsule()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(height: trackHeight)
+
+                    // Progress track
+                    Capsule()
+                        .fill(Color.white)
+                        .frame(width: fillWidth, height: trackHeight)
+                }
+                .frame(height: geometry.size.height)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            isDragging = true
+                            let newProgress = min(max(0, value.location.x / geometry.size.width), 1)
+                            let rawValue = newProgress * Double(totalVerses)
+                            sliderValue = rawValue.rounded() // Snap to integer
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                            ttsViewModel.skipToVerse(at: Int(sliderValue))
+                        }
+                )
+                .animation(.easeInOut(duration: 0.15), value: isDragging)
+            }
+            .frame(height: 20)
+
+            HStack {
+                Text("\(displayVerseIndex + 1)")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .monospacedDigit()
+                Spacer()
+                Text("\(ttsViewModel.totalVerses) verses")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .monospacedDigit()
+            }
+        }
+        .onChange(of: ttsViewModel.currentVerseIndex) { _, newValue in
+            if !isDragging {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    sliderValue = Double(newValue)
+                }
+            }
+        }
+        .onAppear {
+            sliderValue = Double(ttsViewModel.currentVerseIndex)
+        }
+    }
+
+    private var playbackControls: some View {
+        HStack(spacing: 56) {
+            Button {
+                ttsViewModel.goToPreviousChapter()
+            } label: {
+                Image(systemName: "backward.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.thickMaterial)
+            }
+
+            Button {
+                ttsViewModel.togglePlayPause()
+            } label: {
+                Image(systemName: ttsViewModel.playbackState == .playing
+                      ? "pause.fill"
+                      : "play.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.white)
+                    .contentTransition(.symbolEffect(.replace.downUp))
+                    .animation(.smooth(duration: 0.3), value: ttsViewModel.playbackState)
+            }
+
+            Button {
+                ttsViewModel.goToNextChapter()
+            } label: {
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.thickMaterial)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var displayVerseIndex: Int {
