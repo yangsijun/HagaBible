@@ -311,9 +311,13 @@ struct TTSPlaybackManagerNowPlayingSyncTests {
     }
 
     @MainActor
+    /// Lets the manager's queued main-actor work run: startReading/stop each defer to a
+    /// Task, and speak/resume run in a further hop after the (stubbed) session
+    /// activation, so a few yields are needed before asserting.
     private func settleMainActorTasks() async {
-        await Task.yield()
-        await Task.yield()
+        for _ in 0..<4 {
+            await Task.yield()
+        }
     }
 
     @MainActor
@@ -400,11 +404,11 @@ private final class StubAudioSessionConfigurator: AudioSessionConfigurable {
     private(set) var activateCallCount = 0
     private(set) var deactivateCallCount = 0
 
-    func activatePlaybackSession() throws {
+    func activatePlaybackSession() async throws {
         activateCallCount += 1
     }
 
-    func deactivatePlaybackSession() throws {
+    func deactivatePlaybackSession() async throws {
         deactivateCallCount += 1
     }
 }

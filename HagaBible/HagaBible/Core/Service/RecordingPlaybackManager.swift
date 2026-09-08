@@ -52,6 +52,10 @@ final class RecordingPlaybackManager: NSObject {
     /// Polls `AVAudioPlayer.currentTime` while playing to advance the scrubber.
     private var tickTask: Task<Void, Never>?
     private var interruptionObserverToken: NSObjectProtocol?
+    /// Identity of the play/resume still waiting for the audio session to activate
+    /// (activation runs off the main thread). pause/stop and a newer play bump it so
+    /// the stale action is dropped instead of starting audio the user already stopped.
+    private var transportGeneration = 0
 
     // MARK: - Initialization
 
@@ -89,26 +93,34 @@ final class RecordingPlaybackManager: NSObject {
             ttsManager.pause()
         }
 
-        activatePlaybackSession()
+        // The player is built only after the session is active: prepareToPlay acquires
+        // the hardware, so doing it earlier would run on whatever category TTS left.
+        transportGeneration += 1
+        let generation = transportGeneration
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.activatePlaybackSession()
+            guard generation == self.transportGeneration else { return }
 
-        do {
-            let newPlayer = try AVAudioPlayer(contentsOf: url)
-            newPlayer.delegate = self
-            newPlayer.prepareToPlay()
+            do {
+                let newPlayer = try AVAudioPlayer(contentsOf: url)
+                newPlayer.delegate = self
+                newPlayer.prepareToPlay()
 
-            player = newPlayer
-            currentRecordingID = recording.id
-            duration = newPlayer.duration
-            currentTime = 0
+                self.player = newPlayer
+                self.currentRecordingID = recording.id
+                self.duration = newPlayer.duration
+                self.currentTime = 0
 
-            newPlayer.play()
-            playbackState = .playing
-            startTick()
-            Logger.audio.info("Playing recording: \(recording.title)")
-        } catch {
-            Logger.audio.error("Failed to start playback: \(error.localizedDescription)")
-            player = nil
-            playbackState = .idle
+                newPlayer.play()
+                self.playbackState = .playing
+                self.startTick()
+                Logger.audio.info("Playing recording: \(recording.title)")
+            } catch {
+                Logger.audio.error("Failed to start playback: \(error.localizedDescription)")
+                self.player = nil
+                self.playbackState = .idle
+            }
         }
     }
 
@@ -122,6 +134,7 @@ final class RecordingPlaybackManager: NSObject {
 
     func pause() {
         guard let player, playbackState == .playing else { return }
+        transportGeneration += 1
         player.pause()
         currentTime = player.currentTime
         playbackState = .paused
@@ -130,13 +143,22 @@ final class RecordingPlaybackManager: NSObject {
 
     func resume() {
         guard let player, playbackState == .paused else { return }
-        activatePlaybackSession()
-        player.play()
+        // State flips immediately so the UI responds; audio follows once the session
+        // is active again (it may have been taken over by TTS in between).
         playbackState = .playing
         startTick()
+        transportGeneration += 1
+        let generation = transportGeneration
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.activatePlaybackSession()
+            guard generation == self.transportGeneration, self.playbackState == .playing else { return }
+            player.play()
+        }
     }
 
     func stop() {
+        transportGeneration += 1
         player?.stop()
         player = nil
         playbackState = .idle
@@ -205,15 +227,19 @@ final class RecordingPlaybackManager: NSObject {
         tickTask = nil
     }
 
-    private func activatePlaybackSession() {
+    private func activatePlaybackSession() async {
         // AVAudioSession is iOS-only. Keep the category record-capable (.playAndRecord)
         // so playing a recording never disables a subsequent recording, and default to
         // the speaker so playback is audible instead of routing to the earpiece.
+        // Off the main thread (AudioSessionQueue): setCategory/setActive block on the
+        // audio server.
         guard !PlatformHelper.isRunningOnMac else { return }
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
-            try session.setActive(true)
+            try await AudioSessionQueue.run {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
+                try session.setActive(true)
+            }
         } catch {
             Logger.audio.error("Failed to activate playback session: \(error.localizedDescription)")
         }

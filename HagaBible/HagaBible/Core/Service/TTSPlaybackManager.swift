@@ -96,6 +96,18 @@ class TTSPlaybackManager: NSObject {
     private var isPauseRequested = false
     private var interruptionObserverToken: NSObjectProtocol?
 
+    /// Identity of the latest transport action (speak / resume) still waiting for the
+    /// audio session to activate. Activation completes off the main thread, so the
+    /// action runs in a follow-up hop; anything that changes the transport meanwhile —
+    /// a newer speak, pause, stop, chapter switch — bumps the generation and the stale
+    /// action is dropped when it wakes.
+    private var transportGeneration = 0
+    /// True between scheduling a deferred speak/resume and it reaching the synthesizer.
+    /// `pause()` uses it to know the synthesizer never received the utterance, so it
+    /// must take the stop-and-restart path (a later `resume()` then re-speaks the verse)
+    /// instead of pausing a node with nothing scheduled, which would stay silent forever.
+    private var isTransportPending = false
+
     /// Wall-clock anchor for the chapter's elapsed time. Paired with the playback
     /// rate so iOS reflects play/pause on the Now Playing card (rate alone is not
     /// honored). No duration is reported, so no progress bar is shown.
@@ -193,6 +205,7 @@ class TTSPlaybackManager: NSObject {
         let wasPlaying = playbackState == .playing || forcePlay
 
         // Stop current speech without changing playbackState
+        invalidatePendingTransport()
         restartTask?.cancel()
         restartTask = nil
         nextChapterTask?.cancel()
@@ -231,7 +244,10 @@ class TTSPlaybackManager: NSObject {
         restartTask?.cancel()
         restartTask = nil
 
-        if isSynthesizerBusy || isRestarting {
+        if isSynthesizerBusy || isRestarting || isTransportPending {
+            // Nothing (or nothing coherent) is scheduled on the synthesizer: drop the
+            // pending action and reset, so resume() restarts the verse from scratch.
+            invalidatePendingTransport()
             isRestarting = true
             synthesizer.stop()
             synthesizer.recreate()
@@ -250,19 +266,19 @@ class TTSPlaybackManager: NSObject {
     func resume() {
         guard !isSynthesizerBusy else { return }
 
-        // Reactivate the session before resuming: an interruption end (.ended) or a
-        // resume after background suspension can find the session deactivated, and the
-        // `synthesizer.isPaused` branch below calls `synthesizer.resume()` directly
-        // (bypassing speakCurrentVerse), so it would otherwise resume onto a dead session.
-        setupAudioSession()
-
         nextChapterTask?.cancel()
         nextChapterTask = nil
 
         if synthesizer.isPaused {
             // 정상 케이스: 일시정지 완료 → 이어서 재생
+            // Reactivate the session first: an interruption end (.ended) or a resume
+            // after background suspension can find the session deactivated, and this
+            // branch bypasses speakCurrentVerse (which reactivates for every other
+            // start), so it would otherwise resume onto a dead session.
             isPauseRequested = false
-            synthesizer.resume()
+            performAfterSessionActivation { [self] in
+                synthesizer.resume()
+            }
         } else if isPauseRequested || synthesizer.isSpeaking {
             // 빠른 토글: 일시정지 요청했지만 아직 완료 안 됨 → 정리 후 절 재시작
             isPauseRequested = false
@@ -291,6 +307,7 @@ class TTSPlaybackManager: NSObject {
         chapterStartDate = nil
 
         Logger.tts.info("Stopped playback")
+        invalidatePendingTransport()
 
         // 2. 무거운 작업은 다음 런루프에서 실행 (UI 블로킹 방지)
         operationGeneration += 1
@@ -307,7 +324,7 @@ class TTSPlaybackManager: NSObject {
             synthesizer.recreate()
             syncNowPlayingState(withInfo: false)
             clearNowPlayingInfo()
-            deactivateAudioSession()
+            await deactivateAudioSession()
         }
     }
 
@@ -510,10 +527,12 @@ class TTSPlaybackManager: NSObject {
                 // silent moment (most often the 3s inter-chapter gap), and only startReading
                 // used to re-activate it — so a resumed/auto-advanced session played silently.
                 // setActive(true) is idempotent and does not reconfigure hardware when the
-                // session is already active, so this is safe to call per verse.
-                setupAudioSession()
-                synthesizer.speak(text: text, voice: currentVoice, rate: settings.speechRate)
-                updateNowPlayingInfo()
+                // session is already active, so this is safe to call per verse. The speak
+                // itself waits for the activation, which now completes off the main thread.
+                performAfterSessionActivation { [self] in
+                    synthesizer.speak(text: text, voice: currentVoice, rate: settings.speechRate)
+                    updateNowPlayingInfo()
+                }
                 return
             }
             Logger.tts.warning("Skipping verse \(verse.verse): no text")
@@ -559,7 +578,31 @@ class TTSPlaybackManager: NSObject {
 
     // MARK: - Audio Session
 
-    private func setupAudioSession() {
+    /// Runs `action` on the main actor once the audio session has been (re)activated —
+    /// unless a newer transport action, a pause, a stop, or a chapter switch superseded
+    /// it while the activation was in flight, in which case it is dropped. Activation
+    /// is awaited rather than called inline because `AVAudioSession.setActive` blocks
+    /// on the audio server and must stay off the main thread.
+    private func performAfterSessionActivation(_ action: @escaping @MainActor () -> Void) {
+        transportGeneration += 1
+        let generation = transportGeneration
+        isTransportPending = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.activateAudioSession()
+            guard generation == self.transportGeneration else { return }
+            self.isTransportPending = false
+            guard self.playbackState == .playing else { return }
+            action()
+        }
+    }
+
+    private func invalidatePendingTransport() {
+        transportGeneration += 1
+        isTransportPending = false
+    }
+
+    private func activateAudioSession() async {
         // AVAudioSession is iOS-only; skip on macOS to avoid blocking TTS
         guard !PlatformHelper.isRunningOnMac else {
             Logger.tts.debug("Running on macOS - skipping audio session setup")
@@ -567,14 +610,14 @@ class TTSPlaybackManager: NSObject {
         }
 
         do {
-            try audioSessionConfigurator.activatePlaybackSession()
+            try await audioSessionConfigurator.activatePlaybackSession()
             Logger.tts.debug("Audio session activated for TTS playback")
         } catch {
             Logger.tts.error("Failed to setup audio session: \(error.localizedDescription)")
         }
     }
 
-    private func deactivateAudioSession() {
+    private func deactivateAudioSession() async {
         // AVAudioSession is iOS-only; skip on macOS
         guard !PlatformHelper.isRunningOnMac else {
             Logger.tts.debug("Running on macOS - skipping audio session deactivation")
@@ -582,7 +625,7 @@ class TTSPlaybackManager: NSObject {
         }
 
         do {
-            try audioSessionConfigurator.deactivatePlaybackSession()
+            try await audioSessionConfigurator.deactivatePlaybackSession()
             Logger.tts.debug("Audio session deactivated")
         } catch {
             Logger.tts.error("Failed to deactivate audio session: \(error.localizedDescription)")

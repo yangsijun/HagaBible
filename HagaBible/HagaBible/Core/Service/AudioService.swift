@@ -20,6 +20,11 @@ class AudioService {
     var isRecording = false
     
     private var audioRecorder: AVAudioRecorder?
+    /// A start is in flight: the record-capable session is being activated off the
+    /// main thread and the recorder has not been created yet. Guards against a second
+    /// tap creating a second recorder, and lets stopRecording cancel a start that has
+    /// not produced a recorder yet.
+    private var isStartPending = false
     
     private var monitoringTask: Task<Void, Never>?
     var audioSamples: [CGFloat] = []
@@ -48,19 +53,36 @@ class AudioService {
 //    }
     
     func startRecording() {
-        // Activate a record-capable session right before recording. TTS may have switched
-        // the shared session to .playback (output only), so re-assert .playAndRecord every
-        // time or the recording captures no input until an app relaunch.
-        // .allowBluetoothA2DP keeps output high quality; input stays on the built-in mic
-        // (matches the recording-playback session).
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
-            try session.setActive(true)
-        } catch {
-            Logger.audio.error("Failed to activate recording session: \(error.localizedDescription)")
-        }
+        guard !isRecording, !isStartPending, audioRecorder == nil else { return }
+        isStartPending = true
 
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            // Activate a record-capable session right before recording. TTS may have
+            // switched the shared session to .playback (output only), so re-assert
+            // .playAndRecord every time or the recording captures no input until an app
+            // relaunch. .allowBluetoothA2DP keeps output high quality; input stays on the
+            // built-in mic (matches the recording-playback session). Runs off the main
+            // thread (AudioSessionQueue): setCategory/setActive block on the audio server.
+            do {
+                try await AudioSessionQueue.run {
+                    let session = AVAudioSession.sharedInstance()
+                    try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothA2DP])
+                    try session.setActive(true)
+                }
+            } catch {
+                Logger.audio.error("Failed to activate recording session: \(error.localizedDescription)")
+            }
+            // stopRecording() ran while the session was activating: the user no longer
+            // wants a recording, so don't create the recorder at all.
+            guard self.isStartPending else { return }
+            self.isStartPending = false
+            self.beginRecording()
+        }
+    }
+
+    /// Creates the recorder on the now-active session and starts capturing.
+    private func beginRecording() {
         let audioFilename = FileManager.documentsDirectory.appendingPathComponent("\(UUID().uuidString).m4a")
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -108,6 +130,8 @@ class AudioService {
     }
     
     func stopRecording(completion: @escaping (URL, TimeInterval) -> Void) {
+        // Stop tapped before the deferred start created a recorder: cancel the start.
+        isStartPending = false
         guard let recorder = audioRecorder else {
             return
         }
