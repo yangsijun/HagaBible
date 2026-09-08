@@ -69,8 +69,8 @@ struct TTSFullPlayerView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            artwork
-                .frame(width: 300, height: 300)
+            PlayerArtworkTile(systemImage: "book.fill")
+                .frame(width: PlayerArtworkTile.portraitSize, height: PlayerArtworkTile.portraitSize)
 
             Spacer()
 
@@ -97,19 +97,15 @@ struct TTSFullPlayerView: View {
         }
     }
 
-    /// Largest artwork tile in the compact-height layout. Current iPhones have room for
-    /// it at full size; the tile only shrinks below this if the sheet is shorter.
-    private static let landscapeArtworkMaxSize: CGFloat = 280
-
     /// Compact-height layout, Apple Music style: a large artwork on the leading side
     /// and the same controls stacked beside it, so everything fits in an iPhone
     /// landscape sheet. Only iPhones in landscape have a compact vertical size class;
     /// iPad stays on `portraitLayout`.
     private var landscapeLayout: some View {
         HStack(spacing: 32) {
-            artwork
+            PlayerArtworkTile(systemImage: "book.fill")
                 .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: Self.landscapeArtworkMaxSize, maxHeight: Self.landscapeArtworkMaxSize)
+                .frame(maxWidth: PlayerArtworkTile.landscapeMaxSize, maxHeight: PlayerArtworkTile.landscapeMaxSize)
 
             VStack(spacing: 20) {
                 titleRow
@@ -124,22 +120,6 @@ struct TTSFullPlayerView: View {
     }
 
     // MARK: - Sections
-
-    /// Placeholder artwork. Unsized so each layout decides how big it is; the glyph
-    /// scales with the tile (100pt at the portrait tile's 300pt).
-    private var artwork: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(.ultraThinMaterial)
-            .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 10)
-            .overlay {
-                GeometryReader { geometry in
-                    Image(systemName: "book.fill")
-                        .font(.system(size: geometry.size.width / 3))
-                        .foregroundStyle(.thickMaterial)
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                }
-            }
-    }
 
     private var titleRow: some View {
         HStack(alignment: .center) {
@@ -282,6 +262,34 @@ struct TTSFullPlayerView: View {
             return 1
         }
         return ttsViewModel.verses[ttsViewModel.currentVerseIndex].verse
+    }
+}
+
+// MARK: - Artwork tile (shared with RecordingPlayerView)
+
+/// Placeholder artwork tile for the players. Unsized so each layout decides how big
+/// it is; the glyph scales with the tile (100pt at the portrait tile's 300pt).
+struct PlayerArtworkTile: View {
+    /// Tile side in the portrait stack.
+    static let portraitSize: CGFloat = 300
+    /// Largest tile in the compact-height (iPhone landscape) layout. Current iPhones
+    /// have room for it at full size; it only shrinks below this if the sheet is shorter.
+    static let landscapeMaxSize: CGFloat = 280
+
+    let systemImage: String
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(.ultraThinMaterial)
+            .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 10)
+            .overlay {
+                GeometryReader { geometry in
+                    Image(systemName: systemImage)
+                        .font(.system(size: geometry.size.width / 3))
+                        .foregroundStyle(.thickMaterial)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                }
+            }
     }
 }
 
