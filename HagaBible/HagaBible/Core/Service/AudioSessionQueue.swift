@@ -23,14 +23,29 @@ nonisolated enum AudioSessionQueue {
     /// Runs `body` on the audio-session queue and resumes the caller with its result
     /// once it has returned or thrown.
     ///
-    /// Also the place for `AVAudioPlayer` setup and transport: `prepareToPlay()`, and
-    /// `play()` after a stop or a natural finish, allocate the player's audio queue,
-    /// which re-activates the session on the calling thread (same hang risk).
+    /// Also the place for `AVAudioPlayer`/`AVAudioRecorder` setup and transport:
+    /// `prepareToPlay()`, `play()` after a stop or a natural finish, and `record()` on a
+    /// fresh recorder allocate the object's audio queue, which re-activates the session
+    /// on the calling thread (same hang risk). Hand the object back with `AudioObjectBox`.
     static func run<T: Sendable>(_ body: @escaping @Sendable () throws -> T) async throws -> T {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, any Error>) in
             queue.async {
                 continuation.resume(with: Result(catching: body))
             }
         }
+    }
+}
+
+/// Carries a non-`Sendable` AVFoundation object (`AVAudioPlayer`, `AVAudioRecorder`)
+/// across the hop to and from `AudioSessionQueue`.
+///
+/// Safe only because the object is touched from one place at a time: built and started
+/// on the queue, then handed to the main actor, which owns it from there. Any later call
+/// that goes back through the queue must not overlap with main-actor use of the object.
+nonisolated struct AudioObjectBox<Object: AnyObject>: @unchecked Sendable {
+    let object: Object
+
+    init(_ object: Object) {
+        self.object = object
     }
 }

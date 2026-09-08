@@ -111,9 +111,9 @@ final class RecordingPlaybackManager: NSObject {
                     newPlayer.delegate = self
                     newPlayer.prepareToPlay()
                     newPlayer.play()
-                    return PlayerBox(player: newPlayer)
+                    return AudioObjectBox(newPlayer)
                 }
-                let newPlayer = box.player
+                let newPlayer = box.object
                 guard generation == self.transportGeneration else {
                     // pause/stop or a newer play arrived while the player was being built.
                     newPlayer.stop()
@@ -160,17 +160,17 @@ final class RecordingPlaybackManager: NSObject {
         startTick()
         transportGeneration += 1
         let generation = transportGeneration
-        let box = PlayerBox(player: player)
+        let box = AudioObjectBox(player)
         Task { @MainActor [weak self] in
             guard let self else { return }
             await self.activatePlaybackSession()
             guard generation == self.transportGeneration, self.playbackState == .playing else { return }
             // Off main as well: after a natural finish the player's audio queue is gone,
-            // so this play() re-allocates it and re-activates the session (see PlayerBox).
-            try? await AudioSessionQueue.run { box.player.play() }
+            // so this play() re-allocates it and re-activates the session.
+            try? await AudioSessionQueue.run { box.object.play() }
             if generation != self.transportGeneration || self.playbackState != .playing {
                 // Paused or stopped while play() was in flight.
-                box.player.pause()
+                box.object.pause()
             }
         }
     }
@@ -299,16 +299,6 @@ final class RecordingPlaybackManager: NSObject {
             break
         }
     }
-}
-
-// MARK: - PlayerBox
-
-/// Carries an `AVAudioPlayer` across the hop to `AudioSessionQueue`. `AVAudioPlayer`
-/// is not `Sendable`, but it is only touched from one place at a time: built/prepared/
-/// started on the queue, then handed back to the main actor, which owns it from there
-/// (`play()` on resume is the one later call that goes back through the queue).
-private struct PlayerBox: @unchecked Sendable {
-    let player: AVAudioPlayer
 }
 
 // MARK: - AVAudioPlayerDelegate

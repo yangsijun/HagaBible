@@ -76,27 +76,49 @@ class AudioService {
             // stopRecording() ran while the session was activating: the user no longer
             // wants a recording, so don't create the recorder at all.
             guard self.isStartPending else { return }
-            self.isStartPending = false
-            self.beginRecording()
+            await self.beginRecording()
         }
     }
 
     /// Creates the recorder on the now-active session and starts capturing.
-    private func beginRecording() {
+    ///
+    /// Built and started on AudioSessionQueue, not here: `record()` on a fresh recorder
+    /// allocates the capture queue (`prepareToRecordQueue`), which re-activates the
+    /// session on the calling thread — the same blocking call startRecording keeps off
+    /// main. `pause()`, `record()` after a pause, `updateMeters()` and `stop()` do not
+    /// touch the session, so they stay on the main actor.
+    private func beginRecording() async {
         let audioFilename = FileManager.documentsDirectory.appendingPathComponent("\(UUID().uuidString).m4a")
-        let settings = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
 
         do {
-            audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
-            audioRecorder?.isMeteringEnabled = true
-            
-            audioRecorder?.record()
+            let (box, started) = try await AudioSessionQueue.run {
+                let settings = [
+                    AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                    AVSampleRateKey: 44100,
+                    AVNumberOfChannelsKey: 1,
+                    AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+                ]
+                let recorder = try AVAudioRecorder(url: audioFilename, settings: settings)
+                recorder.isMeteringEnabled = true
+                let started = recorder.record()
+                return (AudioObjectBox(recorder), started)
+            }
+            let recorder = box.object
+
+            // stopRecording() ran while the recorder was being built: nobody wants this
+            // recording, so drop it and its (near-empty) file.
+            guard self.isStartPending else {
+                recorder.stop()
+                try? FileManager.default.removeItem(at: audioFilename)
+                return
+            }
+            self.isStartPending = false
+
+            audioRecorder = recorder
             isRecording = true
+            if !started {
+                Logger.audio.error("AVAudioRecorder.record() returned false")
+            }
             
             monitoringTask = Task {
                 // isRecording이 true인 동안 계속 반복
@@ -108,6 +130,7 @@ class AudioService {
             }
             Logger.audio.debug("Recording started")
         } catch {
+            self.isStartPending = false
             Logger.audio.error("Failed to start recording: \(error.localizedDescription)")
             isRecording = false
         }
