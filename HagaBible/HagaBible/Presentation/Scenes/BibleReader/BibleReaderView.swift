@@ -139,6 +139,13 @@ struct BibleReaderView: View {
         )
     }
 
+    /// Where the verse being read aloud is kept while TTS auto-follows: its 30% point
+    /// aligned to the viewport's 30% point (lyrics-style), so a verse or two of context
+    /// stays above it and the upcoming verses fill the rest. `scrollTo` clamps to the
+    /// content bounds, so the first verses simply rest at the top and the last ones at
+    /// the bottom instead of being forced to this line.
+    private static let ttsFollowAnchor = UnitPoint(x: 0.5, y: 0.3)
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -198,6 +205,10 @@ struct BibleReaderView: View {
                     selectEndIndex = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         withAnimation(.linear(duration: 0.3)) {
+                            // List ids are 1-based verse ordinals with 0 = top (see
+                            // BibleVerseListView). `verseNum - 1` is intentional: the verse
+                            // before the target rests at the top so the highlighted target
+                            // sits one line down with context; no verse → 0 → chapter top.
                             proxy.scrollTo((viewModel.navigatedVerseNum ?? 1) - 1, anchor: .top)
                         }
                     }
@@ -205,7 +216,9 @@ struct BibleReaderView: View {
                 .onChange(of: ttsViewModel.currentVerseIndex) { _, newIndex in
                     if ttsViewModel.playbackState != .idle {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            proxy.scrollTo(newIndex, anchor: .top)
+                            // `currentVerseIndex` is 0-based; +1 targets the spoken verse's
+                            // own row (not the one before it) and parks it at the follow line.
+                            proxy.scrollTo(newIndex + 1, anchor: Self.ttsFollowAnchor)
                         }
                     }
                 }

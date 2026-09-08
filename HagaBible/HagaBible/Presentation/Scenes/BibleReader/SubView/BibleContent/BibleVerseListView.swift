@@ -37,6 +37,13 @@ struct BibleVerseListView: View {
     @State private var listWidth: CGFloat = 0
 
     var body: some View {
+        // Scroll-target ids are 1-based verse ordinals (`verseRow` sets `.id(index + 1)`)
+        // and `0` is this zero-height spacer marking the true top of the list. The
+        // explicit ids take precedence over the ForEach's 0-based identity when
+        // `ScrollViewProxy.scrollTo` resolves a target (verified on iOS 26.5), so callers
+        // must pass verse ordinals: `scrollTo(n - 1)` deliberately parks the verse
+        // *before* n at the top (one line of context above n), `scrollTo(0)` goes to
+        // the top, and `scrollTo(n)` targets verse n itself.
         VStack(spacing: 0) {
             Color.clear
                 .frame(height: 0)
@@ -73,12 +80,15 @@ struct BibleVerseListView: View {
         let isLast = index == verses.count - 1
         let bottomGap: CGFloat = isLast ? 0 : spacing
         verseContent(at: index)
-            .id(index + 1)
             .padding(Self.verseRowInnerPadding)
             .padding(.horizontal, Self.verseRowInnerPadding)
             .background(highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear)
             .background(ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear)
             .background(isSelected(index) ? Color.accentColor.opacity(0.25) : .clear)
+            // Scroll-target id (1-based, see `body`). Attached to the padded, highlighted
+            // row rather than the bare text so an anchored scroll aligns the highlight
+            // band itself instead of clipping its top padding.
+            .id(index + 1)
             .contentShape(.rect)
             .contextMenu {
                 Button(action: {
