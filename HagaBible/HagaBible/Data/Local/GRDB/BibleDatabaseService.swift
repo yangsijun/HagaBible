@@ -211,7 +211,7 @@ final class BibleDatabaseService {
         Logger.database.info("Database pool reloaded. Attached: \(attachedConfigs.map { $0.alias })")
     }
 
-    private static func attachBibleFiles(_ attachments: [(path: String, alias: String)], to db: Database) throws {
+    nonisolated private static func attachBibleFiles(_ attachments: [(path: String, alias: String)], to db: Database) throws {
         for attachment in attachments {
             try db.execute(sql: "ATTACH DATABASE ? AS \(attachment.alias)", arguments: [attachment.path])
         }
