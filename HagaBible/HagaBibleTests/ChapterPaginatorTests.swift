@@ -703,6 +703,17 @@ struct PagedReaderControllerTests {
         let rightText = try #require(pages[1].view.subviews.compactMap { $0 as? PageTextView }.first)
         #expect(leftText.textOriginX == base.left + 59 - PagedReaderLayout.outerMarginTrim)
         #expect(rightText.textOriginX == base.left + gutter)
+
+        // Half-folded, the user's side margin counts as zero: nothing moves.
+        var wide = style
+        wide.sideMargin = 20
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: wide, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let widePages = displayedPages(controller)
+        for page in widePages {
+            #expect(try #require(page.textContainer).size.width == 437 - base.left - base.right - (59 - PagedReaderLayout.outerMarginTrim) - gutter)
+        }
+        #expect(try #require(widePages[0].view.subviews.compactMap { $0 as? PageTextView }.first).textOriginX == base.left + 59 - PagedReaderLayout.outerMarginTrim)
     }
 
     @Test("Navigating to a verse lands on its page; a prefetched neighbour continues the sequence")

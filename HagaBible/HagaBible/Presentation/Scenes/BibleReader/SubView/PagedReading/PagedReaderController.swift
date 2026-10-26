@@ -207,11 +207,14 @@ final class PagedReaderController: UIViewController {
     /// and both halves keep the same margin (the larger side) so the book stays
     /// symmetric. Less `outerMarginTrim`, so the half-folded frame is a little tighter;
     /// negative when there is no safe area at all (the base margin shrinks). The user's
-    /// extra side margin is added here for every spread: the outer edge only.
+    /// extra side margin is added here on a flat spread, the outer edge only; a
+    /// half-folded spread ignores it, since its halves are already narrow.
     private var outerInset: CGFloat {
         guard isSpread, let layout else { return 0 }
-        let crease = layout.isCreaseCentred ? max(contentInsets.left, contentInsets.right) - PagedReaderLayout.outerMarginTrim : 0
-        return crease + (style?.sideMargin ?? 0)
+        if layout.isCreaseCentred {
+            return max(contentInsets.left, contentInsets.right) - PagedReaderLayout.outerMarginTrim
+        }
+        return style?.sideMargin ?? 0
     }
 
     /// Tallest strip a bottom tab bar can plausibly take; anything else found in the
