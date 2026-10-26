@@ -72,6 +72,10 @@ struct BibleReaderActionBar: View {
                 } else {
                     ActionBarShareLink(item: bibleVersesString)
                 }
+                ActionBarButton(action: {
+                    selectStartIndex = nil
+                    selectEndIndex = nil
+                }, systemImage: "xmark")
             }
         }
     }
