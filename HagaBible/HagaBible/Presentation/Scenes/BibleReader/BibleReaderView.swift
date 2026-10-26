@@ -60,6 +60,9 @@ struct BibleReaderView: View {
     @State private var availableWidth: CGFloat = 0
     /// Window x of the paged reader's verse column; the toolbar title aligns to it.
     @State private var pagedTextLeadingX: CGFloat?
+    /// A tab bar pill over the page (foldable trailing column), in window coordinates.
+    @State private var pagedTabBarOcclusion: CGRect?
+    @State private var readerTrailingX: CGFloat = 0
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -252,8 +255,16 @@ struct BibleReaderView: View {
                 )
             },
             contextMenu: pagedVerseMenu,
-            onTextLeadingChanged: { pagedTextLeadingX = $0 }
+            onTextLeadingChanged: { pagedTextLeadingX = $0 },
+            onTabBarOcclusionChanged: { pagedTabBarOcclusion = $0 }
         )
+    }
+
+    /// Trailing room the floating action bar leaves for a tab bar pill that sits in the
+    /// page's trailing column (a foldable's), so the two never overlap.
+    private var pagedActionBarTrailingPadding: CGFloat {
+        guard let pill = pagedTabBarOcclusion, pill.minX < readerTrailingX else { return 0 }
+        return readerTrailingX - pill.minX + 8
     }
 
     /// The paged reader's long-press menu: the same three actions as the scroll reader's
@@ -450,8 +461,11 @@ struct BibleReaderView: View {
                 if !appState.isPagedReadingEnabled { actionBar }
             }
             .overlay(alignment: .bottomTrailing) {
-                if appState.isPagedReadingEnabled { actionBar }
+                if appState.isPagedReadingEnabled { actionBar.padding(.trailing, pagedActionBarTrailingPadding) }
             }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.frame(in: .global).maxX
+            } action: { readerTrailingX = $0 }
             .toolbar {
                 BibleReaderToolbarContent(
                     bibleBook: viewModel.bibleBook,

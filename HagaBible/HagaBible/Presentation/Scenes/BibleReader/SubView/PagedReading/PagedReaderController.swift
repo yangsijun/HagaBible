@@ -119,6 +119,10 @@ final class PagedReaderController: UIViewController {
     /// Fired when the left edge of the text column (window coordinates) moves, so the
     /// toolbar title can line up with the verses instead of the bar's own margin.
     var onTextLeadingChanged: ((CGFloat) -> Void)?
+    /// The tab bar pill that covers part of the page (a foldable's trailing column), in
+    /// window coordinates, so floating chrome can keep clear of it; nil when none does.
+    var onTabBarOcclusionChanged: ((CGRect?) -> Void)?
+    private var reportedTabBarOcclusion: CGRect?
     /// Two pages side by side in landscape (the Labs toggle); off keeps one page always.
     var isSpreadEnabled = true {
         didSet { if isSpreadEnabled != oldValue { view.setNeedsLayout() } }
@@ -363,7 +367,10 @@ final class PagedReaderController: UIViewController {
         let tabBar = measureTabBar()
         // Cheap and idempotent; also catches the view being moved into its window after
         // the first layout, which changes window coordinates without changing the layout.
-        defer { reportTextLeadingIfNeeded() }
+        defer {
+            reportTextLeadingIfNeeded()
+            reportTabBarOcclusionIfNeeded(tabBar.occlusion)
+        }
         guard newLayout != layout || pageViewController == nil || paginatedInsets != contentInsets
                 || tabBar.reserve != tabBarReserve || tabBar.occlusion != tabBarOcclusion else { return }
 
@@ -442,6 +449,13 @@ final class PagedReaderController: UIViewController {
         guard let layout else { return 0 }
         let x = layout.pageAreaFrame.minX + textInsets.left + outerInset
         return view.convert(CGPoint(x: x, y: 0), to: nil).x
+    }
+
+    private func reportTabBarOcclusionIfNeeded(_ occlusion: CGRect?) {
+        let inWindow = occlusion.map { view.convert($0, to: nil) }
+        guard inWindow != reportedTabBarOcclusion else { return }
+        reportedTabBarOcclusion = inWindow
+        onTabBarOcclusionChanged?(inWindow)
     }
 
     private func reportTextLeadingIfNeeded() {

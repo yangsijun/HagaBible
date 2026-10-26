@@ -574,6 +574,31 @@ struct PagedReaderControllerTests {
         #expect(crossed)
     }
 
+    @Test("A trailing tab bar pill is reported in window coordinates; a bottom strip is not")
+    func tabBarOcclusionReport() throws {
+        func report(barFrame: CGRect) -> CGRect?? {
+            let size = CGSize(width: 874, height: 402)
+            let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+            let controller = PagedReaderController()
+            var reported: CGRect?? = .none
+            controller.onTabBarOcclusionChanged = { reported = .some($0) }
+            window.rootViewController = controller
+            let bar = UITabBar(frame: barFrame)
+            bar.addSubview(UIView(frame: bar.bounds))
+            window.addSubview(bar)
+            window.isHidden = false
+            window.layoutIfNeeded()
+            controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+            controller.view.layoutIfNeeded()
+            return reported
+        }
+        let pill = CGRect(x: 820, y: 180, width: 44, height: 200)
+        let pillReport = try #require(report(barFrame: pill))
+        #expect(pillReport == pill)
+        // Nothing covers the page, so there is nothing to report (the state starts as nil).
+        #expect((report(barFrame: CGRect(x: 0, y: 338, width: 874, height: 64)) ?? nil) == nil)
+    }
+
     @Test("The lifted verse keeps its glyphs under the selection tint")
     func liftedVerseShowsText() throws {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
