@@ -61,7 +61,6 @@ struct BibleVerseListView: View {
                 }
             }
             .padding(.vertical, 16)
-            .padding(.horizontal, CGFloat(fontConfiguration.sideMargin))
         }
         .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
@@ -78,6 +77,8 @@ struct BibleVerseListView: View {
     private static let previewMaxWidth: CGFloat = 420
 
     private static let verseRowInnerPadding: CGFloat = 8
+    /// Distance from a row's leading edge to its verse number column (before the side margin).
+    static let verseRowLeadingInset: CGFloat = verseRowInnerPadding * 2
     /// Leading inset that aligns comparison text under the main verse text column,
     /// derived from `BibleVerseView`'s own verse-number column metrics (which scale
     /// with the reader's font size).
@@ -97,6 +98,8 @@ struct BibleVerseListView: View {
         verseContent(at: index)
             .padding(Self.verseRowInnerPadding)
             .padding(.horizontal, Self.verseRowInnerPadding)
+            // The user's side margin is part of the row, so highlights span it too.
+            .padding(.horizontal, CGFloat(fontConfiguration.sideMargin))
             .background(highlightedVerseNum == index + 1 ? Color.orange.opacity(0.25) : .clear)
             .background(ttsCurrentVerseIndex == index ? Color.green.opacity(0.2) : .clear)
             .background(isSelected(index) ? Color.accentColor.opacity(0.25) : .clear)

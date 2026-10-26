@@ -796,7 +796,7 @@ final class PageViewController: UIViewController {
         self.side = side
         self.textInsets = textInsets
         self.textView = paginator.map {
-            PageTextView(paginator: $0, pageIndex: ref.index, textOriginX: textInsets.left, stripesOnTrailingEdge: side == .right, bookmarkStripes: bookmarkStripes, highlights: highlights)
+            PageTextView(paginator: $0, pageIndex: ref.index, textOriginX: textInsets.left, bandInset: PageTextView.bandPadding.width + (style?.sideMargin ?? 0), stripesOnTrailingEdge: side == .right, bookmarkStripes: bookmarkStripes, highlights: highlights)
         }
         super.init(nibName: nil, bundle: nil)
         view.backgroundColor = style?.backgroundColor ?? .systemBackground
@@ -850,7 +850,10 @@ final class PageTextView: UIView {
     /// How far a highlight band reaches beyond the verse's glyphs, like the scroll
     /// reader's padded row: sideways through the whole margin (edge to edge on a single
     /// page), a little above and below.
-    private static let bandPadding = CGSize(width: 16, height: 6)
+    static let bandPadding = CGSize(width: 16, height: 6)
+    /// Sideways reach of the band and stripe edge: the base padding plus the user's
+    /// extra side margin, so a selection covers the margin like the scroll reader's row.
+    let bandInset: CGFloat
 
     private let paginator: ChapterPaginator
     private let pageIndex: Int
@@ -866,10 +869,11 @@ final class PageTextView: UIView {
     var contextMenu: ((Int) -> UIMenu?)?
     private(set) var tapRecognizer: UITapGestureRecognizer!
 
-    init(paginator: ChapterPaginator, pageIndex: Int, textOriginX: CGFloat, stripesOnTrailingEdge: Bool = false, bookmarkStripes: [Int: [BookmarkStripe?]], highlights: PageHighlights) {
+    init(paginator: ChapterPaginator, pageIndex: Int, textOriginX: CGFloat, bandInset: CGFloat = PageTextView.bandPadding.width, stripesOnTrailingEdge: Bool = false, bookmarkStripes: [Int: [BookmarkStripe?]], highlights: PageHighlights) {
         self.paginator = paginator
         self.pageIndex = pageIndex
         self.textOriginX = textOriginX
+        self.bandInset = bandInset
         self.stripesOnTrailingEdge = stripesOnTrailingEdge
         self.bookmarkStripes = bookmarkStripes
         self.highlights = highlights
@@ -909,9 +913,9 @@ final class PageTextView: UIView {
         let union = rects.dropFirst().reduce(first) { $0.union($1) }
         let padding = Self.bandPadding
         return CGRect(
-            x: textOriginX - padding.width,
+            x: textOriginX - bandInset,
             y: union.minY - padding.height,
-            width: paginator.pageSize.width + padding.width * 2,
+            width: paginator.pageSize.width + bandInset * 2,
             height: union.height + padding.height * 2
         )
     }
@@ -959,8 +963,8 @@ final class PageTextView: UIView {
     private func drawStripes() {
         guard !bookmarkStripes.isEmpty else { return }
         let halfGap = paginator.verseGap / 2
-        let leadingEdge = textOriginX - Self.bandPadding.width
-        let trailingEdge = textOriginX + paginator.pageSize.width + Self.bandPadding.width
+        let leadingEdge = textOriginX - bandInset
+        let trailingEdge = textOriginX + paginator.pageSize.width + bandInset
         for verse in paginator.verses(onPage: pageIndex) {
             guard let stripes = bookmarkStripes[verse], let verseRect = rect(forVerse: verse) else { continue }
             for (column, stripe) in stripes.prefix(BookmarkStripeComputer.columnLimit).enumerated() {
