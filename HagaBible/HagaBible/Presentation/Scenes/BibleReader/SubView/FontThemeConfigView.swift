@@ -160,7 +160,7 @@ struct ScreenWakeConfigView: View {
 
 #Preview {
     @Previewable @State var isPresented: Bool = true
-    @Previewable @State var viewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    @Previewable @State var viewModel = DIContainer.makeWindowState().reader
     @Previewable @State var fontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     
     NavigationStack {

@@ -89,7 +89,7 @@ struct ReadingChecklistViewModelTests {
 
     private func makeViewModel(_ mock: MockReadingMarkRepository) -> ReadingChecklistViewModel {
         let vm = ReadingChecklistViewModel(
-            appState: AppState(),
+            window: WindowStatePreviewFactory.make(),
             readingMarkRepository: mock,
             bibleRepository: MockBibleRepository.shared
         )

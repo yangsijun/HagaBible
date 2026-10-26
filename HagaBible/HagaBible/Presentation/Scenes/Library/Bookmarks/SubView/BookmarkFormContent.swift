@@ -24,6 +24,7 @@ struct BookmarkFormContent: View {
     let onCancel: () -> Void
     let onSave: () -> Void
 
+    @Environment(BibleReaderViewModel.self) private var reader
     @State private var reference: String = ""
     @State private var verseText: String?
 
@@ -87,7 +88,7 @@ struct BookmarkFormContent: View {
         reference = BibleReferenceFormatter.reference(
             book: bookCode, chapter: chapter, startVerse: startVerse, endVerse: endVerse
         )
-        let loader = VerseTextLoader()
+        let loader = VerseTextLoader(reader: reader)
         guard let loaded = await loader.loadVerseText(
             bookCode: bookCode, chapter: chapter, startVerse: startVerse, endVerse: endVerse
         ) else { return }

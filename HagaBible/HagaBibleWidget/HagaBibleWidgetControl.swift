@@ -68,7 +68,6 @@ struct OpenBibleSearchIntent: AppIntent {
         await MainActor.run {
             DIContainer.registerDependenciesIfNeeded()
             let appState = DIContainer.shared.resolve(type: AppState.self)
-            appState.selectedTab = .search
             appState.pendingSearchFocus = true
         }
         #endif

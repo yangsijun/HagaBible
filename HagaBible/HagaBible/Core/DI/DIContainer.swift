@@ -16,15 +16,18 @@ final class DIContainer {
     private init() {}
 
     private var services: [String: Any] = [:]
+    /// The app resolves on the main thread while test suites register from their own
+    /// threads; an unguarded dictionary corrupts under that (crashed the test host).
+    private let lock = NSLock()
 
     func register<Service>(type: Service.Type, component: Any) {
         let key = String(describing: type)
-        services[key] = component
+        lock.withLock { services[key] = component }
     }
 
     func resolve<Service>(type: Service.Type) -> Service {
         let key = String(describing: type)
-        guard let component = services[key] as? Service else {
+        guard let component = lock.withLock({ services[key] }) as? Service else {
             fatalError("\(key)가 등록되지 않았습니다. 앱 시작점에서 등록했는지 확인하세요.")
         }
         return component
@@ -33,7 +36,7 @@ final class DIContainer {
     /// Non-fatal lookup for optional dependencies (e.g. sync, which isn't wired in
     /// the preview graph). Returns nil instead of crashing when unregistered.
     func resolveOptional<Service>(type: Service.Type) -> Service? {
-        services[String(describing: type)] as? Service
+        lock.withLock { services[String(describing: type)] } as? Service
     }
 }
 
@@ -122,16 +125,6 @@ extension DIContainer {
 
         container.register(type: BibleActionService.self, component: BibleActionService())
 
-        container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
-            appState: container.resolve(type: AppState.self),
-            bibleRepository: container.resolve(type: BibleRepository.self),
-            bookmarkRepository: container.resolve(type: BookmarkRepository.self)
-        ))
-
-        container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
-            bibleRepository: container.resolve(type: BibleRepository.self)
-        ))
-
         container.register(type: AudioService.self, component: AudioService())
         container.register(type: AudioSessionConfigurable.self, component: SystemAudioSessionConfigurator())
         container.register(type: RemoteCommandConfigurable.self, component: SystemRemoteCommandConfigurator())
@@ -169,10 +162,7 @@ extension DIContainer {
         )
         container.register(type: TTSPlaybackManager.self, component: ttsManager)
 
-        container.register(type: TTSViewModel.self, component: TTSViewModel(
-            ttsManager: ttsManager,
-            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
-        ))
+        container.register(type: TTSViewModel.self, component: TTSViewModel(ttsManager: ttsManager))
 
         container.register(type: TTSPictureInPictureService.self, component: TTSPictureInPictureService(
             ttsManager: ttsManager,
@@ -201,13 +191,34 @@ extension DIContainer {
         ))
         
         container.register(type: SearchHistoryRepository.self, component: DefaultSearchHistoryRepository())
-        
-        container.register(type: SearchViewModel.self, component: SearchViewModel(
-            appState: container.resolve(type: AppState.self),
+    }
+
+    // MARK: - Per-window view models
+
+    /// Builds the state one window owns. Not registered in the container: with multiple
+    /// windows (iPad, foldables) each `RootView` needs its own reader, navigation and search
+    /// view models, or two windows would fight over one chapter and one tab selection.
+    static func makeWindowState() -> WindowState {
+        let container = DIContainer.shared
+        return WindowState(
+            reader: BibleReaderViewModel(
+                appState: container.resolve(type: AppState.self),
+                bibleRepository: container.resolve(type: BibleRepository.self),
+                bookmarkRepository: container.resolve(type: BookmarkRepository.self)
+            ),
+            navigation: BibleNavigationViewModel(
+                bibleRepository: container.resolve(type: BibleRepository.self)
+            )
+        )
+    }
+
+    static func makeSearchViewModel(window: WindowState) -> SearchViewModel {
+        let container = DIContainer.shared
+        return SearchViewModel(
+            window: window,
             bibleRepository: container.resolve(type: BibleRepository.self),
-            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self),
             searchHistoryRepository: container.resolve(type: SearchHistoryRepository.self)
-        ))
+        )
     }
 
     /// Wires the in-app purchase store and its version-acquisition use cases +
@@ -264,16 +275,6 @@ extension DIContainer {
         container.register(type: BookmarkRepository.self, component: MockBookmarkRepository())
         container.register(type: ReadingMarkRepository.self, component: MockReadingMarkRepository())
 
-        container.register(type: BibleReaderViewModel.self, component: BibleReaderViewModel(
-            appState: container.resolve(type: AppState.self),
-            bibleRepository: container.resolve(type: BibleRepository.self),
-            bookmarkRepository: container.resolve(type: BookmarkRepository.self)
-        ))
-
-        container.register(type: BibleNavigationViewModel.self, component: BibleNavigationViewModel(
-            bibleRepository: container.resolve(type: BibleRepository.self)
-        ))
-
         container.register(type: AudioService.self, component: AudioService())
         container.register(type: AudioSessionConfigurable.self, component: SystemAudioSessionConfigurator())
         container.register(type: RemoteCommandConfigurable.self, component: SystemRemoteCommandConfigurator())
@@ -311,10 +312,7 @@ extension DIContainer {
         )
         container.register(type: TTSPlaybackManager.self, component: ttsManager)
 
-        container.register(type: TTSViewModel.self, component: TTSViewModel(
-            ttsManager: ttsManager,
-            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self)
-        ))
+        container.register(type: TTSViewModel.self, component: TTSViewModel(ttsManager: ttsManager))
 
         container.register(type: TTSPictureInPictureService.self, component: TTSPictureInPictureService(
             ttsManager: ttsManager,
@@ -343,12 +341,5 @@ extension DIContainer {
         ))
         
         container.register(type: SearchHistoryRepository.self, component: DefaultSearchHistoryRepository())
-        
-        container.register(type: SearchViewModel.self, component: SearchViewModel(
-            appState: container.resolve(type: AppState.self),
-            bibleRepository: container.resolve(type: BibleRepository.self),
-            bibleReaderViewModel: container.resolve(type: BibleReaderViewModel.self),
-            searchHistoryRepository: container.resolve(type: SearchHistoryRepository.self)
-        ))
     }
 }

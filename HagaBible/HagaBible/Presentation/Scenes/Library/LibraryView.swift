@@ -11,22 +11,24 @@ import SwiftUI
 /// (성경읽기표), switched via a top segmented control. Owns the one
 /// NavigationStack; the section views provide only content + their own toolbar.
 struct LibraryView: View {
-    @State private var appState: AppState
+    /// The window this Library belongs to; its reader supplies the version for verse text
+    /// and book names, and its tabs are what the section views switch.
+    @State private var window: WindowState
     @State private var bookmarksViewModel: BookmarksViewModel
     @State private var readingViewModel: ReadingChecklistViewModel
     @State private var fontThemeManager: FontThemeManager
 
-    init() {
-        let appState = DIContainer.shared.resolve(type: AppState.self)
+    init(window: WindowState) {
         let bibleRepository = DIContainer.shared.resolve(type: BibleRepository.self)
-        _appState = State(initialValue: appState)
+        _window = State(initialValue: window)
         _bookmarksViewModel = State(initialValue: BookmarksViewModel(
-            appState: appState,
+            appState: DIContainer.shared.resolve(type: AppState.self),
+            reader: window.reader,
             bookmarkRepository: DIContainer.shared.resolve(type: BookmarkRepository.self),
             bibleRepository: bibleRepository
         ))
         _readingViewModel = State(initialValue: ReadingChecklistViewModel(
-            appState: appState,
+            window: window,
             readingMarkRepository: DIContainer.shared.resolve(type: ReadingMarkRepository.self),
             bibleRepository: bibleRepository
         ))
@@ -36,7 +38,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                switch appState.librarySection {
+                switch window.librarySection {
                 case .bookmarks:
                     BookmarksSectionView(viewModel: bookmarksViewModel, onNavigate: navigateToReader)
                         .transition(.opacity)
@@ -53,7 +55,7 @@ struct LibraryView: View {
                     // Animating the binding wraps the whole switch in one
                     // transaction, so the content crossfades AND the bookmark
                     // search bar animates in/out together (no abrupt nav-bar jump).
-                    Picker("Library section", selection: $appState.librarySection.animation(.easeInOut(duration: 0.25))) {
+                    Picker("Library section", selection: $window.librarySection.animation(.easeInOut(duration: 0.25))) {
                         Text("Bookmarks").tag(LibrarySection.bookmarks)
                         Text("Reading").tag(LibrarySection.reading)
                     }
@@ -61,7 +63,7 @@ struct LibraryView: View {
                     .frame(maxWidth: 320)
                 }
             }
-            .onChange(of: appState.selectedTab) { _, tab in
+            .onChange(of: window.selectedTab) { _, tab in
                 // Re-entering the Library tab: refresh bookmarks (the reader may
                 // have added/removed some) and reload the checklist's book list if
                 // the reader's version changed — book names are version-specific.
@@ -74,23 +76,15 @@ struct LibraryView: View {
     }
 
     private func navigateToReader(bookCode: String, chapter: Int, verseNum: Int) {
-        let readerViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
         Task {
-            readerViewModel.navigatedVerseNum = verseNum
-            await readerViewModel.applyBibleSelectionAsync(
-                bookCode: bookCode,
-                chapterNum: chapter,
-                verseNum: verseNum
-            )
-            // Switch tabs only after the selection is applied, so the reader's
-            // onChange(selectedTab) refreshes stripes for the new chapter, not the old.
-            appState.selectedTab = .bibleReader
-            readerViewModel.bibleNavigationUpdateTrigger.toggle()
+            await window.showReader(bookCode: bookCode, chapter: chapter, verse: verseNum)
         }
     }
 }
 
 #Preview {
     DIContainer.registerForPreview()
-    return LibraryView()
+    let window = DIContainer.makeWindowState()
+    return LibraryView(window: window)
+        .environment(window.reader)
 }

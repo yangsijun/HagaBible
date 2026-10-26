@@ -11,21 +11,26 @@ import OSLog
 @Observable
 @MainActor
 class AppState {
-    var selectedTab: TabIdentifier = .bibleReader
+    /// The window (scene) that most recently became active. External requests below are
+    /// handled by this window; nil until the first window appears, in which case the first
+    /// `RootView` to show takes them. Per-window UI state itself lives in `WindowState`.
+    @ObservationIgnored weak var activeWindow: WindowState?
 
-    /// Which Library segment to show. Shared so the reader's toolbar can route to
-    /// a specific section (Bookmarks or 성경읽기표) when it switches to the tab.
-    var librarySection: LibrarySection = .bookmarks
-
-    /// Book order (1–66) the 성경읽기표 should scroll to when the Library tab opens,
-    /// set by the reader's "Reading Checklist" toolbar action; cleared once consumed.
-    var pendingReadingScrollBookOrder: Int?
+    /// A reader position an external entry point (App Shortcut / Siri / Spotlight) wants
+    /// shown. Set by `OpenBibleReferenceIntent`; the active window's `RootView` applies it
+    /// to its own reader and clears it. Consume-once.
+    var pendingReaderNavigation: ReaderNavigationRequest?
 
     /// Search text an external entry point (App Shortcut / Siri / Spotlight) wants the
     /// Search tab to run. Set by `SearchBibleTextIntent`; `RootView` copies it into the
     /// `.searchable` field (which fires the existing search pipeline) and clears it.
-    /// Consume-once, mirroring `pendingReadingScrollBookOrder`.
+    /// Consume-once, mirroring `pendingReaderNavigation`.
     var pendingSearchQuery: String?
+
+    /// Translation `SearchBibleTextIntent` asked for; the handling window switches its
+    /// reader to it before running `pendingSearchQuery` (the search uses the reader's
+    /// version). Cleared together with the query.
+    var pendingSearchVersionCode: String?
 
     /// Request that the Search tab's search field take focus (raise the keyboard, ready
     /// to type). Set by `OpenBibleSearchIntent` (the Control Center control) so a tap opens
@@ -197,4 +202,13 @@ struct PersistedReaderPosition: Codable, Equatable {
     var bookCode: String?
     var chapter: Int?
     var verse: Int?
+}
+
+/// A position an App Intent wants the active window's reader to show. `versionCode` nil
+/// keeps the reader's current translation.
+struct ReaderNavigationRequest: Equatable {
+    var versionCode: String?
+    var bookCode: String
+    var chapter: Int
+    var verse: Int
 }

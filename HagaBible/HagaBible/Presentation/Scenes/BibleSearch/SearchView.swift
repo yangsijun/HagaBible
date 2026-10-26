@@ -13,7 +13,7 @@ struct SearchView: View {
     @Environment(\.isSearching) private var isSearching
     
     @Binding var searchText: String
-    @State private var viewModel: SearchViewModel = DIContainer.shared.resolve(type: SearchViewModel.self)
+    @Environment(SearchViewModel.self) private var viewModel
     
     private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     

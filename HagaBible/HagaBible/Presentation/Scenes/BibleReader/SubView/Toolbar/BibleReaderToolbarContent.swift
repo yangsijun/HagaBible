@@ -28,6 +28,8 @@ struct BibleReaderToolbarContent: ToolbarContent {
     let onAccountTapped: () -> Void
     let onBookmarksTapped: () -> Void
     let onReadingChecklistTapped: () -> Void
+    /// nil where the system can't open more windows (iPhone): the entry is hidden.
+    var onNewWindowTapped: (() -> Void)? = nil
     let comparableVersions: [BibleVersion]
     let compareVersionCode: String?
     let onSelectCompareVersion: (String?) -> Void
@@ -73,6 +75,11 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 }
                 Button(action: onReadingChecklistTapped) {
                     Label("Reading Checklist", systemImage: "checklist")
+                }
+                if let onNewWindowTapped {
+                    Button(action: onNewWindowTapped) {
+                        Label("New Window", systemImage: "macwindow.badge.plus")
+                    }
                 }
                 Divider()
                 Button {

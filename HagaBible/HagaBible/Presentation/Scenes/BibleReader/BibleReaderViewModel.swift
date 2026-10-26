@@ -19,37 +19,39 @@ class BibleReaderViewModel {
     
     var bibleRepository: BibleRepository
     private let bookmarkRepository: BookmarkRepository
-    private let bibleActionService: BibleActionService = DIContainer.shared.resolve(type: BibleActionService.self)
+    private let bibleActionService: BibleActionService
+
+    /// This window's own position. Each window has its own reader, so the position is
+    /// stored here, not in `AppState`; every change is also written through to
+    /// `appState.bibleReaderState`, which is the app-wide "last read" position: it is what
+    /// gets persisted, what a new window opens at, and what App Intents / recordings read.
+    private var state = BibleReaderState()
 
     var bibleVersion: BibleVersion? {
-        get {
-            appState.bibleReaderState.bibleVersion
-        }
+        get { state.bibleVersion }
         set {
+            state.bibleVersion = newValue
             appState.bibleReaderState.bibleVersion = newValue
         }
     }
     var bibleBook: BibleBook? {
-        get {
-            appState.bibleReaderState.bibleBook
-        }
+        get { state.bibleBook }
         set {
+            state.bibleBook = newValue
             appState.bibleReaderState.bibleBook = newValue
         }
     }
     var bibleChapter: BibleChapter? {
-        get {
-            appState.bibleReaderState.bibleChapter
-        }
+        get { state.bibleChapter }
         set {
+            state.bibleChapter = newValue
             appState.bibleReaderState.bibleChapter = newValue
         }
     }
     var bibleVerse: BibleVerse? {
-        get {
-            appState.bibleReaderState.bibleVerse
-        }
+        get { state.bibleVerse }
         set {
+            state.bibleVerse = newValue
             appState.bibleReaderState.bibleVerse = newValue
         }
     }
@@ -107,14 +109,22 @@ class BibleReaderViewModel {
         set { appState.bookmarkIndicatorEnabled = newValue }
     }
 
-    init(appState: AppState, bibleRepository: BibleRepository, bookmarkRepository: BookmarkRepository) {
+    /// `bibleActionService` defaults to the container's; tests pass their own so they never
+    /// touch `DIContainer.shared` (its dictionary isn't thread-safe across parallel suites).
+    init(
+        appState: AppState,
+        bibleRepository: BibleRepository,
+        bookmarkRepository: BookmarkRepository,
+        bibleActionService: BibleActionService? = nil
+    ) {
         self.appState = appState
 
         self.bibleRepository = bibleRepository
         self.bookmarkRepository = bookmarkRepository
+        self.bibleActionService = bibleActionService ?? DIContainer.shared.resolve(type: BibleActionService.self)
 
-        // Live in-memory state wins (a VM rebuilt mid-session resumes where the user is); the
-        // disk-restored position seeds a cold launch; the constants are the ultimate fallback.
+        // The app-wide last-read position wins (a new window opens where the user is reading);
+        // the disk-restored position seeds a cold launch; the constants are the ultimate fallback.
         let restored = appState.restoredReaderPosition
         self.versionCode = appState.bibleReaderState.bibleVersion?.versionCode ?? restored?.versionCode ?? "WEBBE"
         self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? restored?.bookCode ?? "GEN"

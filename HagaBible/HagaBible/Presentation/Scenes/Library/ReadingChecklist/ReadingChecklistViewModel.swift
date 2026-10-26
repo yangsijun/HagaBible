@@ -28,16 +28,18 @@ final class ReadingChecklistViewModel {
     /// the list — e.g. "창세기" (NKRV) vs "Genesis" (WEBBE).
     private var loadedVersionCode: String?
 
-    private let appState: AppState
+    /// This window's state: its reader's version names the books; its pending scroll
+    /// target comes from its reader's toolbar.
+    private let window: WindowState
     private let readingMarkRepository: any ReadingMarkRepository
     private let bibleRepository: any BibleRepository
 
     init(
-        appState: AppState,
+        window: WindowState,
         readingMarkRepository: any ReadingMarkRepository,
         bibleRepository: any BibleRepository
     ) {
-        self.appState = appState
+        self.window = window
         self.readingMarkRepository = readingMarkRepository
         self.bibleRepository = bibleRepository
     }
@@ -76,13 +78,13 @@ final class ReadingChecklistViewModel {
         do {
             let versions = try await bibleRepository.fetchBibleVersionList()
             let downloaded = versions.filter { $0.isDownloaded }
-            if let current = appState.bibleReaderState.bibleVersion?.versionCode,
+            if let current = window.reader.bibleVersion?.versionCode,
                downloaded.contains(where: { $0.versionCode == current }) {
                 return current
             }
             return downloaded.first?.versionCode
         } catch {
-            return appState.bibleReaderState.bibleVersion?.versionCode
+            return window.reader.bibleVersion?.versionCode
         }
     }
 
@@ -103,14 +105,14 @@ final class ReadingChecklistViewModel {
     // MARK: - Scroll target (성경읽기표 바로가기)
 
     /// Book order the checklist should scroll to on entry, forwarded from
-    /// `AppState` so the view can observe it. Set by the reader's "Reading
+    /// `WindowState` so the view can observe it. Set by the reader's "Reading
     /// Checklist" toolbar action; nil when there's nothing to scroll to.
-    var scrollTargetBookOrder: Int? { appState.pendingReadingScrollBookOrder }
+    var scrollTargetBookOrder: Int? { window.pendingReadingScrollBookOrder }
 
     /// Clears the pending scroll target once the checklist has scrolled to it,
     /// so a normal re-entry into the tab doesn't scroll again.
     func consumeScrollTarget() {
-        appState.pendingReadingScrollBookOrder = nil
+        window.pendingReadingScrollBookOrder = nil
     }
 
     // MARK: - Queries

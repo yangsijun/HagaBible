@@ -18,8 +18,25 @@ struct RootView: View {
 
     @State private var showLoadingView: Bool = false
     @State private var downloadProgress: String = ""
-    @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
     @State private var showFullPlayer: Bool = false
+    @State private var fontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
+
+    /// This window's state (tab, Library routing, reader/navigation view models). One
+    /// `RootView` per window, so a second window on iPad gets its own chapter and tabs.
+    @State private var window: WindowState
+    @State private var searchViewModel: SearchViewModel
+
+    init() {
+        let window = DIContainer.makeWindowState()
+        _window = State(initialValue: window)
+        _searchViewModel = State(initialValue: DIContainer.makeSearchViewModel(window: window))
+    }
+
+    /// External requests (App Intents, the Control Center control) go to the window that was
+    /// active last; before any window has been active (cold launch) the first one takes them.
+    private var handlesExternalRequests: Bool {
+        appState.activeWindow == nil || appState.activeWindow === window
+    }
 
     // Default versions auto-downloaded on first launch must be FREE — bundling a
     // paid version here would hand out purchased content without payment. KRV
@@ -35,6 +52,9 @@ struct RootView: View {
                 mainContent
             }
         }
+        // Here rather than on the `WindowGroup`: reading the theme in `App.body` would rebuild
+        // `RootView` (and a throwaway `WindowState`) on every theme change.
+        .preferredColorScheme(fontThemeManager.colorScheme)
         // Re-runs when the reader's empty-state "Retry" bumps the request counter.
         .task(id: appState.bibleDownloadRetryRequest) {
             await downloadDefaultVersionsIfNeeded()
@@ -54,6 +74,7 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            appState.activeWindow = window
             // Recover a TTS session that iOS silently deactivated while the app was
             // suspended (mini player shows, marked "playing", but no audio comes out).
             ttsViewModel.handleForegroundTransition()
@@ -67,13 +88,13 @@ struct RootView: View {
     }
 
     private var mainContent: some View {
-        TabView(selection: $appState.selectedTab) {
+        TabView(selection: $window.selectedTab) {
             Tab("Bible", systemImage: "book.fill", value: .bibleReader) {
                 BibleReaderView()
                     .environment(\.horizontalSizeClass, horizontalSizeClass)
             }
             Tab("Library", systemImage: "books.vertical.fill", value: .library) {
-                LibraryView()
+                LibraryView(window: window)
                     .environment(\.horizontalSizeClass, horizontalSizeClass)
             }
             if appState.isRecordingEnabled {
@@ -90,8 +111,14 @@ struct RootView: View {
         }
         .applyTabBarMinimizeBehavior()
         .applyTTSBottomAccessory(isEnabled: appState.isTTSEnabled, ttsViewModel: ttsViewModel, showFullPlayer: $showFullPlayer)
-        .applyTTSPiPHost(isEnabled: appState.isTTSEnabled, ttsViewModel: ttsViewModel)
+        // Only the window whose reader the session reads from hosts the PiP layer; two hosts
+        // would fight over the one service.
+        .applyTTSPiPHost(isEnabled: appState.isTTSEnabled && ttsViewModel.reader === window.reader, ttsViewModel: ttsViewModel)
         .environment(\.horizontalSizeClass, .compact)
+        .environment(window)
+        .environment(window.reader)
+        .environment(window.navigation)
+        .environment(searchViewModel)
         .onAppear {
             ttsViewModel.onChapterFinished = { [ttsViewModel] in
                 ttsViewModel.goToNextChapter(forcePlay: true)
@@ -107,12 +134,15 @@ struct RootView: View {
                 // Ask for mic permission when recording is turned on, so the prompt
                 // appears here rather than at every app launch.
                 DIContainer.shared.resolve(type: AudioService.self).requestMicrophonePermissionIfNeeded()
-            } else if appState.selectedTab == .recordings {
+            } else if window.selectedTab == .recordings {
                 // The Recordings tab is about to disappear; fall back to the reader so
                 // the TabView isn't left on a now-missing tab.
-                appState.selectedTab = .bibleReader
+                window.selectedTab = .bibleReader
             }
         }
+        // An App Shortcut / Siri / Spotlight reference sets `pendingReaderNavigation`; the
+        // active window moves its reader there. On change and on appear, like the search below.
+        .onChange(of: appState.pendingReaderNavigation) { _, _ in applyPendingNavigationIfNeeded() }
         // An App Shortcut / Siri / Spotlight text search sets `pendingSearchQuery`; copy
         // it into the `.searchable` field (which fires the existing search pipeline) and
         // clear it. Applied both on change and on appear so a value the intent set before
@@ -121,21 +151,44 @@ struct RootView: View {
         // The Control Center "Bible Search" control asks for the search field to take focus.
         .onChange(of: appState.pendingSearchFocus) { _, _ in applyPendingSearchFocusIfNeeded() }
         .onAppear {
+            if appState.activeWindow == nil { appState.activeWindow = window }
+            applyPendingNavigationIfNeeded()
             applyPendingSearchIfNeeded()
             applyPendingSearchFocusIfNeeded()
         }
     }
 
+    private func applyPendingNavigationIfNeeded() {
+        guard handlesExternalRequests, let request = appState.pendingReaderNavigation else { return }
+        appState.pendingReaderNavigation = nil
+        Task {
+            await window.showReader(
+                versionCode: request.versionCode,
+                bookCode: request.bookCode,
+                chapter: request.chapter,
+                verse: request.verse
+            )
+        }
+    }
+
     private func applyPendingSearchIfNeeded() {
-        guard let query = appState.pendingSearchQuery else { return }
-        search = query
-        appState.selectedTab = .search
+        guard handlesExternalRequests, let query = appState.pendingSearchQuery else { return }
+        let versionCode = appState.pendingSearchVersionCode
         appState.pendingSearchQuery = nil
+        appState.pendingSearchVersionCode = nil
+        Task {
+            // The search runs against the reader's version, so switch first and await it.
+            if let versionCode {
+                await window.reader.applyBibleSelectionAsync(versionCode: versionCode)
+            }
+            search = query
+            window.selectedTab = .search
+        }
     }
 
     private func applyPendingSearchFocusIfNeeded() {
-        guard appState.pendingSearchFocus else { return }
-        appState.selectedTab = .search
+        guard handlesExternalRequests, appState.pendingSearchFocus else { return }
+        window.selectedTab = .search
         appState.pendingSearchFocus = false
         // Defer so the Search tab's `.searchable` field is installed before we focus it —
         // on a cold launch from the control the flag is set before this view (and the tab)

@@ -35,15 +35,11 @@ struct SearchBibleTextIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         DIContainer.registerDependenciesIfNeeded()
         let appState = DIContainer.shared.resolve(type: AppState.self)
-        if let version {
-            // Switch the app to the chosen translation *before* handing off the query, so
-            // the search (which runs against the reader's current version) uses it. Awaited
-            // so `bibleReaderState.bibleVersion` is updated before `RootView` runs the search.
-            let reader = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
-            await reader.applyBibleSelectionAsync(versionCode: version.id)
-        }
+        // The chosen translation rides along with the query: the active window's `RootView`
+        // switches its own reader to it before running the search (which uses the reader's
+        // version). Set before the query, whose change triggers the handling.
+        appState.pendingSearchVersionCode = version?.id
         appState.pendingSearchQuery = query
-        appState.selectedTab = .search
         return .result()
     }
 }

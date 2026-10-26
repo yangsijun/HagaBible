@@ -109,7 +109,7 @@ enum ReadingChecklistPreviewFactory {
     ) -> ReadingChecklistViewModel {
         let resolvedBooks = books ?? (try? MockBibleRepository.shared.fetchBibleBookList(versionCode: "KRV")) ?? []
         let viewModel = ReadingChecklistViewModel(
-            appState: AppState(),
+            window: WindowStatePreviewFactory.make(),
             readingMarkRepository: MockReadingMarkRepository(),
             bibleRepository: MockBibleRepository.shared
         )

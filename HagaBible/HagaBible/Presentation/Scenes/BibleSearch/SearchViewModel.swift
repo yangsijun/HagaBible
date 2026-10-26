@@ -12,9 +12,10 @@ import OSLog
 @Observable
 @MainActor
 class SearchViewModel {
-    private let appState: AppState
+    /// The window this search belongs to: results open in its reader and its tabs switch.
+    private let window: WindowState
     private let bibleRepository: BibleRepository
-    private let bibleReaderViewModel: BibleReaderViewModel
+    private var bibleReaderViewModel: BibleReaderViewModel { window.reader }
     private let searchHistoryRepository: SearchHistoryRepository
     
     var bibleReferenceText: String? = nil
@@ -29,14 +30,12 @@ class SearchViewModel {
     var availableVersions: [BibleVersion] = []
         
     init(
-        appState: AppState,
+        window: WindowState,
         bibleRepository: BibleRepository,
-        bibleReaderViewModel: BibleReaderViewModel,
         searchHistoryRepository: SearchHistoryRepository
     ) {
-        self.appState = appState
+        self.window = window
         self.bibleRepository = bibleRepository
-        self.bibleReaderViewModel = bibleReaderViewModel
         self.searchHistoryRepository = searchHistoryRepository
     }
     
@@ -46,7 +45,7 @@ class SearchViewModel {
             bibleReferenceVerse = nil
             return
         }
-        guard let bibleVersion = appState.bibleReaderState.bibleVersion else {
+        guard let bibleVersion = bibleReaderViewModel.bibleVersion else {
             bibleReferenceText = nil
             bibleReferenceVerse = nil
             return
@@ -104,7 +103,7 @@ class SearchViewModel {
             groupedSearchResults = [:]
             return
         }
-        guard let bibleVersion = appState.bibleReaderState.bibleVersion else {
+        guard let bibleVersion = bibleReaderViewModel.bibleVersion else {
             searchResults = []
             groupedSearchResults = [:]
             return
@@ -157,7 +156,7 @@ class SearchViewModel {
         
         bibleReaderViewModel.navigatedVerseNum = verse.verse
 
-        appState.selectedTab = .bibleReader        
+        window.selectedTab = .bibleReader
         
         bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
     }

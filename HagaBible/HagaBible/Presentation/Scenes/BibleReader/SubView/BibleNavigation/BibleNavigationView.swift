@@ -11,7 +11,7 @@ struct BibleNavigationView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(BibleReaderViewModel.self) private var bibleReaderViewModel: BibleReaderViewModel
     
-    @State private var viewModel: BibleNavigationViewModel = DIContainer.shared.resolve(type: BibleNavigationViewModel.self)
+    @Environment(BibleNavigationViewModel.self) private var viewModel
     
     @State var selectedVersion: BibleVersion?
     @State var selectedBook: BibleBook?
@@ -136,7 +136,8 @@ struct BibleNavigationView: View {
 
 #Preview {
     DIContainer.registerForPreview()
-    let viewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    let window = DIContainer.makeWindowState()
+    let viewModel = window.reader
     
     return NavigationStack {
         Text("")
@@ -148,6 +149,7 @@ struct BibleNavigationView: View {
                     selectedVerse: viewModel.bibleVerse,
                 )
                     .environment(viewModel)
+                    .environment(window.navigation)
                     .presentationDetents([.small])
             }
     }

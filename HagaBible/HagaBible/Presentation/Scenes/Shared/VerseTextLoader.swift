@@ -12,13 +12,14 @@ import OSLog
 /// Shared by the bookmarks list (batch) and the add/edit form (single range).
 @MainActor
 struct VerseTextLoader {
-    var appState: AppState = DIContainer.shared.resolve(type: AppState.self)
+    /// The reader of the window the text is shown in (each window has its own).
+    let reader: BibleReaderViewModel
     var bibleRepository: any BibleRepository = DIContainer.shared.resolve(type: BibleRepository.self)
 
     /// Prefer the version the user is currently reading; fall back to the first
     /// downloaded version only when no reading version is set.
     func resolveVersionCode() async throws -> String? {
-        if let current = appState.bibleReaderState.bibleVersion?.versionCode {
+        if let current = reader.bibleVersion?.versionCode {
             return current
         }
         let versions = try await bibleRepository.fetchBibleVersionList()

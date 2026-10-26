@@ -203,3 +203,21 @@ struct MockBibleRepository: BibleRepository {
         return abbreviations[abbreviation]
     }
 }
+
+/// A window over the mock repositories, for previews and tests of the per-window view
+/// models. Touches nothing in `DIContainer.shared`, so tests can run in parallel with
+/// suites that register into it.
+@MainActor
+enum WindowStatePreviewFactory {
+    static func make(appState: AppState? = nil) -> WindowState {
+        return WindowState(
+            reader: BibleReaderViewModel(
+                appState: appState ?? AppState(),
+                bibleRepository: MockBibleRepository.shared,
+                bookmarkRepository: MockBookmarkRepository(),
+                bibleActionService: BibleActionService()
+            ),
+            navigation: BibleNavigationViewModel(bibleRepository: MockBibleRepository.shared)
+        )
+    }
+}

@@ -10,7 +10,7 @@ import SwiftUI
 struct SearchResultsView: View {
     @Environment(\.dismissSearch) var dismissSearch
     
-    @State private var viewModel: SearchViewModel = DIContainer.shared.resolve(type: SearchViewModel.self)
+    @Environment(SearchViewModel.self) private var viewModel
     var searchText: String
     @State private var expandedBooks: Set<String> = []
     

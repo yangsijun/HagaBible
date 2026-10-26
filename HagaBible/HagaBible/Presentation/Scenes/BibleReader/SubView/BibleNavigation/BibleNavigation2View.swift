@@ -12,7 +12,7 @@ struct BibleNavigation2View: View {
     @Environment(\.dismiss) var dismiss
     @Environment(BibleReaderViewModel.self) private var bibleReaderViewModel: BibleReaderViewModel
 
-    @State private var viewModel: BibleNavigationViewModel = DIContainer.shared.resolve(type: BibleNavigationViewModel.self)
+    @Environment(BibleNavigationViewModel.self) private var viewModel
     @State private var ttsViewModel: TTSViewModel = DIContainer.shared.resolve(type: TTSViewModel.self)
     
     @State var selectedVersion: BibleVersion?
@@ -52,7 +52,7 @@ struct BibleNavigation2View: View {
 
                                 bibleReaderViewModel.navigatedVerseNum = 1
                                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                                switchTTSChapterIfActive(language: selectedVersion.language)
+                                switchTTSChapterIfActive()
                             }
                         }
                     )
@@ -81,7 +81,7 @@ struct BibleNavigation2View: View {
 
                                 bibleReaderViewModel.navigatedVerseNum = 1
                                 bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-                                switchTTSChapterIfActive(language: selectedVersion.language)
+                                switchTTSChapterIfActive()
                             }
                         }
                     )
@@ -307,11 +307,11 @@ struct BibleNavigation2View: View {
 
         bibleReaderViewModel.navigatedVerseNum = verse.verse
         bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-        switchTTSChapterIfActive(language: selectedVersion?.language ?? "Korean", startVerseNum: verse.verse)
+        switchTTSChapterIfActive(startVerseNum: verse.verse)
     }
 
-    private func switchTTSChapterIfActive(language: String, startVerseNum: Int = 1) {
-        guard ttsViewModel.playbackState != .idle else { return }
+    private func switchTTSChapterIfActive(startVerseNum: Int = 1) {
+        guard ttsViewModel.isReading(bibleReaderViewModel) else { return }
 
         let oldVerses = bibleReaderViewModel.bibleVerseList
 
@@ -325,7 +325,7 @@ struct BibleNavigation2View: View {
             }
 
             let startIndex = max(0, startVerseNum - 1)
-            ttsViewModel.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language, forcePlay: true, startIndex: startIndex)
+            ttsViewModel.switchChapter(from: bibleReaderViewModel, forcePlay: true, startIndex: startIndex)
         }
     }
 
@@ -363,7 +363,7 @@ struct BibleNavigation2View: View {
 
 #Preview {
     @Previewable @State var isPresented: Bool = false
-    @Previewable @State var viewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    @Previewable @State var window = DIContainer.makeWindowState()
     
     NavigationStack {
         Button(action: { isPresented.toggle() }) {
@@ -371,7 +371,8 @@ struct BibleNavigation2View: View {
         }
         .sheet(isPresented: $isPresented) {
             BibleNavigation2View()
-                .environment(viewModel)
+                .environment(window.reader)
+                .environment(window.navigation)
                 .presentationDetents([.small])
         }
     }

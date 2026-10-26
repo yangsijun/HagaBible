@@ -41,23 +41,19 @@ struct OpenBibleReferenceIntent: AppIntent {
             // Book couldn't be resolved — fall back to the Search tab with the raw text,
             // so an ambiguous phrase still lands somewhere useful.
             appState.pendingSearchQuery = reference
-            appState.selectedTab = .search
             return .result()
         }
 
-        let reader = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
         // versionCode: the chosen translation, else nil to keep the reader's current one;
         // the canonical book code is shared across versions, so the reference resolves
-        // everywhere. Awaited so the position is applied before the scroll trigger fires.
-        await reader.applyBibleSelectionAsync(
+        // everywhere. The active window's `RootView` applies it to its own reader (there is
+        // one reader per window) and switches to the reader tab.
+        appState.pendingReaderNavigation = ReaderNavigationRequest(
             versionCode: version?.id,
             bookCode: resolved.bookCode,
-            chapterNum: resolved.chapter,
-            verseNum: resolved.verse
+            chapter: resolved.chapter,
+            verse: resolved.verse
         )
-        reader.navigatedVerseNum = resolved.verse
-        appState.selectedTab = .bibleReader
-        reader.bibleNavigationUpdateTrigger.toggle()
         return .result()
     }
 }

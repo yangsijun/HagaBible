@@ -36,7 +36,11 @@ struct BibleReaderView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass: UserInterfaceSizeClass?
     @Environment(\.scenePhase) private var scenePhase
     @State private var appState: AppState = DIContainer.shared.resolve(type: AppState.self)
-    @State private var viewModel: BibleReaderViewModel = DIContainer.shared.resolve(type: BibleReaderViewModel.self)
+    /// Per-window (`RootView` provides them): this window's reader and its tab/Library routing.
+    @Environment(BibleReaderViewModel.self) private var viewModel
+    @Environment(WindowState.self) private var window
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     @State private var fontThemeManager: FontThemeManager = DIContainer.shared.resolve(type: FontThemeManager.self)
     @State private var showBibleNavigation: Bool = false
     @State private var showFontThemeConfig: Bool = false
@@ -68,7 +72,7 @@ struct BibleReaderView: View {
             fontConfiguration: fontThemeManager.fontConfiguration,
             theme: fontThemeManager.theme,
             highlightedVerseNum: viewModel.navigatedVerseNum,
-            ttsCurrentVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
+            ttsCurrentVerseIndex: ttsViewModel.isReading(viewModel) ? ttsViewModel.currentVerseIndex : nil,
             bookmarkStripesPerVerse: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
             // Only render comparison rows once the version (and thus its
             // language/font) is resolved, to avoid a wrong-font first frame.
@@ -144,24 +148,22 @@ struct BibleReaderView: View {
             .swipeGesture(
                 navigationToken: viewModel.bibleNavigationUpdateTrigger,
                 onLeftSwipe: {
-                    let wasActive = ttsViewModel.playbackState != .idle
+                    let wasActive = ttsViewModel.isReading(viewModel)
                     Task {
                         await viewModel.goToPreviousChapterAsync()
                         viewModel.bibleNavigationUpdateTrigger.toggle()
                         if wasActive {
-                            let language = viewModel.bibleVersion?.language ?? "Korean"
-                            ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                            ttsViewModel.switchChapter(from: viewModel)
                         }
                     }
                 },
                 onRightSwipe: {
-                    let wasActive = ttsViewModel.playbackState != .idle
+                    let wasActive = ttsViewModel.isReading(viewModel)
                     Task {
                         await viewModel.goToNextChapterAsync()
                         viewModel.bibleNavigationUpdateTrigger.toggle()
                         if wasActive {
-                            let language = viewModel.bibleVersion?.language ?? "Korean"
-                            ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                            ttsViewModel.switchChapter(from: viewModel)
                         }
                     }
                 }
@@ -180,7 +182,7 @@ struct BibleReaderView: View {
                 }
             }
             .onChange(of: ttsViewModel.currentVerseIndex) { _, newIndex in
-                if ttsViewModel.playbackState != .idle {
+                if ttsViewModel.isReading(viewModel) {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         // `currentVerseIndex` is 0-based; +1 targets the spoken verse's
                         // own row (not the one before it). The anchor is solved per verse
@@ -226,7 +228,7 @@ struct BibleReaderView: View {
             ),
             isSpreadEnabled: appState.isPagedSpreadEnabled,
             highlightedVerseNum: viewModel.navigatedVerseNum,
-            ttsVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
+            ttsVerseIndex: ttsViewModel.isReading(viewModel) ? ttsViewModel.currentVerseIndex : nil,
             selectedVerses: selectStartIndex.map { start in (start + 1)...((selectEndIndex ?? start) + 1) },
             bookmarkStripes: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
             navigationToken: viewModel.bibleNavigationUpdateTrigger,
@@ -345,14 +347,13 @@ struct BibleReaderView: View {
             viewModel.fetchBibleVerse()
             return
         }
-        let wasActive = ttsViewModel.playbackState != .idle
+        let wasActive = ttsViewModel.isReading(viewModel)
         Task {
             await viewModel.applyBibleSelectionAsync(bookCode: key.bookCode, chapterNum: key.chapter, verseNum: firstVerse)
             selectStartIndex = nil
             selectEndIndex = nil
             if wasActive {
-                let language = viewModel.bibleVersion?.language ?? "Korean"
-                ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                ttsViewModel.switchChapter(from: viewModel)
             }
         }
     }
@@ -375,7 +376,7 @@ struct BibleReaderView: View {
     /// the reader tab is active, so dimming/keep-awake never applies on other tabs
     /// (e.g. coming back from background while Library is selected).
     private func applyScreenWake() {
-        guard appState.selectedTab == .bibleReader else {
+        guard window.selectedTab == .bibleReader else {
             screenWake.teardown()
             return
         }
@@ -461,20 +462,21 @@ struct BibleReaderView: View {
                     showBibleNavigation: $showBibleNavigation,
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
-                    ttsPlaybackState: ttsViewModel.playbackState,
+                    ttsPlaybackState: ownTTSPlaybackState,
                     isTTSEnabled: appState.isTTSEnabled,
                     onLabsTapped: { showLabs = true },
                     onReminderTapped: { showReminder = true },
                     onAccountTapped: { showAccount = true },
                     onBookmarksTapped: {
-                        appState.librarySection = .bookmarks
-                        appState.selectedTab = .library
+                        window.librarySection = .bookmarks
+                        window.selectedTab = .library
                     },
                     onReadingChecklistTapped: {
-                        appState.pendingReadingScrollBookOrder = viewModel.bibleBook?.bookOrder
-                        appState.librarySection = .reading
-                        appState.selectedTab = .library
+                        window.pendingReadingScrollBookOrder = viewModel.bibleBook?.bookOrder
+                        window.librarySection = .reading
+                        window.selectedTab = .library
                     },
+                    onNewWindowTapped: newWindowAction,
                     comparableVersions: viewModel.comparableVersions,
                     compareVersionCode: viewModel.compareVersionCode,
                     onSelectCompareVersion: { code in
@@ -537,7 +539,7 @@ struct BibleReaderView: View {
         .sheet(item: $shareItem) { item in
             ActivityView(activityItems: [item.text])
         }
-        .onChange(of: appState.selectedTab) { _, tab in
+        .onChange(of: window.selectedTab) { _, tab in
             // Returning from the Library tab (where bookmarks can be added/edited/
             // deleted) — refresh the reader's per-chapter stripes.
             if tab == .bibleReader {
@@ -684,20 +686,32 @@ struct BibleReaderView: View {
     }
 
     // MARK: - TTS Methods
+    /// The Listen button reflects only a session reading from this window's reader; another
+    /// window's session leaves it at "Listen" (tapping takes the session over).
+    private var ownTTSPlaybackState: TTSPlaybackState {
+        ttsViewModel.isReading(viewModel) ? ttsViewModel.playbackState : .idle
+    }
+
+    /// Opens another window of the app (iPad, foldables); nil hides the menu entry.
+    private var newWindowAction: (() -> Void)? {
+        guard supportsMultipleWindows else { return nil }
+        return { openWindow(id: "main") }
+    }
+
     private func handleListenTapped() {
         // Defense in depth: the Listen action is hidden when TTS is disabled, but
         // guard here too so a session can never start while the feature is off.
         guard appState.isTTSEnabled else { return }
-        if ttsViewModel.playbackState == .idle {
-            // Start from selected verse or beginning
-            let startIndex = selectStartIndex ?? 0
-            let language = viewModel.bibleVersion?.language ?? "Korean"
-            ttsViewModel.startReading(verses: viewModel.bibleVerseList, language: language, startIndex: startIndex)
-            selectStartIndex = nil
-            selectEndIndex = nil
-        } else {
+        if ttsViewModel.isReading(viewModel) {
             // Stop TTS and hide accessory view
             ttsViewModel.stop()
+        } else {
+            // Start from selected verse or beginning. A session another window started is
+            // taken over, not stopped: Listen here means "read this chapter".
+            let startIndex = selectStartIndex ?? 0
+            ttsViewModel.startReading(from: viewModel, startIndex: startIndex)
+            selectStartIndex = nil
+            selectEndIndex = nil
         }
     }
 }

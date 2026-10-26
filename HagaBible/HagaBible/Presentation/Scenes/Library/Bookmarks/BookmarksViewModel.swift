@@ -36,6 +36,8 @@ final class BookmarksViewModel {
     }
 
     private let appState: AppState
+    /// This window's reader: verse text and book names follow the version it is showing.
+    private let reader: BibleReaderViewModel
     private let bookmarkRepository: any BookmarkRepository
     private let bibleRepository: any BibleRepository
     private let verseTextLoader: VerseTextLoader
@@ -44,13 +46,15 @@ final class BookmarksViewModel {
 
     init(
         appState: AppState,
+        reader: BibleReaderViewModel,
         bookmarkRepository: any BookmarkRepository,
         bibleRepository: any BibleRepository
     ) {
         self.appState = appState
+        self.reader = reader
         self.bookmarkRepository = bookmarkRepository
         self.bibleRepository = bibleRepository
-        self.verseTextLoader = VerseTextLoader(appState: appState, bibleRepository: bibleRepository)
+        self.verseTextLoader = VerseTextLoader(reader: reader, bibleRepository: bibleRepository)
     }
 
     var hasActiveFilters: Bool {
@@ -161,7 +165,7 @@ final class BookmarksViewModel {
     /// else the first downloaded version. Mirrors `VerseTextLoader` so the filter
     /// labels match the verse text shown in the list.
     private func currentVersionCode() async throws -> String? {
-        if let current = appState.bibleReaderState.bibleVersion?.versionCode {
+        if let current = reader.bibleVersion?.versionCode {
             return current
         }
         let versions = try await bibleRepository.fetchBibleVersionList()

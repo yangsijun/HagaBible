@@ -686,6 +686,16 @@
         }
       }
     },
+    "New Window" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 창"
+          }
+        }
+      }
+    },
     "No bible downloaded" : {
       "localizations" : {
         "ko" : {

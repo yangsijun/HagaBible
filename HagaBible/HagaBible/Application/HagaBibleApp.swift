@@ -15,9 +15,10 @@ struct HagaBibleApp: App {
     }
     
     var body: some Scene {
-        WindowGroup {
+        // The id lets the reader's "New Window" action open another instance of this group
+        // (`openWindow(id:)`). Each window gets its own `RootView` and `WindowState`.
+        WindowGroup(id: "main") {
             RootView()
-                .preferredColorScheme(DIContainer.shared.resolve(type: FontThemeManager.self).colorScheme)
         }
     }
 }

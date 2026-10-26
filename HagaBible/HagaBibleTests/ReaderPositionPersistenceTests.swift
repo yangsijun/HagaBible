@@ -214,3 +214,74 @@ struct FontConfigurationPersistenceTests {
         #expect(decoded.sideMargin == 0)
     }
 }
+
+// MARK: - Per-window reader state
+
+/// Multi-window: each `WindowState` owns a reader with its own position, while
+/// `AppState.bibleReaderState` tracks the last position navigated anywhere (what gets
+/// persisted and what a new window opens at).
+@MainActor
+@Suite("WindowState Tests")
+struct WindowStateTests {
+    private static let key = "bibleReaderState"
+
+    /// The readers write through to UserDefaults; keep the host app's saved position intact.
+    private func preservingSavedPosition(_ body: () async throws -> Void) async throws {
+        let defaults = UserDefaults.standard
+        let saved = defaults.data(forKey: Self.key)
+        defer {
+            if let saved { defaults.set(saved, forKey: Self.key) } else { defaults.removeObject(forKey: Self.key) }
+        }
+        try await body()
+    }
+
+    @Test("Two windows read different chapters; AppState keeps the last one navigated")
+    func windowsKeepSeparatePositions() async throws {
+        try await preservingSavedPosition {
+            let appState = AppState()
+            let first = WindowStatePreviewFactory.make(appState: appState)
+            let second = WindowStatePreviewFactory.make(appState: appState)
+            // Let the readers' launch-time selection (fired from init) settle first. The
+            // version resolves against the downloaded list, which the view normally loads.
+            try await Task.sleep(for: .milliseconds(100))
+            await first.reader.fetchAvailableVersions()
+            await second.reader.fetchAvailableVersions()
+
+            await first.reader.applyBibleSelectionAsync(versionCode: "KRV", bookCode: "GEN", chapterNum: 1, verseNum: 1)
+            await second.reader.applyBibleSelectionAsync(versionCode: "KRV", bookCode: "EXO", chapterNum: 2, verseNum: 1)
+
+            #expect(first.reader.bibleBook?.bookCode == "GEN")
+            #expect(first.reader.bibleChapter?.chapter == 1)
+            #expect(second.reader.bibleBook?.bookCode == "EXO")
+            #expect(second.reader.bibleChapter?.chapter == 2)
+            #expect(appState.bibleReaderState.bibleBook?.bookCode == "EXO")
+
+            // A window created now opens where the user last read, not at the defaults.
+            let third = WindowStatePreviewFactory.make(appState: appState)
+            #expect(third.reader.bookCode == "EXO")
+            #expect(third.reader.chapterNum == 2)
+        }
+    }
+
+    @Test("showReader moves only its own window to the reader tab")
+    func showReaderSwitchesOwnTab() async throws {
+        try await preservingSavedPosition {
+            let appState = AppState()
+            let first = WindowStatePreviewFactory.make(appState: appState)
+            let second = WindowStatePreviewFactory.make(appState: appState)
+            first.selectedTab = .library
+            second.selectedTab = .library
+            try await Task.sleep(for: .milliseconds(100))
+            await first.reader.fetchAvailableVersions()
+            await second.reader.fetchAvailableVersions()
+            await second.reader.applyBibleSelectionAsync(versionCode: "KRV")
+
+            await second.showReader(bookCode: "EXO", chapter: 2, verse: 3)
+
+            #expect(second.selectedTab == .bibleReader)
+            #expect(second.reader.navigatedVerseNum == 3)
+            #expect(first.selectedTab == .library)
+            #expect(first.reader.bibleBook?.bookCode != "EXO")
+        }
+    }
+}

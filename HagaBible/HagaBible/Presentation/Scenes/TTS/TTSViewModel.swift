@@ -14,7 +14,11 @@ class TTSViewModel {
     // MARK: - Dependencies
 
     private let ttsManager: TTSPlaybackManager
-    private let bibleReaderViewModel: BibleReaderViewModel
+    /// The reader the current session reads from: chapter changes from the player land in
+    /// its window. Set when a session starts; with several windows open, only that window
+    /// highlights the spoken verse and follows the player. Weak: a closed window's reader
+    /// must not be kept alive by a stale session.
+    private(set) weak var reader: BibleReaderViewModel?
 
     // MARK: - Forwarded Properties
 
@@ -81,9 +85,14 @@ class TTSViewModel {
 
     // MARK: - Initialization
 
-    init(ttsManager: TTSPlaybackManager, bibleReaderViewModel: BibleReaderViewModel) {
+    init(ttsManager: TTSPlaybackManager) {
         self.ttsManager = ttsManager
-        self.bibleReaderViewModel = bibleReaderViewModel
+    }
+
+    /// True while a session is reading from this reader (this window). Other windows show
+    /// the mini player too, since the audio is shared, but must not highlight or follow.
+    func isReading(_ reader: BibleReaderViewModel) -> Bool {
+        playbackState != .idle && self.reader === reader
     }
 
     // MARK: - Playback Controls
@@ -119,11 +128,11 @@ class TTSViewModel {
     // MARK: - Chapter Navigation
 
     func goToNextChapter(forcePlay: Bool = false) {
+        guard let reader else { return }
         Task {
-            await bibleReaderViewModel.goToNextChapterAsync()
-            bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-            let language = bibleReaderViewModel.bibleVersion?.language ?? "Korean"
-            ttsManager.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language, forcePlay: forcePlay)
+            await reader.goToNextChapterAsync()
+            reader.bibleNavigationUpdateTrigger.toggle()
+            switchChapter(from: reader, forcePlay: forcePlay)
         }
     }
 
@@ -135,16 +144,23 @@ class TTSViewModel {
         }
 
         // 1절이면 이전 장으로 이동
+        guard let reader else { return }
         Task {
-            await bibleReaderViewModel.goToPreviousChapterAsync()
-            bibleReaderViewModel.bibleNavigationUpdateTrigger.toggle()
-            let language = bibleReaderViewModel.bibleVersion?.language ?? "Korean"
-            ttsManager.switchChapter(verses: bibleReaderViewModel.bibleVerseList, language: language)
+            await reader.goToPreviousChapterAsync()
+            reader.bibleNavigationUpdateTrigger.toggle()
+            switchChapter(from: reader)
         }
     }
 
-    func switchChapter(verses: [BibleVerse], language: String, forcePlay: Bool = false, startIndex: Int = 0) {
-        ttsManager.switchChapter(verses: verses, language: language, forcePlay: forcePlay, startIndex: startIndex)
+    /// Continues the session in the reader's current chapter (after it navigated).
+    func switchChapter(from reader: BibleReaderViewModel, forcePlay: Bool = false, startIndex: Int = 0) {
+        self.reader = reader
+        ttsManager.switchChapter(
+            verses: reader.bibleVerseList,
+            language: reader.bibleVersion?.language ?? "Korean",
+            forcePlay: forcePlay,
+            startIndex: startIndex
+        )
     }
 
     // MARK: - Settings
@@ -159,8 +175,15 @@ class TTSViewModel {
 
     // MARK: - Reading Control
 
-    func startReading(verses: [BibleVerse], language: String, startIndex: Int = 0) {
-        ttsManager.startReading(verses: verses, language: language, startIndex: startIndex)
+    /// Starts a session reading the reader's current chapter; that reader's window owns the
+    /// session from here (see `reader`).
+    func startReading(from reader: BibleReaderViewModel, startIndex: Int = 0) {
+        self.reader = reader
+        ttsManager.startReading(
+            verses: reader.bibleVerseList,
+            language: reader.bibleVersion?.language ?? "Korean",
+            startIndex: startIndex
+        )
     }
 
     func refreshVoices() {

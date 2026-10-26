@@ -154,8 +154,10 @@ enum BookmarksPreviewFactory {
         sortOrder: BookmarkSortOrder = .createdAtDesc,
         indicatorEnabled: Bool = true
     ) -> BookmarksViewModel {
+        let appState = AppState()
         let viewModel = BookmarksViewModel(
-            appState: AppState(),
+            appState: appState,
+            reader: WindowStatePreviewFactory.make(appState: appState).reader,
             bookmarkRepository: MockBookmarkRepository(seed: seed),
             bibleRepository: MockBibleRepository.shared
         )

@@ -10,7 +10,7 @@ import SwiftUI
 struct SearchHistoryView: View {
     @Environment(\.dismissSearch) var dismissSearch
     
-    @State private var viewModel: SearchViewModel = DIContainer.shared.resolve(type: SearchViewModel.self)
+    @Environment(SearchViewModel.self) private var viewModel
     @State private var showClearSearchHistoryDialog = false
     
     var body: some View {
