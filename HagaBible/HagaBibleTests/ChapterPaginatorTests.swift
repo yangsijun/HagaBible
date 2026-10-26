@@ -574,6 +574,35 @@ struct PagedReaderControllerTests {
         #expect(crossed)
     }
 
+    @Test("The lifted verse keeps its glyphs under the selection tint")
+    func liftedVerseShowsText() throws {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        let controller = PagedReaderController()
+        window.rootViewController = controller
+        window.isHidden = false
+        window.layoutIfNeeded()
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let pageViewController = try #require(controller.children.compactMap { $0 as? UIPageViewController }.first)
+        let page = try #require(pageViewController.viewControllers?.first as? PageViewController)
+        let textView = try #require(page.verseTapRecognizer?.view as? PageTextView)
+        let interaction = UIContextMenuInteraction(delegate: textView)
+        let configuration = UIContextMenuConfiguration(identifier: NSNumber(value: 1), previewProvider: nil, actionProvider: nil)
+        let preview = try #require(textView.contextMenuInteraction(interaction, previewForHighlightingMenuWithConfiguration: configuration))
+        let image = try #require((preview.view as? UIImageView)?.image?.cgImage)
+
+        // Paper and tint are light; only glyphs are dark.
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let context = try #require(CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var darkPixels = 0
+        for i in stride(from: 0, to: pixels.count, by: 4) where pixels[i + 3] > 200 {
+            if Int(pixels[i]) + Int(pixels[i + 1]) + Int(pixels[i + 2]) < 3 * 110 { darkPixels += 1 }
+        }
+        #expect(darkPixels > 50)
+    }
+
     @Test("A page torn down under an open verse menu gives the dismissal no preview instead of crashing")
     func dismissPreviewAfterRelayoutDoesNotCrash() throws {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 874, height: 402))

@@ -979,11 +979,13 @@ extension PageTextView: UIContextMenuInteractionDelegate {
     }
 
     func contextMenuInteraction(_ interaction: UIContextMenuInteraction, previewForHighlightingMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
-        targetedPreview(for: configuration)
+        targetedPreview(for: configuration, tinted: true)
     }
 
+    /// The dismissal copy matches the page exactly (no tint), so UIKit lingering with it
+    /// over the page after the menu closes is invisible, as in the scroll reader.
     func contextMenuInteraction(_ interaction: UIContextMenuInteraction, previewForDismissingMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
-        targetedPreview(for: configuration)
+        targetedPreview(for: configuration, tinted: false)
     }
 
     /// Lifts just the pressed verse (its band) out of the page, on paper color.
@@ -991,7 +993,7 @@ extension PageTextView: UIContextMenuInteractionDelegate {
     /// The lifted view is a rendered copy of the band, not this view: UIKit hides the
     /// preview's view while the menu is up, so lifting the page itself (clipped to the
     /// band) made every other verse on the page vanish.
-    private func targetedPreview(for configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
+    private func targetedPreview(for configuration: UIContextMenuConfiguration, tinted: Bool) -> UITargetedPreview? {
         // A relayout (rotation, fold) replaces the pages while a menu is up; UIKit still
         // asks this page for the dismissal preview, and a target outside a window throws.
         guard window != nil, let verse = (configuration.identifier as? NSNumber)?.intValue else { return nil }
@@ -1004,9 +1006,10 @@ extension PageTextView: UIContextMenuInteractionDelegate {
             layer.render(in: context.cgContext)
             // The scroll reader's preview always tints its verses as selected; a page
             // only has the tint drawn when the verses are actually selected.
-            if highlights.selectedVerses?.contains(verse) != true {
+            // Over the text, so not the default copy blend (which would replace the glyphs).
+            if tinted, highlights.selectedVerses?.contains(verse) != true {
                 tintColor.withAlphaComponent(0.25).setFill()
-                context.fill(band)
+                context.fill(band, blendMode: .normal)
             }
         }
         let copy = UIImageView(image: image)
