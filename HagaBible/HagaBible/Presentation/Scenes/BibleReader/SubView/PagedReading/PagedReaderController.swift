@@ -994,6 +994,12 @@ extension PageTextView: UIContextMenuInteractionDelegate {
             pageBackgroundColor.setFill()
             context.fill(band)
             layer.render(in: context.cgContext)
+            // The scroll reader's preview always tints its verses as selected; a page
+            // only has the tint drawn when the verses are actually selected.
+            if highlights.selectedVerses?.contains(verse) != true {
+                tintColor.withAlphaComponent(0.25).setFill()
+                context.fill(band)
+            }
         }
         let copy = UIImageView(image: image)
         copy.frame = band

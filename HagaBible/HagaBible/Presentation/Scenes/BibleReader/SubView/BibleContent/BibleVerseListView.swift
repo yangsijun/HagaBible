@@ -244,30 +244,33 @@ struct BibleVerseListView: View {
         // down ourselves to keep every selected verse visible.
         let (start, end) = getSelectIndexFromContextMenuIndex(index)
         let width = min(max(listWidth, 1), Self.previewMaxWidth)
-        let contentHeight = estimatedPreviewHeight(start: start, end: end, width: width)
+        let contentHeight = max(estimatedPreviewHeight(start: start, end: end, width: width), 1)
         // Budget from the list's own size, not the screen: in a landscape or wide layout
         // the menu sits beside the preview, so more of the height is available.
         let isWide = listWidth > listHeight
         let maxHeight = max(listHeight, 1) * (isWide ? 0.8 : 0.55)
-        let scale = min(1, maxHeight / max(contentHeight, 1))
-        let content = VStack(spacing: 0) {
-            ForEach(start...end, id: \.self) { idx in
-                makeVerseView(at: idx)
-                    .padding(8)
-                    .padding(.horizontal, 8)
-                    .background(Color.accentColor.opacity(0.25))
+        let budgetScale = min(1, maxHeight / contentHeight)
+        let idealSize = CGSize(width: width * budgetScale, height: contentHeight * budgetScale)
+        // The budget is a guess at the area the system grants; when it grants less (it
+        // did in landscape and on a foldable) the container shrinks under the content.
+        // So the content scales to whatever size it actually gets instead of clipping.
+        GeometryReader { proxy in
+            let scale = min(proxy.size.width / width, proxy.size.height / contentHeight)
+            VStack(spacing: 0) {
+                ForEach(start...end, id: \.self) { idx in
+                    makeVerseView(at: idx)
+                        .padding(8)
+                        .padding(.horizontal, 8)
+                        .background(Color.accentColor.opacity(0.25))
+                }
             }
+            .frame(width: width)
+            .background(Color(uiColor: theme.backgroundColor))
+            .scaleEffect(scale, anchor: .topLeading)
         }
-        .frame(width: width)
+        .frame(minWidth: 0, idealWidth: idealSize.width, maxWidth: idealSize.width, minHeight: 0, idealHeight: idealSize.height, maxHeight: idealSize.height)
+        .aspectRatio(idealSize.width / idealSize.height, contentMode: .fit)
         .background(Color(uiColor: theme.backgroundColor))
-        if scale >= 1 {
-            content
-        } else {
-            content
-                .scaleEffect(scale, anchor: .topLeading)
-                .frame(width: width * scale, height: contentHeight * scale, alignment: .topLeading)
-                .background(Color(uiColor: theme.backgroundColor))
-        }
     }
 
     /// Height the preview's verse stack will lay out at for a given width,
