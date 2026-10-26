@@ -62,6 +62,8 @@ struct FontConfiguration: Codable, Equatable {
     ]
     
     var lineSpacing: Int = 0
+    /// Extra side margin in points on top of the reader's built-in 16pt; 0 is the minimum.
+    var sideMargin: Int = 0
     
     static let defaultFontConfiguration: FontConfiguration = FontConfiguration(
         type: [
@@ -74,7 +76,22 @@ struct FontConfiguration: Codable, Equatable {
             "English": .natural,
             "Korean": .justified,
         ],
-        lineSpacing: 0
+        lineSpacing: 0,
+        sideMargin: 0
     )
+}
+
+extension FontConfiguration {
+    /// Keys added after the first release decode as their defaults, so a saved
+    /// configuration from an older build keeps its other settings instead of resetting.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        type = try container.decode([String: FontType].self, forKey: .type)
+        style = try container.decode(FontStyle.self, forKey: .style)
+        size = try container.decode(Int.self, forKey: .size)
+        alignment = try container.decode([String: CodableTextAlignment].self, forKey: .alignment)
+        lineSpacing = try container.decode(Int.self, forKey: .lineSpacing)
+        sideMargin = try container.decodeIfPresent(Int.self, forKey: .sideMargin) ?? 0
+    }
 }
 

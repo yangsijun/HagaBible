@@ -294,6 +294,24 @@ struct PagedReaderControllerTests {
         #expect(spread.alpha == 1)
     }
 
+    @Test("The side margin setting pushes the text column inward on both sides")
+    func sideMarginNarrowsTheColumn() throws {
+        let controller = makeController(size: CGSize(width: 390, height: 844))
+        let content = makeContent(chapter: 1, verses: 10)
+        controller.apply(content: content, style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let plain = try #require(displayedPages(controller).first?.textContainer)
+        let plainOrigin = controller.textLeadingX
+
+        var wide = style
+        wide.sideMargin = 20
+        controller.apply(content: content, style: wide, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let padded = try #require(displayedPages(controller).first?.textContainer)
+        #expect(padded.size.width == plain.size.width - 40)
+        #expect(controller.textLeadingX == plainOrigin + 20)
+    }
+
     @Test("Bookmark stripes sit at the outer edge of each spread page: left edge on the left page, right edge on the right")
     func stripesMirrorOnTheRightPage() throws {
         let controller = makeController(size: CGSize(width: 874, height: 402))

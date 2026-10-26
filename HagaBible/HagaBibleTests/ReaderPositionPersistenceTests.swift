@@ -196,3 +196,21 @@ struct AppStateReaderPositionRestoreTests {
         }
     }
 }
+
+@Suite("Font configuration persistence")
+struct FontConfigurationPersistenceTests {
+    @Test("A configuration saved before the side margin existed decodes with its other settings intact")
+    func decodesWithoutSideMargin() throws {
+        var saved = FontConfiguration.defaultFontConfiguration
+        saved.size = 27
+        saved.lineSpacing = 9
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(saved)) as! [String: Any]
+        json.removeValue(forKey: "sideMargin")
+        let data = try JSONSerialization.data(withJSONObject: json)
+
+        let decoded = try JSONDecoder().decode(FontConfiguration.self, from: data)
+        #expect(decoded.size == 27)
+        #expect(decoded.lineSpacing == 9)
+        #expect(decoded.sideMargin == 0)
+    }
+}

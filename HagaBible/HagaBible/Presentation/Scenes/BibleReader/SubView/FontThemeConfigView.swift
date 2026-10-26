@@ -28,6 +28,7 @@ struct FontThemeConfigView: View {
             List {
                 FontSizeStepperView(fontSize: $fontThemeManager.fontConfiguration.size)
                 LineSpacingStepperView(lineSpacing: $fontThemeManager.fontConfiguration.lineSpacing)
+                SideMarginStepperView(sideMargin: $fontThemeManager.fontConfiguration.sideMargin)
                 FontTypeConfigView(fontType: fontTypeBinding)
                 ThemePickerView(theme: $fontThemeManager.theme)
                 ScreenWakeConfigView(appState: appState)
@@ -62,6 +63,21 @@ struct LineSpacingStepperView: View {
                 "\(Int(lineSpacing))",
                 value: $lineSpacing,
                 in: 0...32
+            )
+        }
+    }
+}
+
+struct SideMarginStepperView: View {
+    @Binding var sideMargin: Int
+    
+    var body: some View {
+        HStack {
+            Text("Side Margin:")
+            Stepper(
+                "\(sideMargin)",
+                value: $sideMargin,
+                in: 0...48
             )
         }
     }

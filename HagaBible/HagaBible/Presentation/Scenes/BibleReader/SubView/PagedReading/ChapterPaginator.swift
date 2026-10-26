@@ -34,6 +34,8 @@ struct PageTextStyle: Equatable {
     var alignment: NSTextAlignment
     var compareAlignment: NSTextAlignment
     var lineSpacing: CGFloat
+    /// Extra side margin (the Font & Theme setting) added to each page's built-in margins.
+    var sideMargin: CGFloat = 0
 
     /// Colors compare by resolved value: the theme hands out a fresh `UIColor` object on
     /// every access, and treating each as a change would re-typeset (and replace the
@@ -51,6 +53,7 @@ struct PageTextStyle: Equatable {
             && lhs.alignment == rhs.alignment
             && lhs.compareAlignment == rhs.compareAlignment
             && lhs.lineSpacing == rhs.lineSpacing
+            && lhs.sideMargin == rhs.sideMargin
     }
 }
 

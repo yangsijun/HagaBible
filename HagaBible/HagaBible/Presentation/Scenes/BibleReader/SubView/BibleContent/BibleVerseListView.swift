@@ -60,6 +60,7 @@ struct BibleVerseListView: View {
                 }
             }
             .padding(.vertical, 16)
+            .padding(.horizontal, CGFloat(fontConfiguration.sideMargin))
         }
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width

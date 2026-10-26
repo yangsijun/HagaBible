@@ -1166,6 +1166,16 @@
         }
       }
     },
+    "Side Margin:" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "좌우 여백:"
+          }
+        }
+      }
+    },
     "Sign in to sync your bookmarks and reading progress across your devices. Your data stays scoped to your account." : {
       "localizations" : {
         "ko" : {

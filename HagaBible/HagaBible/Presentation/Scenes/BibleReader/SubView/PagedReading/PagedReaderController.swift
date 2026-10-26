@@ -170,14 +170,16 @@ final class PagedReaderController: UIViewController {
 
     /// Margins around a page's text, before the spine gutter and the outer safe inset.
     /// A single page keeps the side safe areas (the Dynamic Island in landscape) out of
-    /// both margins; a spread handles them through `outerInset` instead.
+    /// both margins; a spread handles them through `outerInset` instead. The user's
+    /// extra side margin widens both sides of every page.
     private var textInsets: UIEdgeInsets {
         let base = PageViewController.textInsets
+        let extra = style?.sideMargin ?? 0
         return UIEdgeInsets(
             top: base.top + contentInsets.top,
-            left: base.left + (isSpread ? 0 : contentInsets.left),
+            left: base.left + extra + (isSpread ? 0 : contentInsets.left),
             bottom: base.bottom + max(contentInsets.bottom, tabBarReserve),
-            right: base.right + (isSpread ? 0 : contentInsets.right)
+            right: base.right + extra + (isSpread ? 0 : contentInsets.right)
         )
     }
 

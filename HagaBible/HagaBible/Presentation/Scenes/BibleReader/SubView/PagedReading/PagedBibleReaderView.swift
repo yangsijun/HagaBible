@@ -76,7 +76,8 @@ extension PageTextStyle {
             backgroundColor: theme.backgroundColor,
             alignment: fontConfiguration.alignment[language]?.nsAlignment ?? .natural,
             compareAlignment: fontConfiguration.alignment[compareLanguage]?.nsAlignment ?? .natural,
-            lineSpacing: CGFloat(fontConfiguration.lineSpacing)
+            lineSpacing: CGFloat(fontConfiguration.lineSpacing),
+            sideMargin: CGFloat(fontConfiguration.sideMargin)
         )
     }
 }
