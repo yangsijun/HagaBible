@@ -775,3 +775,48 @@ struct PagedReaderControllerTests {
     }
 }
 
+
+@Suite("Tab bar clearance")
+@MainActor
+struct TabBarClearanceTests {
+    // Action-bar buttons resting at the bottom-trailing corner of a landscape iPhone window.
+    private let buttons = CGRect(x: 640, y: 285, width: 196, height: 44)
+
+    @Test("A search circle just below the buttons is not touched, so nothing moves")
+    func landscapePhoneClear() {
+        let parts = [CGRect(x: 792, y: 338, width: 44, height: 44), CGRect(x: 38, y: 338, width: 180, height: 44)]
+        let clearance = TabBarGeometry.clearance(for: buttons, parts: parts)
+        #expect(clearance.lift == 0 && clearance.shift == 0)
+    }
+
+    @Test("A trailing tab column is dodged by shifting left, not by lifting")
+    func trailingColumnShiftsLeft() {
+        let column = CGRect(x: 830, y: 0, width: 44, height: 402)
+        let clearance = TabBarGeometry.clearance(for: buttons, parts: [column])
+        #expect(clearance.shift == 14, "\(clearance)")
+        #expect(clearance.lift == 0)
+    }
+
+    @Test("A bottom pill under the buttons is dodged by lifting")
+    func bottomPillLifts() {
+        let pill = CGRect(x: 700, y: 320, width: 150, height: 44)
+        let clearance = TabBarGeometry.clearance(for: buttons, parts: [pill])
+        #expect(clearance.lift == 17, "\(clearance)")
+        #expect(clearance.shift == 0)
+    }
+
+    @Test("Only the tab bar's shown subviews count, in window coordinates")
+    func visiblePartsAreTheShownSubviews() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 874, height: 402))
+        let bar = UITabBar(frame: CGRect(x: 0, y: 338, width: 874, height: 64))
+        let pill = UIView(frame: CGRect(x: 38, y: 0, width: 180, height: 44))
+        let hidden = UIView(frame: CGRect(x: 300, y: 0, width: 44, height: 44))
+        hidden.isHidden = true
+        bar.addSubview(pill)
+        bar.addSubview(hidden)
+        window.addSubview(bar)
+        let parts = TabBarGeometry.visibleParts(in: window)
+        #expect(parts.contains(CGRect(x: 38, y: 338, width: 180, height: 44)))
+        #expect(!parts.contains(CGRect(x: 300, y: 338, width: 44, height: 44)))
+    }
+}

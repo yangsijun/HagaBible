@@ -32,8 +32,6 @@ struct PagedBibleReaderView: UIViewControllerRepresentable {
     let contextMenu: (Int) -> UIMenu?
     /// Window x where the verse column starts; the toolbar title lines up with it.
     let onTextLeadingChanged: (CGFloat) -> Void
-    /// Window frame of a tab bar pill covering the page, if any (see the controller).
-    let onTabBarOcclusionChanged: (CGRect?) -> Void
 
     func makeUIViewController(context: Context) -> PagedReaderController {
         PagedReaderController()
@@ -50,7 +48,6 @@ struct PagedBibleReaderView: UIViewControllerRepresentable {
         controller.onVerseTapped = onVerseTapped
         controller.contextMenu = contextMenu
         controller.onTextLeadingChanged = onTextLeadingChanged
-        controller.onTabBarOcclusionChanged = onTabBarOcclusionChanged
         controller.apply(
             content: content,
             style: style,

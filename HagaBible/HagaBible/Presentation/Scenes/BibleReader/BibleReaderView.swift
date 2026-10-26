@@ -63,9 +63,10 @@ struct BibleReaderView: View {
     /// Window x of the scroll list's leading edge; the verse column starts a row's
     /// padding plus the user's side margin in from it.
     @State private var scrollListLeadingX: CGFloat?
-    /// A tab bar pill over the page (foldable trailing column), in window coordinates.
-    @State private var pagedTabBarOcclusion: CGRect?
-    @State private var readerTrailingX: CGFloat = 0
+    /// How far the action bar is pushed up and left to stay clear of the tab bar's
+    /// visible parts (a landscape pill, a foldable's trailing column); see `TabBarGeometry`.
+    @State private var actionBarLift: CGFloat = 0
+    @State private var actionBarShift: CGFloat = 0
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -261,8 +262,7 @@ struct BibleReaderView: View {
                 )
             },
             contextMenu: pagedVerseMenu,
-            onTextLeadingChanged: { pagedTextLeadingX = $0 },
-            onTabBarOcclusionChanged: { pagedTabBarOcclusion = $0 }
+            onTextLeadingChanged: { pagedTextLeadingX = $0 }
         )
     }
 
@@ -272,11 +272,13 @@ struct BibleReaderView: View {
         scrollListLeadingX.map { $0 + BibleVerseListView.verseRowLeadingInset + CGFloat(fontThemeManager.fontConfiguration.sideMargin) }
     }
 
-    /// Trailing room the floating action bar leaves for a tab bar pill that sits in the
-    /// page's trailing column (a foldable's), so the two never overlap.
-    private var pagedActionBarTrailingPadding: CGFloat {
-        guard let pill = pagedTabBarOcclusion, pill.minX < readerTrailingX else { return 0 }
-        return readerTrailingX - pill.minX + 8
+    /// Re-derives the action bar's clearance from where its buttons would rest without
+    /// any; measuring the already-moved frame would otherwise feed the move back in.
+    private func updateActionBarClearance(buttons: CGRect, tabBarParts: [CGRect]) {
+        let resting = buttons.offsetBy(dx: actionBarShift, dy: actionBarLift)
+        let needed = TabBarGeometry.clearance(for: resting, parts: tabBarParts)
+        if abs(needed.lift - actionBarLift) >= 0.5 { actionBarLift = needed.lift }
+        if abs(needed.shift - actionBarShift) >= 0.5 { actionBarShift = needed.shift }
     }
 
     /// The paged reader's long-press menu: the same three actions as the scroll reader's
@@ -354,8 +356,11 @@ struct BibleReaderView: View {
             },
             onExportCancel: {
                 exportRequest = nil
-            }
+            },
+            onButtonsFrameChange: updateActionBarClearance
         )
+        .padding(.bottom, actionBarLift)
+        .padding(.trailing, actionBarShift)
         .ignoresSafeArea(edges: .horizontal)
     }
 
@@ -473,11 +478,8 @@ struct BibleReaderView: View {
                 if !appState.isPagedReadingEnabled { actionBar }
             }
             .overlay(alignment: .bottomTrailing) {
-                if appState.isPagedReadingEnabled { actionBar.padding(.trailing, pagedActionBarTrailingPadding) }
+                if appState.isPagedReadingEnabled { actionBar }
             }
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.frame(in: .global).maxX
-            } action: { readerTrailingX = $0 }
             .toolbar {
                 BibleReaderToolbarContent(
                     bibleBook: viewModel.bibleBook,

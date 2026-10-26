@@ -30,6 +30,9 @@ struct BibleReaderActionBar: View {
     var exportCompareVersionName: String = ""
     var onExportScopeChosen: (_ scope: BibleReaderViewModel.VerseExportScope) -> Void = { _ in }
     var onExportCancel: () -> Void = {}
+    /// The buttons' window frame and the tab bar's visible parts, whenever either moves
+    /// (see `TabBarClearanceReader`); the reader keeps the two apart.
+    var onButtonsFrameChange: (_ frame: CGRect, _ tabBarParts: [CGRect]) -> Void = { _, _ in }
 
     var bibleVersesString: String {
         bibleActionService.makeVerseStringFromVerseList(bibleVerseList, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
@@ -43,6 +46,16 @@ struct BibleReaderActionBar: View {
     var body: some View {
         if selectStartIndex != nil || selectEndIndex != nil {
             ActionBar {
+                HStack {
+                    buttons
+                }
+                .background(TabBarClearanceReader(onChange: onButtonsFrameChange))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var buttons: some View {
                 ActionBarButton(action: { onBookmarkTapped() }, systemImage: "bookmark")
                 ActionBarButton(action: {
                     if isComparisonOn {
@@ -76,8 +89,6 @@ struct BibleReaderActionBar: View {
                     selectStartIndex = nil
                     selectEndIndex = nil
                 }, systemImage: "xmark")
-            }
-        }
     }
 
     private func exportDialogBinding(for mode: VerseExportDialogMode) -> Binding<Bool> {
