@@ -181,6 +181,10 @@ final class PagedReaderController: UIViewController {
     var divisionRegionsForTesting: [CGRect]? {
         didSet { view.setNeedsLayout() }
     }
+    /// Stands in for system UI occlusion regions (a foldable's trailing tab column).
+    var occlusionRegionsForTesting: [CGRect]? {
+        didSet { view.setNeedsLayout() }
+    }
 
     /// Margins around a page's text, before the spine gutter and the outer safe inset.
     /// A single page keeps the side safe areas (the Dynamic Island in landscape) out of
@@ -233,7 +237,22 @@ final class PagedReaderController: UIViewController {
                 occlusion = occlusion.map { $0.union(frame) } ?? frame
             }
         }
+        // System chrome the window hierarchy doesn't show as a tab bar (a foldable's
+        // trailing tab column) is reported by UIKit as an occlusion region instead.
+        for frame in occlusionRegionFrames() where frame.intersects(view.bounds) {
+            occlusion = occlusion.map { $0.union(frame) } ?? frame
+        }
         return (reserve, occlusion)
+    }
+
+    /// Active regions system UI covers, in the view's coordinates (iOS 27.1+), margins
+    /// included so text and floating chrome keep a little clear of them.
+    private func occlusionRegionFrames() -> [CGRect] {
+        if let occlusionRegionsForTesting { return occlusionRegionsForTesting }
+        if #available(iOS 27.1, *) {
+            return view.reservedRegions(kind: .occlusion).filter(\.isActive).map(\.frame)
+        }
+        return []
     }
 
     private static func tabBars(in view: UIView) -> [UITabBar] {

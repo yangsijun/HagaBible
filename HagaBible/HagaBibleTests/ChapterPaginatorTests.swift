@@ -599,6 +599,47 @@ struct PagedReaderControllerTests {
         #expect((report(barFrame: CGRect(x: 0, y: 338, width: 874, height: 64)) ?? nil) == nil)
     }
 
+    @Test("A system occlusion region (foldable tab column) is reported like a tab bar pill")
+    func occlusionRegionReport() throws {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 874, height: 402))
+        let controller = PagedReaderController()
+        var reported: CGRect?? = .none
+        controller.onTabBarOcclusionChanged = { reported = .some($0) }
+        window.rootViewController = controller
+        window.isHidden = false
+        let column = CGRect(x: 830, y: 0, width: 44, height: 402)
+        controller.occlusionRegionsForTesting = [column]
+        window.layoutIfNeeded()
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        #expect(try #require(reported) == column)
+    }
+
+    @Test("The selection band reaches across the user's side margin")
+    func selectionBandSpansSideMargin() throws {
+        func liftedWidth(sideMargin: CGFloat) throws -> CGFloat {
+            var style = self.style
+            style.sideMargin = sideMargin
+            let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+            let controller = PagedReaderController()
+            window.rootViewController = controller
+            window.isHidden = false
+            window.layoutIfNeeded()
+            controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+            controller.view.layoutIfNeeded()
+            let pageViewController = try #require(controller.children.compactMap { $0 as? UIPageViewController }.first)
+            let page = try #require(pageViewController.viewControllers?.first as? PageViewController)
+            let textView = try #require(page.verseTapRecognizer?.view as? PageTextView)
+            let interaction = UIContextMenuInteraction(delegate: textView)
+            let configuration = UIContextMenuConfiguration(identifier: NSNumber(value: 1), previewProvider: nil, actionProvider: nil)
+            let preview = try #require(textView.contextMenuInteraction(interaction, previewForHighlightingMenuWithConfiguration: configuration))
+            return preview.view.bounds.width
+        }
+        // A wider margin narrows the text but the band still spans edge to edge: same width.
+        #expect(try liftedWidth(sideMargin: 0) == 402)
+        #expect(try liftedWidth(sideMargin: 24) == 402)
+    }
+
     @Test("The lifted verse keeps its glyphs under the selection tint")
     func liftedVerseShowsText() throws {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
