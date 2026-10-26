@@ -28,8 +28,8 @@ enum PageSide {
 /// - A crease running top-to-bottom becomes the book's spine: a two-page spread centred
 ///   on it, with the page area shrunk symmetrically so both pages are the same width,
 ///   and a gutter on each page's spine side so no text sits under the crease.
-/// - A crease running left-to-right can't be a spine; text flows around it instead
-///   (`exclusionBand` becomes an exclusion path on every page).
+/// - A crease running left-to-right (half-folded in portrait) can't be a spine and is
+///   ignored: text runs straight across it, like the scroll reader (user decision).
 /// - Without a crease, landscape (wider than tall) is a spread, portrait a single page.
 ///   A spread spans the area between the side safe areas (`sideInsets`) so both pages
 ///   are the same width whichever side the Dynamic Island or a toolbar column is on.
@@ -43,14 +43,12 @@ struct PagedReaderLayout: Equatable {
     /// up part of its base margin, so the text sits `textInsets.left - spineMarginTrim`
     /// from the crease edge instead of a full margin and the two halves read closer.
     var spineGutter: CGFloat = 0
-    /// How much of the base side margin a half-folded page spends on the spine side.
-    static let spineMarginTrim: CGFloat = 12
+    /// How much of the base side margin a half-folded page spends on the spine side
+    /// (leaving 12pt next to the crease).
+    static let spineMarginTrim: CGFloat = 4
     /// Likewise on the outer edge: a half-folded page is narrow, so it keeps a tighter
     /// frame there too (`textInsets.left - outerMarginTrim` plus the side safe area).
-    static let outerMarginTrim: CGFloat = 12
-    /// Vertical band (page-area coordinates) text must avoid on every page.
-    var exclusionBand: ClosedRange<CGFloat>?
-
+    static let outerMarginTrim: CGFloat = 4
     static func resolve(bounds: CGRect, divisionRegions: [CGRect], sideInsets: (left: CGFloat, right: CGFloat) = (0, 0)) -> PagedReaderLayout {
         let regions = divisionRegions.filter { !$0.isEmpty && $0.intersects(bounds) }
         if let crease = regions.first(where: { $0.height > $0.width }) {
@@ -65,11 +63,7 @@ struct PagedReaderLayout: Equatable {
                 spineGutter: max(0, ceil(crease.width / 2) - spineMarginTrim)
             )
         }
-        var layout = fallback(bounds, sideInsets: sideInsets)
-        if let crease = regions.first(where: { $0.width >= $0.height }) {
-            layout.exclusionBand = (crease.minY - bounds.minY)...(crease.maxY - bounds.minY)
-        }
-        return layout
+        return fallback(bounds, sideInsets: sideInsets)
     }
 
     private static func fallback(_ bounds: CGRect, sideInsets: (left: CGFloat, right: CGFloat)) -> PagedReaderLayout {
@@ -250,14 +244,11 @@ final class PagedReaderController: UIViewController {
     }
 
     /// Areas text must flow around on the page at `index`, in page text coordinates: the
-    /// crease band (every page) and the tab bar pill (only the page it actually covers).
+    /// tab bar pill, only on the page it actually covers.
     private func exclusionRects(forPage index: Int) -> [CGRect] {
         var rects: [CGRect] = []
         let insets = textInsets
         let pageSide = side(of: PageRef(key: ChapterKey(versionCode: "", bookCode: "", chapter: 0), index: index))
-        if let band = layout?.exclusionBand {
-            rects.append(CGRect(x: -1_000, y: band.lowerBound - insets.top, width: 10_000, height: band.upperBound - band.lowerBound))
-        }
         if let occlusion = tabBarOcclusion, let layout {
             var pageFrame = layout.pageAreaFrame
             pageFrame.size = pageSize
@@ -733,7 +724,9 @@ extension PagedReaderController: UIPageViewControllerDataSource, UIPageViewContr
 /// A filler (no paginator) is a blank sheet of the same paper color.
 final class PageViewController: UIViewController {
     /// Margins around the text area beyond the safe area; the bottom one also holds the footer.
-    static let textInsets = UIEdgeInsets(top: 12, left: 24, bottom: 32, right: 24)
+    /// Side margins match the scroll reader's verse rows (8pt row padding + 8pt inner
+    /// padding), so switching modes keeps the verse column in the same place.
+    static let textInsets = UIEdgeInsets(top: 12, left: 16, bottom: 32, right: 16)
 
     let ref: PageRef
     let side: PageSide
@@ -765,7 +758,7 @@ final class PageViewController: UIViewController {
         self.side = side
         self.textInsets = textInsets
         self.textView = paginator.map {
-            PageTextView(paginator: $0, pageIndex: ref.index, textOriginX: textInsets.left, bookmarkStripes: bookmarkStripes, highlights: highlights)
+            PageTextView(paginator: $0, pageIndex: ref.index, textOriginX: textInsets.left, stripesOnTrailingEdge: side == .right, bookmarkStripes: bookmarkStripes, highlights: highlights)
         }
         super.init(nibName: nil, bundle: nil)
         view.backgroundColor = style?.backgroundColor ?? .systemBackground
@@ -813,12 +806,16 @@ final class PageViewController: UIViewController {
 /// ownership.
 final class PageTextView: UIView {
     /// How far a highlight band reaches beyond the verse's glyphs, like the scroll
-    /// reader's padded row.
-    private static let bandPadding = CGSize(width: 8, height: 6)
+    /// reader's padded row: sideways through the whole margin (edge to edge on a single
+    /// page), a little above and below.
+    private static let bandPadding = CGSize(width: 16, height: 6)
 
     private let paginator: ChapterPaginator
     private let pageIndex: Int
     let textOriginX: CGFloat
+    /// The right page of a spread keeps its stripes on the outer (right) edge, mirroring
+    /// the left page, so the spine stays clear.
+    let stripesOnTrailingEdge: Bool
     var textContainer: NSTextContainer? { paginator.container(at: pageIndex) }
     var bookmarkStripes: [Int: [BookmarkStripe?]]
     var highlights: PageHighlights
@@ -827,10 +824,11 @@ final class PageTextView: UIView {
     var contextMenu: ((Int) -> UIMenu?)?
     private(set) var tapRecognizer: UITapGestureRecognizer!
 
-    init(paginator: ChapterPaginator, pageIndex: Int, textOriginX: CGFloat, bookmarkStripes: [Int: [BookmarkStripe?]], highlights: PageHighlights) {
+    init(paginator: ChapterPaginator, pageIndex: Int, textOriginX: CGFloat, stripesOnTrailingEdge: Bool = false, bookmarkStripes: [Int: [BookmarkStripe?]], highlights: PageHighlights) {
         self.paginator = paginator
         self.pageIndex = pageIndex
         self.textOriginX = textOriginX
+        self.stripesOnTrailingEdge = stripesOnTrailingEdge
         self.bookmarkStripes = bookmarkStripes
         self.highlights = highlights
         super.init(frame: .zero)
@@ -914,17 +912,22 @@ final class PageTextView: UIView {
     }
 
     /// Same geometry as the scroll reader's `stripeView`: 3pt columns 1pt apart at the
-    /// leading edge, bridging the verse gap when a bookmark continues up/down.
+    /// outer edge of the margin (column 0 outermost), bridging the verse gap when a
+    /// bookmark continues up/down.
     private func drawStripes() {
         guard !bookmarkStripes.isEmpty else { return }
         let halfGap = paginator.verseGap / 2
+        let leadingEdge = textOriginX - Self.bandPadding.width
+        let trailingEdge = textOriginX + paginator.pageSize.width + Self.bandPadding.width
         for verse in paginator.verses(onPage: pageIndex) {
             guard let stripes = bookmarkStripes[verse], let verseRect = rect(forVerse: verse) else { continue }
             for (column, stripe) in stripes.prefix(BookmarkStripeComputer.columnLimit).enumerated() {
                 guard let stripe else { continue }
                 let top = verseRect.minY - (stripe.extendsUp ? halfGap : 0)
                 let bottom = verseRect.maxY + (stripe.extendsDown ? halfGap : 0)
-                let x = 8 + CGFloat(column) * 4
+                let x = stripesOnTrailingEdge
+                    ? trailingEdge - 3 - CGFloat(column) * 4
+                    : leadingEdge + CGFloat(column) * 4
                 UIColor(stripe.color.swiftUIColor).withAlphaComponent(0.8).setFill()
                 UIRectFill(CGRect(x: x, y: top, width: 3, height: bottom - top))
             }

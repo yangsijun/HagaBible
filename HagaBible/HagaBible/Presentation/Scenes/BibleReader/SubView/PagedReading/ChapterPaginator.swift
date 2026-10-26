@@ -207,13 +207,17 @@ final class ChapterPaginator {
             paragraph.lineSpacing = style.lineSpacing
             paragraph.firstLineHeadIndent = 0
             paragraph.headIndent = textIndent
-            paragraph.tabStops = [NSTextTab(textAlignment: .left, location: textIndent)]
+            // The number is centred in its column like the scroll reader's, the text starts after it.
+            paragraph.tabStops = [
+                NSTextTab(textAlignment: .center, location: numberWidth / 2),
+                NSTextTab(textAlignment: .left, location: textIndent),
+            ]
             paragraph.defaultTabInterval = textIndent
             paragraph.paragraphSpacing = compareText != nil ? 6 : (isLast ? 0 : verseGap)
 
             var number = numberAttributes
             number[.paragraphStyle] = paragraph
-            result.append(NSAttributedString(string: "\(verse.verse)\t", attributes: number))
+            result.append(NSAttributedString(string: "\t\(verse.verse)\t", attributes: number))
             // No trailing newline after the chapter's final paragraph: it would lay out an
             // empty line that can spill onto a blank extra page.
             let terminator = (isLast && compareText == nil) ? "" : "\n"

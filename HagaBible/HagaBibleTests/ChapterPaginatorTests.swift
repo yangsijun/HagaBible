@@ -158,10 +158,9 @@ struct PagedReaderLayoutTests {
         #expect(layout.pageAreaFrame.midX == 380)
         #expect(layout.pageAreaFrame.width == 760)
         #expect(layout.spineGutter == 20 - PagedReaderLayout.spineMarginTrim)
-        #expect(layout.exclusionBand == nil)
 
         // A crease narrower than the trimmed margin needs no gutter at all; the base margin already clears it.
-        let narrow = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [CGRect(x: 370, y: 0, width: 20, height: 740)])
+        let narrow = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [CGRect(x: 377, y: 0, width: 6, height: 740)])
         #expect(narrow.spineGutter == 0)
 
         let offCentre = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [CGRect(x: 290, y: 0, width: 20, height: 740)])
@@ -170,15 +169,15 @@ struct PagedReaderLayoutTests {
         #expect(offCentre.pageAreaFrame.minX == 0)
     }
 
-    @Test("A horizontal crease keeps the orientation rule and becomes an exclusion band")
-    func horizontalCreaseExcludes() {
+    @Test("A horizontal crease (half-folded in portrait) is ignored: one page, text straight across")
+    func horizontalCreaseIsIgnored() {
         let layout = PagedReaderLayout.resolve(
             bounds: CGRect(x: 0, y: 0, width: 740, height: 760),
             divisionRegions: [CGRect(x: 0, y: 370, width: 740, height: 20)]
         )
+        #expect(layout == PagedReaderLayout.resolve(bounds: CGRect(x: 0, y: 0, width: 740, height: 760), divisionRegions: []))
         #expect(!layout.isSpread)
-        #expect(layout.pageAreaFrame == CGRect(x: 0, y: 0, width: 740, height: 760))
-        #expect(layout.exclusionBand == 370...390)
+        #expect(!layout.isCreaseCentred)
     }
 }
 
@@ -295,6 +294,49 @@ struct PagedReaderControllerTests {
         #expect(spread.alpha == 1)
     }
 
+    @Test("Bookmark stripes sit at the outer edge of each spread page: left edge on the left page, right edge on the right")
+    func stripesMirrorOnTheRightPage() throws {
+        let controller = makeController(size: CGSize(width: 874, height: 402))
+        let stripe = BookmarkStripe(color: .yellow, extendsUp: false, extendsDown: false)
+        let stripes = Dictionary(uniqueKeysWithValues: (1...31).map { ($0, [Optional(stripe)]) })
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: stripes, navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let pages = displayedPages(controller)
+        #expect(pages.count == 2)
+
+        for (index, page) in pages.enumerated() {
+            let text = try #require(page.view.subviews.compactMap { $0 as? PageTextView }.first)
+            let container = try #require(page.textContainer)
+            let layoutManager = try #require(container.layoutManager)
+            let firstLine = layoutManager.lineFragmentUsedRect(forGlyphAt: layoutManager.glyphRange(for: container).location, effectiveRange: nil)
+            let y = Int(firstLine.midY)
+            let alpha = renderedAlpha(of: text)
+            let leading = Int(text.textOriginX - 16) + 1
+            let trailing = Int(text.textOriginX + container.size.width + 16) - 2
+            let isRight = index == 1
+            #expect((alpha(leading, y) > 0.5) == !isRight, "page \(index) leading edge")
+            #expect((alpha(trailing, y) > 0.5) == isRight, "page \(index) trailing edge")
+        }
+    }
+
+    /// Renders the view at 1x and returns a sampler of the alpha at integer coordinates.
+    private func renderedAlpha(of view: UIView) -> (Int, Int) -> CGFloat {
+        let width = Int(view.bounds.width), height = Int(view.bounds.height)
+        let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: 1, y: -1)
+        view.layer.render(in: context)
+        // The closure keeps `context` alive; its pixel buffer dies with it.
+        return { x, y in
+            guard (0..<width).contains(x), (0..<height).contains(y) else { return 0 }
+            let bytes = context.data!.assumingMemoryBound(to: UInt8.self)
+            return CGFloat(bytes[y * context.bytesPerRow + x * 4 + 3]) / 255
+        }
+    }
+
     private func displayedPages(_ controller: PagedReaderController) -> [PageViewController] {
         let pageViewController = controller.children.compactMap { $0 as? UIPageViewController }.first
         return pageViewController?.viewControllers?.compactMap { $0 as? PageViewController } ?? []
@@ -367,7 +409,8 @@ struct PagedReaderControllerTests {
     func halfFoldedSymmetricMargins() throws {
         let base = PageViewController.textInsets
         let controller = makeController(size: CGSize(width: 874, height: 402))
-        controller.divisionRegionsForTesting = [CGRect(x: 417, y: 0, width: 40, height: 402)]   // half 20 → gutter 8
+        controller.divisionRegionsForTesting = [CGRect(x: 417, y: 0, width: 40, height: 402)]   // half 20 → gutter 20 − trim
+        let gutter = 20 - PagedReaderLayout.spineMarginTrim
         controller.contentInsets = UIEdgeInsets(top: 0, left: 0, bottom: 21, right: 59)
         controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
         controller.view.layoutIfNeeded()
@@ -376,12 +419,12 @@ struct PagedReaderControllerTests {
         for page in pages {
             let container = try #require(page.textContainer)
             #expect(container.exclusionPaths.isEmpty)
-            #expect(container.size.width == 437 - base.left - base.right - (59 - PagedReaderLayout.outerMarginTrim) - 8)
+            #expect(container.size.width == 437 - base.left - base.right - (59 - PagedReaderLayout.outerMarginTrim) - gutter)
         }
         let leftText = try #require(pages[0].view.subviews.compactMap { $0 as? PageTextView }.first)
         let rightText = try #require(pages[1].view.subviews.compactMap { $0 as? PageTextView }.first)
         #expect(leftText.textOriginX == base.left + 59 - PagedReaderLayout.outerMarginTrim)
-        #expect(rightText.textOriginX == base.left + 8)
+        #expect(rightText.textOriginX == base.left + gutter)
     }
 
     @Test("Navigating to a verse lands on its page; a prefetched neighbour continues the sequence")
