@@ -504,7 +504,10 @@ final class PagedReaderController: UIViewController {
             slot.paginator = nil
             return
         }
-        slot.paginator = ChapterPaginator(content: slot.content, style: style, pageSize: textSize) { [self] index in exclusionRects(forPage: index) }
+        // In a spread the comparison text takes the facing page (parallel layout).
+        slot.paginator = ChapterPaginator(content: slot.content, style: style, pageSize: textSize, parallel: isSpread) { [self] index in
+            exclusionRects(forPage: index)
+        }
     }
 
     private func replaceCurrent(with content: ChapterContent, styleChanged: Bool) {
@@ -620,7 +623,7 @@ final class PagedReaderController: UIViewController {
             side: pageSide,
             paginator: paginator,
             textInsets: insets,
-            footerText: paginator == nil ? "" : "\(ref.index + 1) / \(count)",
+            footerText: paginator.map { $0.isParallel ? "\(ref.index / 2 + 1) / \(count / 2)" : "\(ref.index + 1) / \(count)" } ?? "",
             style: style,
             // Stripes/selection/highlights describe the view model's chapter only.
             bookmarkStripes: isCurrentChapter ? bookmarkStripes : [:],
@@ -902,11 +905,11 @@ final class PageTextView: UIView {
     }
 
     override func draw(_ rect: CGRect) {
-        guard let container = paginator.container(at: pageIndex) else { return }
+        guard let container = paginator.container(at: pageIndex), let layoutManager = paginator.layoutManager(forPage: pageIndex) else { return }
         drawHighlights()
         let origin = CGPoint(x: textOriginX, y: 0)
-        let glyphRange = paginator.layoutManager.glyphRange(for: container)
-        paginator.layoutManager.drawGlyphs(forGlyphRange: glyphRange, at: origin)
+        let glyphRange = layoutManager.glyphRange(for: container)
+        layoutManager.drawGlyphs(forGlyphRange: glyphRange, at: origin)
         drawStripes()
     }
 

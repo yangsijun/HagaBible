@@ -141,6 +141,70 @@ struct ChapterPaginatorTests {
     }
 }
 
+@Suite("Parallel comparison layout")
+@MainActor
+struct ParallelPaginatorTests {
+    private var style: PageTextStyle {
+        PageTextStyle(
+            font: .systemFont(ofSize: 20), compareFont: .systemFont(ofSize: 16),
+            textColor: .label, verseNumberColor: .secondaryLabel, backgroundColor: .systemBackground,
+            alignment: .justified, compareAlignment: .natural, lineSpacing: 4
+        )
+    }
+
+    private func makeContent(verseCount: Int) -> ChapterContent {
+        let verses = (1...verseCount).map { number in
+            BibleVerse(
+                bookCode: "GEN", bookName: "Genesis", bookOrder: 1, chapter: 1, verse: number,
+                verseText: Array(repeating: "word", count: 4 + number % 7).joined(separator: " "), versionCode: "KRV"
+            )
+        }
+        // Every third comparison verse is much longer than its main verse, the rest shorter.
+        let compare = Dictionary(uniqueKeysWithValues: (1...verseCount).map { number in
+            (number, number % 3 == 0 ? Array(repeating: "longer comparison text", count: 7).joined(separator: " ") : "short")
+        })
+        return ChapterContent(key: ChapterKey(versionCode: "KRV", bookCode: "GEN", chapter: 1), verses: verses, compareTextByVerse: compare)
+    }
+
+    @Test("Facing pages carry the same verses, main text left and comparison right, with rows aligned")
+    func facingPagesAlignRows() throws {
+        let pageSize = CGSize(width: 320, height: 400)
+        let paginator = ChapterPaginator(content: makeContent(verseCount: 14), style: style, pageSize: pageSize, parallel: true)
+        #expect(paginator.isParallel)
+        #expect(paginator.pageCount.isMultiple(of: 2))
+        #expect(paginator.pageCount >= 4)
+
+        var seen: [Int] = []
+        for left in stride(from: 0, to: paginator.pageCount, by: 2) {
+            let right = left + 1
+            let verses = paginator.verses(onPage: left)
+            #expect(!verses.isEmpty)
+            #expect(verses == paginator.verses(onPage: right))
+            seen += verses
+            for verse in verses {
+                let leftRect = try #require(paginator.rect(forVerse: verse, onPage: left))
+                let rightRect = try #require(paginator.rect(forVerse: verse, onPage: right))
+                #expect(abs(leftRect.minY - rightRect.minY) < 0.5, "verse \(verse) rows differ")
+                #expect(leftRect.maxY <= pageSize.height + 0.5)
+                #expect(rightRect.maxY <= pageSize.height + 0.5)
+            }
+            let leftText = try #require(paginator.layoutManager(forPage: left)?.textStorage?.string)
+            let rightText = try #require(paginator.layoutManager(forPage: right)?.textStorage?.string)
+            #expect(!leftText.contains("short") && leftText.contains("word"))
+            #expect(rightText.contains("short") && !rightText.contains("word"))
+        }
+        #expect(seen == Array(1...14))
+        #expect(paginator.pageIndex(containingVerse: 14).map { $0.isMultiple(of: 2) } == true)
+    }
+
+    @Test("Without a spread the comparison stays under each verse in the flowing layout")
+    func singlePageKeepsTheFlow() {
+        let flowing = ChapterPaginator(content: makeContent(verseCount: 6), style: style, pageSize: CGSize(width: 320, height: 400), parallel: false)
+        #expect(!flowing.isParallel)
+        #expect(flowing.textStorage.string.contains("short"))
+    }
+}
+
 @Suite("Paged reader layout")
 struct PagedReaderLayoutTests {
     @Test("Without a crease, landscape is a spread and portrait a single page")
