@@ -866,7 +866,7 @@ final class PageTextView: UIView {
         paginator.verse(at: CGPoint(x: point.x - textOriginX, y: point.y), onPage: pageIndex)
     }
 
-    private func rect(forVerse verse: Int) -> CGRect? {
+    func rect(forVerse verse: Int) -> CGRect? {
         paginator.rect(forVerse: verse, onPage: pageIndex)?.offsetBy(dx: textOriginX, dy: 0)
     }
 
@@ -972,11 +972,23 @@ extension PageTextView: UIContextMenuInteractionDelegate {
     }
 
     /// Lifts just the pressed verse (its band) out of the page, on paper color.
+    ///
+    /// The lifted view is a rendered copy of the band, not this view: UIKit hides the
+    /// preview's view while the menu is up, so lifting the page itself (clipped to the
+    /// band) made every other verse on the page vanish.
     private func targetedPreview(for configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
         guard let verse = (configuration.identifier as? NSNumber)?.intValue, let band = band(forVerses: verse...verse) else { return nil }
+        let image = UIGraphicsImageRenderer(bounds: band).image { context in
+            pageBackgroundColor.setFill()
+            context.fill(band)
+            layer.render(in: context.cgContext)
+        }
+        let copy = UIImageView(image: image)
+        copy.frame = band
         let parameters = UIPreviewParameters()
         parameters.backgroundColor = pageBackgroundColor
-        parameters.visiblePath = UIBezierPath(roundedRect: band, cornerRadius: 10)
-        return UITargetedPreview(view: self, parameters: parameters)
+        parameters.visiblePath = UIBezierPath(roundedRect: copy.bounds, cornerRadius: 10)
+        let target = UIPreviewTarget(container: self, center: CGPoint(x: band.midX, y: band.midY))
+        return UITargetedPreview(view: copy, parameters: parameters, target: target)
     }
 }

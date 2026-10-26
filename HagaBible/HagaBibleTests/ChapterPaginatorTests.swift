@@ -324,6 +324,27 @@ struct PagedReaderControllerTests {
         #expect(controller.textLeadingX == plainOrigin + 20)
     }
 
+    @Test("The context-menu lift is a copy of the verse band, so the rest of the page stays visible")
+    func contextMenuLiftsACopyOfTheVerse() throws {
+        // Targeted previews need a window (UIKit asserts otherwise), like the real reader has.
+        let (controller, window) = makeHostedController(size: CGSize(width: 390, height: 844), barFrame: .zero)
+        defer { window.isHidden = true }
+        controller.contextMenu = { _ in UIMenu(children: [UIAction(title: "Copy") { _ in }]) }
+        controller.apply(content: makeContent(chapter: 1, verses: 10), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let page = try #require(displayedPages(controller).first)
+        let text = try #require(page.view.subviews.compactMap { $0 as? PageTextView }.first)
+        let interaction = try #require(text.interactions.compactMap { $0 as? UIContextMenuInteraction }.first)
+        let configuration = UIContextMenuConfiguration(identifier: NSNumber(value: 3), previewProvider: nil, actionProvider: nil)
+
+        let preview = try #require(text.contextMenuInteraction(interaction, previewForHighlightingMenuWithConfiguration: configuration))
+        #expect(preview.view !== text)
+        #expect(preview.view.superview == nil)
+        let verseRect = try #require(text.rect(forVerse: 3))
+        #expect(preview.view.bounds.height < text.bounds.height)
+        #expect(preview.view.bounds.height >= verseRect.height)
+    }
+
     @Test("Bookmark stripes sit at the outer edge of each spread page: left edge on the left page, right edge on the right")
     func stripesMirrorOnTheRightPage() throws {
         let controller = makeController(size: CGSize(width: 874, height: 402))
