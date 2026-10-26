@@ -977,7 +977,10 @@ extension PageTextView: UIContextMenuInteractionDelegate {
     /// preview's view while the menu is up, so lifting the page itself (clipped to the
     /// band) made every other verse on the page vanish.
     private func targetedPreview(for configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
-        guard let verse = (configuration.identifier as? NSNumber)?.intValue, let band = band(forVerses: verse...verse) else { return nil }
+        guard let verse = (configuration.identifier as? NSNumber)?.intValue else { return nil }
+        // Pressing inside the selection lifts the whole selection, like the scroll reader's preview.
+        let verses = highlights.selectedVerses.flatMap { $0.contains(verse) ? $0 : nil } ?? verse...verse
+        guard let band = band(forVerses: verses) else { return nil }
         let image = UIGraphicsImageRenderer(bounds: band).image { context in
             pageBackgroundColor.setFill()
             context.fill(band)

@@ -39,6 +39,7 @@ struct BibleVerseListView: View {
     /// out in a detached window where `AdvancedText` gets no width proposal (and
     /// would size to a single infinite line), so it needs a definite width.
     @State private var listWidth: CGFloat = 0
+    @State private var listHeight: CGFloat = 0
 
     var body: some View {
         // Scroll-target ids are 1-based verse ordinals and `0` is this zero-height
@@ -62,12 +63,19 @@ struct BibleVerseListView: View {
             .padding(.vertical, 16)
             .padding(.horizontal, CGFloat(fontConfiguration.sideMargin))
         }
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width
-        } action: { width in
-            listWidth = width
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            listWidth = size.width
+            listHeight = size.height
         }
     }
+
+    /// Widest the long-press preview gets. A landscape phone, an iPad or an unfolded
+    /// foldable is far wider than the preview area the context menu grants (the menu
+    /// sits beside the preview there), and an over-wide preview is container-shrunk by
+    /// the system and clipped; a reading-column width always fits.
+    private static let previewMaxWidth: CGFloat = 420
 
     private static let verseRowInnerPadding: CGFloat = 8
     /// Leading inset that aligns comparison text under the main verse text column,
@@ -235,9 +243,12 @@ struct BibleVerseListView: View {
         // content out at full size (clipping it), so we scale the whole content
         // down ourselves to keep every selected verse visible.
         let (start, end) = getSelectIndexFromContextMenuIndex(index)
-        let width = max(listWidth, 1)
+        let width = min(max(listWidth, 1), Self.previewMaxWidth)
         let contentHeight = estimatedPreviewHeight(start: start, end: end, width: width)
-        let maxHeight = Self.screenHeight * 0.55
+        // Budget from the list's own size, not the screen: in a landscape or wide layout
+        // the menu sits beside the preview, so more of the height is available.
+        let isWide = listWidth > listHeight
+        let maxHeight = max(listHeight, 1) * (isWide ? 0.8 : 0.55)
         let scale = min(1, maxHeight / max(contentHeight, 1))
         let content = VStack(spacing: 0) {
             ForEach(start...end, id: \.self) { idx in
@@ -257,14 +268,6 @@ struct BibleVerseListView: View {
                 .frame(width: width * scale, height: contentHeight * scale, alignment: .topLeading)
                 .background(Color(uiColor: theme.backgroundColor))
         }
-    }
-
-    /// Screen height resolved through a connected window scene (UIScreen.main is
-    /// deprecated on iOS 26); the fallback only matters before any scene exists.
-    private static var screenHeight: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }
-            .first ?? 844
     }
 
     /// Height the preview's verse stack will lay out at for a given width,
