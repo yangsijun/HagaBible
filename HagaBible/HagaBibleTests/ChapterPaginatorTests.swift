@@ -1,5 +1,6 @@
 import Testing
 import UIKit
+import SwiftUI
 @testable import HagaBible
 
 @Suite("Chapter paginator")
@@ -386,6 +387,53 @@ struct PagedReaderControllerTests {
         let padded = try #require(displayedPages(controller).first?.textContainer)
         #expect(padded.size.width == plain.size.width - 40)
         #expect(controller.textLeadingX == plainOrigin + 20)
+    }
+
+    @Test("Changing the side margin reports the new text column before the next layout pass")
+    func sideMarginChangeReportsAtOnce() throws {
+        let controller = makeController(size: CGSize(width: 390, height: 844))
+        let content = makeContent(chapter: 1, verses: 10)
+        var reported: [CGFloat] = []
+        controller.onTextLeadingChanged = { reported.append($0) }
+        controller.apply(content: content, style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let plain = controller.textLeadingX
+
+        var wide = style
+        wide.sideMargin = 20
+        controller.apply(content: content, style: wide, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        #expect(reported.last == plain + 20)
+    }
+
+    @Test("A scroll-mode selection covers the side margin, not just the text")
+    @MainActor
+    func scrollSelectionSpansSideMargin() throws {
+        let verses = (1...3).map {
+            BibleVerse(bookCode: "GEN", bookName: "Genesis", bookOrder: 1, chapter: 1, verse: $0, verseText: "In the beginning God created the heavens and the earth.", versionCode: "WEBBE")
+        }
+        var configuration = FontConfiguration.defaultFontConfiguration
+        configuration.sideMargin = 40
+        let list = BibleVerseListView(
+            verses: verses, language: "English", fontConfiguration: configuration, theme: .light,
+            highlightedVerseNum: nil, ttsCurrentVerseIndex: nil, bibleActionService: BibleActionService(),
+            selectStartIndex: .constant(0), selectEndIndex: .constant(0)
+        )
+        .frame(width: 390, height: 600)
+        .background(Color.white)
+        let renderer = ImageRenderer(content: list)
+        renderer.scale = 1
+        let image = try #require(renderer.cgImage)
+        let data = try #require(image.dataProvider?.data) as Data
+        func pixel(_ x: Int, _ y: Int) -> (UInt8, UInt8, UInt8) {
+            let i = y * image.bytesPerRow + x * (image.bitsPerPixel / 8)
+            return (data[i], data[i + 1], data[i + 2])
+        }
+        // Some row of the selected verse is tinted all the way to x = 2 (inside the margin).
+        let tintedInMargin = (0..<image.height).contains { y in
+            let p = pixel(2, y)
+            return !(p.0 > 250 && p.1 > 250 && p.2 > 250)
+        }
+        #expect(tintedInMargin)
     }
 
     @Test("The context-menu lift is a copy of the verse band, so the rest of the page stays visible")

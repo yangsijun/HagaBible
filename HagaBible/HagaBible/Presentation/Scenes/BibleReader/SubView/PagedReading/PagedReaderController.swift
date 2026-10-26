@@ -311,6 +311,8 @@ final class PagedReaderController: UIViewController {
         let styleChanged = self.style != style
         self.style = style
         view.backgroundColor = style.backgroundColor
+        // The side margin moves the verse column without a layout pass; tell the toolbar now.
+        if styleChanged { reportTextLeadingIfNeeded() }
         var landingVerse: Int?
 
         if let slot = currentSlot, slot.content.key == content.key {

@@ -60,6 +60,9 @@ struct BibleReaderView: View {
     @State private var availableWidth: CGFloat = 0
     /// Window x of the paged reader's verse column; the toolbar title aligns to it.
     @State private var pagedTextLeadingX: CGFloat?
+    /// Window x of the scroll list's leading edge; the verse column starts a row's
+    /// padding plus the user's side margin in from it.
+    @State private var scrollListLeadingX: CGFloat?
     /// A tab bar pill over the page (foldable trailing column), in window coordinates.
     @State private var pagedTabBarOcclusion: CGRect?
     @State private var readerTrailingX: CGFloat = 0
@@ -118,6 +121,9 @@ struct BibleReaderView: View {
             ScrollView {
                 verseList
             }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.frame(in: .global).minX
+            } action: { scrollListLeadingX = $0 }
             // `containerSize` is already the visible reading area (nav bar bottom to
             // the bottom safe-area inset), which is the same rect `scrollTo(anchor:)`
             // aligns against. Do not subtract `contentInsets` again.
@@ -258,6 +264,12 @@ struct BibleReaderView: View {
             onTextLeadingChanged: { pagedTextLeadingX = $0 },
             onTabBarOcclusionChanged: { pagedTabBarOcclusion = $0 }
         )
+    }
+
+    /// Where the scroll reader's verse numbers start, in window coordinates (the row's
+    /// two 8pt paddings plus the side margin); computed, so a margin change lands at once.
+    private var scrollTextLeadingX: CGFloat? {
+        scrollListLeadingX.map { $0 + BibleVerseListView.verseRowLeadingInset + CGFloat(fontThemeManager.fontConfiguration.sideMargin) }
     }
 
     /// Trailing room the floating action bar leaves for a tab bar pill that sits in the
@@ -472,7 +484,7 @@ struct BibleReaderView: View {
                     chapterNum: viewModel.chapterNum,
                     bibleVersion: viewModel.bibleVersion,
                     availableWidth: availableWidth,
-                    alignedLeadingX: appState.isPagedReadingEnabled ? pagedTextLeadingX : nil,
+                    alignedLeadingX: appState.isPagedReadingEnabled ? pagedTextLeadingX : scrollTextLeadingX,
                     showBibleNavigation: $showBibleNavigation,
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,
