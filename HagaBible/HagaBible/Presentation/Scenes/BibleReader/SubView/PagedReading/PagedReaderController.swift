@@ -662,6 +662,8 @@ final class PagedReaderController: UIViewController {
     /// right with its preceding page on the left, never forced to the left.
     private func display(_ ref: PageRef, direction: UIPageViewController.NavigationDirection, animated: Bool) {
         guard let pageViewController, !isTransitioning else { return }
+        // The pages being replaced may have a verse menu open; close it with them on screen.
+        displayedPages.forEach { $0.dismissVerseMenu() }
         guard isSpread else {
             pageViewController.setViewControllers([makePage(ref)], direction: direction, animated: animated)
             return
@@ -818,6 +820,10 @@ final class PageViewController: UIViewController {
         textView?.bookmarkStripes = bookmarkStripes
         textView?.highlights = highlights
         textView?.setNeedsDisplay()
+    }
+
+    func dismissVerseMenu() {
+        textView?.interactions.compactMap { $0 as? UIContextMenuInteraction }.forEach { $0.dismissMenu() }
     }
 }
 
@@ -986,7 +992,9 @@ extension PageTextView: UIContextMenuInteractionDelegate {
     /// preview's view while the menu is up, so lifting the page itself (clipped to the
     /// band) made every other verse on the page vanish.
     private func targetedPreview(for configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
-        guard let verse = (configuration.identifier as? NSNumber)?.intValue else { return nil }
+        // A relayout (rotation, fold) replaces the pages while a menu is up; UIKit still
+        // asks this page for the dismissal preview, and a target outside a window throws.
+        guard window != nil, let verse = (configuration.identifier as? NSNumber)?.intValue else { return nil }
         // Pressing inside the selection lifts the whole selection, like the scroll reader's preview.
         let verses = highlights.selectedVerses.flatMap { $0.contains(verse) ? $0 : nil } ?? verse...verse
         guard let band = band(forVerses: verses) else { return nil }

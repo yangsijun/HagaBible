@@ -574,6 +574,31 @@ struct PagedReaderControllerTests {
         #expect(crossed)
     }
 
+    @Test("A page torn down under an open verse menu gives the dismissal no preview instead of crashing")
+    func dismissPreviewAfterRelayoutDoesNotCrash() throws {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 874, height: 402))
+        let controller = PagedReaderController()
+        window.rootViewController = controller
+        window.isHidden = false
+        window.layoutIfNeeded()
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let pageViewController = try #require(controller.children.compactMap { $0 as? UIPageViewController }.first)
+        let page = try #require(pageViewController.viewControllers?.first as? PageViewController)
+        let textView = try #require(page.verseTapRecognizer?.view as? PageTextView)
+        let interaction = UIContextMenuInteraction(delegate: textView)
+        let configuration = UIContextMenuConfiguration(identifier: NSNumber(value: 1), previewProvider: nil, actionProvider: nil)
+        #expect(textView.contextMenuInteraction(interaction, previewForHighlightingMenuWithConfiguration: configuration) != nil)
+
+        // Rotating to portrait rebuilds the spread as single pages; the old page leaves the window.
+        window.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        controller.view.frame = window.bounds
+        window.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
+        #expect(textView.window == nil)
+        #expect(textView.contextMenuInteraction(interaction, previewForDismissingMenuWithConfiguration: configuration) == nil)
+    }
+
     @Test("A page flipped into from the prefetched next chapter selects verses once that chapter is current")
     func flippedIntoNeighbourGainsTapHandlers() async throws {
         let controller = makeController(size: CGSize(width: 390, height: 844))
