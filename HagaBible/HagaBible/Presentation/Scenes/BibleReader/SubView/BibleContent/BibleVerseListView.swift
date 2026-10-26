@@ -162,6 +162,13 @@ struct BibleVerseListView: View {
                 handleSelectVerse(index)
             }
             .padding(.bottom, bottomGap)
+            // A multi-verse selection reads as one block: the gap below a selected row is
+            // tinted too when the next row is selected (as on a page).
+            .background(alignment: .bottom) {
+                if isSelected(index), isSelected(index + 1) {
+                    Color.accentColor.opacity(0.25).frame(height: bottomGap)
+                }
+            }
             .overlay(alignment: .leading) {
                 if !stripes.isEmpty {
                     HStack(spacing: 1) {

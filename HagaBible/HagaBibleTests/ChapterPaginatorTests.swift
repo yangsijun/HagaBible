@@ -528,6 +528,48 @@ struct PagedReaderControllerTests {
         }
     }
 
+    @Test("A multi-verse selection in the scroll reader is one block: the line-spacing gap between rows is tinted")
+    func scrollSelectionBridgesTheGap() throws {
+        let verses = (1...3).map {
+            BibleVerse(bookCode: "GEN", bookName: "Genesis", bookOrder: 1, chapter: 1, verse: $0, verseText: "In the beginning God created the heavens and the earth.", versionCode: "WEBBE")
+        }
+        var configuration = FontConfiguration.defaultFontConfiguration
+        configuration.lineSpacing = 12
+        let list = BibleVerseListView(
+            verses: verses, language: "English", fontConfiguration: configuration, theme: .light,
+            highlightedVerseNum: nil, ttsCurrentVerseIndex: nil, bibleActionService: BibleActionService(),
+            selectStartIndex: .constant(0), selectEndIndex: .constant(1)
+        )
+        .ignoresSafeArea()
+        let window = UIWindow(frame: CGRect(origin: .zero, size: CGSize(width: 390, height: 844)))
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: list)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        defer { window.isHidden = true }
+        let rows = window.allSubviews(ofType: UITextView.self).map { $0.convert($0.bounds, to: window) }.sorted { $0.minY < $1.minY }
+        try #require(rows.count == 3)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = try #require(UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(window.bounds)
+            window.layer.render(in: context.cgContext)
+        }.cgImage)
+        let data = try #require(image.dataProvider?.data) as Data
+        func isWhite(_ x: Int, _ y: Int) -> Bool {
+            let i = y * image.bytesPerRow + x * (image.bitsPerPixel / 8)
+            return data[i] > 250 && data[i + 1] > 250 && data[i + 2] > 250
+        }
+        // Between verse 1's band (8pt below its text) and verse 2's (8pt above) lies the 12pt gap.
+        let gapY = Int((rows[0].maxY + 8 + rows[1].minY - 8) / 2)
+        #expect(!isWhite(2, gapY))
+        #expect(!isWhite(195, gapY))
+        // Verse 3 is not selected: the gap above it stays paper.
+        let unselectedGapY = Int((rows[1].maxY + 8 + rows[2].minY - 8) / 2)
+        #expect(isWhite(195, unselectedGapY))
+    }
+
     @Test("The context-menu lift is a copy of the verse band, so the rest of the page stays visible")
     func contextMenuLiftsACopyOfTheVerse() throws {
         // Targeted previews need a window (UIKit asserts otherwise), like the real reader has.
@@ -957,6 +999,12 @@ struct TabBarClearanceTests {
 
 
 private extension UIView {
+    func allSubviews<T: UIView>(ofType type: T.Type) -> [T] {
+        subviews.flatMap { subview -> [T] in
+            ([subview as? T].compactMap { $0 }) + subview.allSubviews(ofType: type)
+        }
+    }
+
     func firstSubview<T: UIView>(ofType type: T.Type) -> T? {
         for subview in subviews {
             if let match = subview as? T { return match }
