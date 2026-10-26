@@ -7,7 +7,8 @@ import SwiftUI
 
 /// "Labs" sheet — opt-in experimental features. Bound to the shared `AppState`, so
 /// flipping a toggle immediately shows/hides the dependent UI: the reader's "Listen"
-/// action and the TTS mini player (TTS), and the Recordings tab (recording).
+/// action and the TTS mini player (TTS), the Recordings tab (recording), and the
+/// reader's book-style page layout (page turning).
 /// Reached from the reader's "Other (…)" toolbar menu.
 ///
 /// Colors match the rest of the app: the themed page background is shown through a
@@ -34,6 +35,13 @@ struct ExperimentalFeaturesView: View {
                             title: "Recordings",
                             subtitle: "Record your voice and play it back.",
                             systemImage: "waveform"
+                        )
+                    }
+                    Toggle(isOn: $appState.isPagedReadingEnabled) {
+                        featureLabel(
+                            title: "Page Turning",
+                            subtitle: "Read like a book, turning pages instead of scrolling. Landscape shows two pages side by side.",
+                            systemImage: "book.pages"
                         )
                     }
                 } header: {
@@ -64,7 +72,7 @@ struct ExperimentalFeaturesView: View {
         .presentationBackground(Color(uiColor: fontThemeManager.theme.backgroundColor))
     }
 
-    private func featureLabel(title: String, subtitle: String, systemImage: String) -> some View {
+    private func featureLabel(title: LocalizedStringKey, subtitle: LocalizedStringKey, systemImage: String) -> some View {
         Label {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

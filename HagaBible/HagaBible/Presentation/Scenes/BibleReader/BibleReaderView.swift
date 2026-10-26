@@ -99,16 +99,258 @@ struct BibleReaderView: View {
             selectStartIndex: $selectStartIndex,
             selectEndIndex: $selectEndIndex
         )
-        .onChange(of: viewModel.navigatedVerseNum) {
-            if viewModel.navigatedVerseNum != nil {
-                highlightTask?.cancel()
-                highlightTask = Task {
-                    try await Task.sleep(for: .seconds(3))
-                    viewModel.navigatedVerseNum = nil
+        .safeAreaPadding(.bottom, 200)
+    }
+
+    /// The default reading surface: the verse list in a vertical scroll view, with the
+    /// chapter swipe, TTS follow-scroll and navigation scroll-to attached.
+    private var scrollingReader: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                verseList
+            }
+            // `containerSize` is already the visible reading area (nav bar bottom to
+            // the bottom safe-area inset), which is the same rect `scrollTo(anchor:)`
+            // aligns against. Do not subtract `contentInsets` again.
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.containerSize.height
+            } action: { _, height in
+                visibleReadingHeight = height
+            }
+            .onScrollPhaseChange { _, _ in
+                // Every scroll-phase change — including the transition back to
+                // .idle when momentum stops — counts as interaction, so the dim
+                // countdown restarts the moment scrolling settles rather than mid-fling.
+                screenWake.userDidInteract(
+                    keepScreenOn: appState.keepScreenOn,
+                    dimAfterSeconds: appState.screenDimAfterSeconds
+                )
+            }
+            // Any touch on the reading surface — a tap, the start of a scroll or a
+            // chapter swipe — holds off dimming for its full duration: the screen
+            // can't dim under a finger, and a touch while dimmed undims *and* scrolls
+            // because the recognizer never blocks the touch (see `TouchActivityDetector`).
+            .gesture(
+                TouchActivityDetector { active in
+                    screenWake.setTouchActive(
+                        active,
+                        keepScreenOn: appState.keepScreenOn,
+                        dimAfterSeconds: appState.screenDimAfterSeconds
+                    )
+                }
+            )
+            .swipeGesture(
+                navigationToken: viewModel.bibleNavigationUpdateTrigger,
+                onLeftSwipe: {
+                    let wasActive = ttsViewModel.playbackState != .idle
+                    Task {
+                        await viewModel.goToPreviousChapterAsync()
+                        viewModel.bibleNavigationUpdateTrigger.toggle()
+                        if wasActive {
+                            let language = viewModel.bibleVersion?.language ?? "Korean"
+                            ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                        }
+                    }
+                },
+                onRightSwipe: {
+                    let wasActive = ttsViewModel.playbackState != .idle
+                    Task {
+                        await viewModel.goToNextChapterAsync()
+                        viewModel.bibleNavigationUpdateTrigger.toggle()
+                        if wasActive {
+                            let language = viewModel.bibleVersion?.language ?? "Korean"
+                            ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
+                        }
+                    }
+                }
+            )
+            .onChange(of: viewModel.bibleNavigationUpdateTrigger, initial: false) {
+                selectStartIndex = nil
+                selectEndIndex = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.linear(duration: 0.3)) {
+                        // List ids are 1-based verse ordinals with 0 = top (see
+                        // BibleVerseListView). `verseNum - 1` is intentional: the verse
+                        // before the target rests at the top so the highlighted target
+                        // sits one line down with context; no verse → 0 → chapter top.
+                        proxy.scrollTo((viewModel.navigatedVerseNum ?? 1) - 1, anchor: .top)
+                    }
+                }
+            }
+            .onChange(of: ttsViewModel.currentVerseIndex) { _, newIndex in
+                if ttsViewModel.playbackState != .idle {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        // `currentVerseIndex` is 0-based; +1 targets the spoken verse's
+                        // own row (not the one before it). The anchor is solved per verse
+                        // from the row's height so its top edge lands on the follow line;
+                        // `scrollTo` still clamps at the chapter's start and end.
+                        proxy.scrollTo(
+                            newIndex + 1,
+                            anchor: TTSFollowScroll.anchor(
+                                rowHeight: verseRowHeights[newIndex],
+                                visibleHeight: visibleReadingHeight
+                            )
+                        )
+                    }
                 }
             }
         }
-        .safeAreaPadding(.bottom, 200)
+    }
+
+    /// Labs "Page Turning" surface: the chapter typeset into book pages with a page-curl
+    /// flip, two pages side by side in landscape (or around the fold of a foldable).
+    /// Chapters flow into one another, so a flip past the last page lands in the next
+    /// chapter (the view model follows via `onPageChanged`). Tap-to-select, the long-press
+    /// menu and bookmark stripes work as in scroll mode; the selection indices are the
+    /// same 0-based verse indices, so the action bar and export flow are shared as-is.
+    private var pagedReader: some View {
+        // The page view runs under the bars so the curl is full-screen; the safe area is
+        // handed in so the text (and footer) stay clear of them.
+        GeometryReader { proxy in
+            pagedReaderView(contentInsets: proxy.safeAreaInsets)
+                .ignoresSafeArea()
+        }
+    }
+
+    private func pagedReaderView(contentInsets: EdgeInsets) -> some View {
+        PagedBibleReaderView(
+            content: viewModel.pagedChapterContent,
+            contentInsets: contentInsets,
+            style: .make(
+                fontConfiguration: fontThemeManager.fontConfiguration,
+                theme: fontThemeManager.theme,
+                language: viewModel.bibleVersion?.language ?? "English",
+                compareLanguage: viewModel.compareVersion?.language ?? "English"
+            ),
+            highlightedVerseNum: viewModel.navigatedVerseNum,
+            ttsVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
+            selectedVerses: selectStartIndex.map { start in (start + 1)...((selectEndIndex ?? start) + 1) },
+            bookmarkStripes: viewModel.isBookmarkIndicatorEnabled ? viewModel.bookmarkStripesPerVerse : [:],
+            navigationToken: viewModel.bibleNavigationUpdateTrigger,
+            targetVerse: viewModel.navigatedVerseNum ?? viewModel.verseNum,
+            fetchNeighbor: { key, forward in
+                guard let adjacent = viewModel.adjacentChapter(bookCode: key.bookCode, chapter: key.chapter, forward: forward) else {
+                    return nil
+                }
+                return await viewModel.fetchPagedChapterContent(bookCode: adjacent.bookCode, chapter: adjacent.chapter)
+            },
+            onPageChanged: handlePagedPositionChange,
+            onUserInteraction: {
+                screenWake.userDidInteract(
+                    keepScreenOn: appState.keepScreenOn,
+                    dimAfterSeconds: appState.screenDimAfterSeconds
+                )
+            },
+            onVerseTapped: { verse in
+                (selectStartIndex, selectEndIndex) = BibleVerseListView.selection(
+                    afterTapping: verse - 1, start: selectStartIndex, end: selectEndIndex
+                )
+            },
+            contextMenu: pagedVerseMenu
+        )
+    }
+
+    /// The paged reader's long-press menu: the same three actions as the scroll reader's
+    /// context menu, acting on the selection when the pressed verse is inside it.
+    private func pagedVerseMenu(forVerse verse: Int) -> UIMenu? {
+        let index = verse - 1
+        guard viewModel.bibleVerseList.indices.contains(index) else { return nil }
+        var start = index, end = index
+        if let selectStartIndex, let selectEndIndex, (selectStartIndex...selectEndIndex).contains(index) {
+            start = selectStartIndex
+            end = selectEndIndex
+        }
+        let text = { viewModel.makeExportText(startIndex: start, endIndex: end, scope: .main) }
+        let isComparisonOn = viewModel.isComparisonOn
+        // With comparison on, select first so the action bar (which hosts the version
+        // dialog) is on screen, then present the dialog on the next hop — as in scroll mode.
+        func requestExport(_ mode: VerseExportRequest.Mode) {
+            selectStartIndex = start
+            selectEndIndex = end
+            Task { @MainActor in
+                exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: mode)
+            }
+        }
+        return UIMenu(children: [
+            UIAction(title: String(localized: "Add bookmark"), image: UIImage(systemName: "bookmark")) { _ in
+                requestAddBookmark(start: start, end: end)
+            },
+            UIAction(title: String(localized: "Copy to clipboard"), image: UIImage(systemName: "doc.on.doc")) { _ in
+                if isComparisonOn {
+                    requestExport(.copy)
+                } else {
+                    UIPasteboard.general.string = text()
+                    selectStartIndex = nil
+                    selectEndIndex = nil
+                }
+            },
+            UIAction(title: String(localized: "Share"), image: UIImage(systemName: "square.and.arrow.up")) { _ in
+                if isComparisonOn {
+                    requestExport(.share)
+                } else {
+                    shareItem = ShareTextItem(text: text())
+                }
+            },
+        ])
+    }
+
+    /// Shared by both reading surfaces; see `body` for where each hosts it.
+    private var actionBar: some View {
+        BibleReaderActionBar(
+            selectStartIndex: $selectStartIndex,
+            selectEndIndex: $selectEndIndex,
+            bibleVerseList: viewModel.bibleVerseList,
+            onBookmarkTapped: {
+                guard let start = selectStartIndex else { return }
+                let end = selectEndIndex ?? start
+                requestAddBookmark(start: start, end: end)
+            },
+            isComparisonOn: viewModel.isComparisonOn,
+            onCompareCopy: { start, end in
+                exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .copy)
+            },
+            onCompareShare: { start, end in
+                exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .share)
+            },
+            // The dialog is attached to the matching action-bar button so
+            // it appears as a bubble pointing at the tapped button.
+            exportDialogMode: exportDialogMode,
+            exportDialogTitle: exportDialogTitle,
+            exportMainVersionName: viewModel.bibleVersion?.versionName ?? "Version A",
+            exportCompareVersionName: viewModel.compareVersion?.versionName ?? "Version B",
+            onExportScopeChosen: { scope in
+                if let request = exportRequest {
+                    performExport(request, scope: scope)
+                }
+            },
+            onExportCancel: {
+                exportRequest = nil
+            }
+        )
+        .ignoresSafeArea(edges: .horizontal)
+    }
+
+    /// A page flip settled on `firstVerse` of `key`. Inside the current chapter that just
+    /// records the position (so the app reopens on the same page); in a neighbouring
+    /// chapter it moves the reader there — the same work the chapter swipe does in
+    /// scroll mode, including handing TTS the new chapter. The navigation trigger is not
+    /// toggled: the pages are already showing the right place.
+    private func handlePagedPositionChange(_ key: ChapterKey, _ firstVerse: Int) {
+        if key.bookCode == viewModel.bookCode, key.chapter == viewModel.chapterNum {
+            viewModel.verseNum = firstVerse
+            viewModel.fetchBibleVerse()
+            return
+        }
+        let wasActive = ttsViewModel.playbackState != .idle
+        Task {
+            await viewModel.applyBibleSelectionAsync(bookCode: key.bookCode, chapterNum: key.chapter, verseNum: firstVerse)
+            selectStartIndex = nil
+            selectEndIndex = nil
+            if wasActive {
+                let language = viewModel.bibleVersion?.language ?? "Korean"
+                ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
+            }
+        }
     }
 
     /// True while any modal is open over the reader (Bible Navigation, Font & Themes,
@@ -163,103 +405,29 @@ struct BibleReaderView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    verseList
+            Group {
+                if appState.isPagedReadingEnabled {
+                    pagedReader
+                } else {
+                    scrollingReader
                 }
-                .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
-                .overlay {
-                    if hasResolvedContent, viewModel.bibleVersion == nil {
-                        noBibleDownloadedView
-                    }
+            }
+            .background(Color(uiColor: fontThemeManager.theme.backgroundColor))
+            .overlay {
+                if hasResolvedContent, viewModel.bibleVersion == nil {
+                    noBibleDownloadedView
                 }
-                .overlay(alignment: .top) {
-                    contentStatusBanner
-                        .animation(.easeInOut(duration: 0.25), value: appState.bibleContentUpdateStatus)
-                }
-                // `containerSize` is already the visible reading area (nav bar bottom to
-                // the bottom safe-area inset), which is the same rect `scrollTo(anchor:)`
-                // aligns against. Do not subtract `contentInsets` again.
-                .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                    geometry.containerSize.height
-                } action: { _, height in
-                    visibleReadingHeight = height
-                }
-                .onScrollPhaseChange { _, _ in
-                    // Every scroll-phase change — including the transition back to
-                    // .idle when momentum stops — counts as interaction, so the dim
-                    // countdown restarts the moment scrolling settles rather than mid-fling.
-                    screenWake.userDidInteract(
-                        keepScreenOn: appState.keepScreenOn,
-                        dimAfterSeconds: appState.screenDimAfterSeconds
-                    )
-                }
-                // Any touch on the reading surface — a tap, the start of a scroll or a
-                // chapter swipe — holds off dimming for its full duration: the screen
-                // can't dim under a finger, and a touch while dimmed undims *and* scrolls
-                // because the recognizer never blocks the touch (see `TouchActivityDetector`).
-                .gesture(
-                    TouchActivityDetector { active in
-                        screenWake.setTouchActive(
-                            active,
-                            keepScreenOn: appState.keepScreenOn,
-                            dimAfterSeconds: appState.screenDimAfterSeconds
-                        )
-                    }
-                )
-                .swipeGesture(
-                    navigationToken: viewModel.bibleNavigationUpdateTrigger,
-                    onLeftSwipe: {
-                        let wasActive = ttsViewModel.playbackState != .idle
-                        Task {
-                            await viewModel.goToPreviousChapterAsync()
-                            viewModel.bibleNavigationUpdateTrigger.toggle()
-                            if wasActive {
-                                let language = viewModel.bibleVersion?.language ?? "Korean"
-                                ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
-                            }
-                        }
-                    },
-                    onRightSwipe: {
-                        let wasActive = ttsViewModel.playbackState != .idle
-                        Task {
-                            await viewModel.goToNextChapterAsync()
-                            viewModel.bibleNavigationUpdateTrigger.toggle()
-                            if wasActive {
-                                let language = viewModel.bibleVersion?.language ?? "Korean"
-                                ttsViewModel.switchChapter(verses: viewModel.bibleVerseList, language: language)
-                            }
-                        }
-                    }
-                )
-                .onChange(of: viewModel.bibleNavigationUpdateTrigger, initial: false) {
-                    selectStartIndex = nil
-                    selectEndIndex = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation(.linear(duration: 0.3)) {
-                            // List ids are 1-based verse ordinals with 0 = top (see
-                            // BibleVerseListView). `verseNum - 1` is intentional: the verse
-                            // before the target rests at the top so the highlighted target
-                            // sits one line down with context; no verse → 0 → chapter top.
-                            proxy.scrollTo((viewModel.navigatedVerseNum ?? 1) - 1, anchor: .top)
-                        }
-                    }
-                }
-                .onChange(of: ttsViewModel.currentVerseIndex) { _, newIndex in
-                    if ttsViewModel.playbackState != .idle {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            // `currentVerseIndex` is 0-based; +1 targets the spoken verse's
-                            // own row (not the one before it). The anchor is solved per verse
-                            // from the row's height so its top edge lands on the follow line;
-                            // `scrollTo` still clamps at the chapter's start and end.
-                            proxy.scrollTo(
-                                newIndex + 1,
-                                anchor: TTSFollowScroll.anchor(
-                                    rowHeight: verseRowHeights[newIndex],
-                                    visibleHeight: visibleReadingHeight
-                                )
-                            )
-                        }
+            }
+            .overlay(alignment: .top) {
+                contentStatusBanner
+                    .animation(.easeInOut(duration: 0.25), value: appState.bibleContentUpdateStatus)
+            }
+            .onChange(of: viewModel.navigatedVerseNum) {
+                if viewModel.navigatedVerseNum != nil {
+                    highlightTask?.cancel()
+                    highlightTask = Task {
+                        try await Task.sleep(for: .seconds(3))
+                        viewModel.navigatedVerseNum = nil
                     }
                 }
             }
@@ -270,39 +438,14 @@ struct BibleReaderView: View {
                 availableWidth = newWidth
             }
             .toolbarTitleDisplayMode(.inline)
+            // In scroll mode the bar insets the safe area (the list scrolls above it). In
+            // page mode it floats instead: an inset would shrink the page area and
+            // re-typeset every page each time a selection starts or ends.
             .safeAreaInset(edge: .bottom, alignment: .trailing) {
-                BibleReaderActionBar(
-                    selectStartIndex: $selectStartIndex,
-                    selectEndIndex: $selectEndIndex,
-                    bibleVerseList: viewModel.bibleVerseList,
-                    onBookmarkTapped: {
-                        guard let start = selectStartIndex else { return }
-                        let end = selectEndIndex ?? start
-                        requestAddBookmark(start: start, end: end)
-                    },
-                    isComparisonOn: viewModel.isComparisonOn,
-                    onCompareCopy: { start, end in
-                        exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .copy)
-                    },
-                    onCompareShare: { start, end in
-                        exportRequest = VerseExportRequest(startIndex: start, endIndex: end, mode: .share)
-                    },
-                    // The dialog is attached to the matching action-bar button so
-                    // it appears as a bubble pointing at the tapped button.
-                    exportDialogMode: exportDialogMode,
-                    exportDialogTitle: exportDialogTitle,
-                    exportMainVersionName: viewModel.bibleVersion?.versionName ?? "Version A",
-                    exportCompareVersionName: viewModel.compareVersion?.versionName ?? "Version B",
-                    onExportScopeChosen: { scope in
-                        if let request = exportRequest {
-                            performExport(request, scope: scope)
-                        }
-                    },
-                    onExportCancel: {
-                        exportRequest = nil
-                    }
-                )
-                .ignoresSafeArea(edges: .horizontal)
+                if !appState.isPagedReadingEnabled { actionBar }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if appState.isPagedReadingEnabled { actionBar }
             }
             .toolbar {
                 BibleReaderToolbarContent(

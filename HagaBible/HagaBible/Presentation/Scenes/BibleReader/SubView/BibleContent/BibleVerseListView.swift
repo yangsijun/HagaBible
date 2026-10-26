@@ -321,31 +321,19 @@ struct BibleVerseListView: View {
     }
     
     private func handleSelectVerse(_ index: Int) {
-        guard selectStartIndex != nil, selectEndIndex != nil else {
-            selectStartIndex = index
-            selectEndIndex = index
-            return
+        (selectStartIndex, selectEndIndex) = Self.selection(afterTapping: index, start: selectStartIndex, end: selectEndIndex)
+    }
+
+    /// The tap-to-select rule, shared with the paged reader: first tap selects one verse,
+    /// a tap above extends up, a tap past the end extends down, a tap inside trims the
+    /// selection to end just before it (or clears it when only one verse is selected).
+    static func selection(afterTapping index: Int, start: Int?, end: Int?) -> (start: Int?, end: Int?) {
+        guard let start, let end else { return (index, index) }
+        if index < start { return (index, end) }
+        if index == start {
+            return index == end ? (nil, nil) : (start + 1, end)
         }
-        if index < selectStartIndex! {
-            selectStartIndex = index
-            return
-        }
-        if index == selectStartIndex! {
-            if index == selectEndIndex! {
-                selectStartIndex = nil
-                selectEndIndex = nil
-            } else {
-                selectStartIndex! += 1
-            }
-            return
-        }
-        if index > selectStartIndex! {
-            if index <= selectEndIndex! {
-                selectEndIndex = index - 1
-            } else {
-                selectEndIndex = index
-            }
-        }
+        return index <= end ? (start, index - 1) : (start, index)
     }
 }
 

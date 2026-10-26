@@ -63,12 +63,16 @@ class AppState {
     /// Experimental ("Labs") feature toggles — opt-in, default off, persisted via
     /// `ExperimentalFeaturePreferences`. Observable so flipping one immediately
     /// shows/hides the dependent UI: the reader's "Listen" action + the TTS mini
-    /// player (TTS), and the Recordings tab (recording).
+    /// player (TTS), the Recordings tab (recording), and the reader's page layout.
     var isTTSEnabled: Bool = ExperimentalFeaturePreferences.isTTSEnabled {
         didSet { ExperimentalFeaturePreferences.isTTSEnabled = isTTSEnabled }
     }
     var isRecordingEnabled: Bool = ExperimentalFeaturePreferences.isRecordingEnabled {
         didSet { ExperimentalFeaturePreferences.isRecordingEnabled = isRecordingEnabled }
+    }
+    /// Book-style reader (page curl, two pages in landscape) instead of the scrolling list.
+    var isPagedReadingEnabled: Bool = ExperimentalFeaturePreferences.isPagedReadingEnabled {
+        didSet { ExperimentalFeaturePreferences.isPagedReadingEnabled = isPagedReadingEnabled }
     }
 
     /// Screen-wake settings for the reader, persisted via `ScreenDisplayPreferences`.

@@ -370,4 +370,62 @@ class BibleReaderViewModel {
     }
     
     var bibleNavigationUpdateTrigger: Bool = false
+
+    // MARK: - Paged reading (Labs)
+
+    /// The current chapter as the paged reader typesets it. The key comes from the loaded
+    /// verses, not from `bookCode`/`chapterNum`: during a navigation those update one await
+    /// ahead of the verse list, and keying on them would briefly present the old verses as
+    /// the new chapter.
+    var pagedChapterContent: ChapterContent {
+        makePagedChapterContent(
+            key: bibleVerseList.first.map { ChapterKey(versionCode: $0.versionCode, bookCode: $0.bookCode, chapter: $0.chapter) }
+                ?? ChapterKey(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum),
+            verses: bibleVerseList,
+            compareTextByVerse: compareVersion != nil ? compareTextByVerse : [:]
+        )
+    }
+
+    /// The chapter before/after the given one in reading order, crossing book boundaries;
+    /// `nil` at the very start or end of the Bible.
+    func adjacentChapter(bookCode: String, chapter: Int, forward: Bool) -> (bookCode: String, chapter: Int)? {
+        guard let index = bibleBookList.firstIndex(where: { $0.bookCode == bookCode }) else { return nil }
+        if forward {
+            if chapter < bibleBookList[index].totalChapters { return (bookCode, chapter + 1) }
+            guard index + 1 < bibleBookList.count else { return nil }
+            return (bibleBookList[index + 1].bookCode, 1)
+        } else {
+            if chapter > 1 { return (bookCode, chapter - 1) }
+            guard index > 0 else { return nil }
+            return (bibleBookList[index - 1].bookCode, bibleBookList[index - 1].totalChapters)
+        }
+    }
+
+    /// Loads a chapter of the current version (plus its comparison text when comparison is
+    /// on) for the paged reader to prefetch, without touching the reader's own position.
+    func fetchPagedChapterContent(bookCode: String, chapter: Int) async -> ChapterContent? {
+        do {
+            let verses = try await bibleRepository.fetchBibleVerseList(versionCode: versionCode, bookCode: bookCode, chapter: chapter)
+            var compare: [Int: String] = [:]
+            if let code = compareVersionCode, code != versionCode {
+                let compareVerses = try await bibleRepository.fetchBibleVerseList(versionCode: code, bookCode: bookCode, chapter: chapter)
+                compare = Dictionary(
+                    compareVerses.compactMap { verse in verse.verseText.map { (verse.verse, $0) } },
+                    uniquingKeysWith: { first, _ in first }
+                )
+            }
+            return makePagedChapterContent(
+                key: ChapterKey(versionCode: versionCode, bookCode: bookCode, chapter: chapter),
+                verses: verses,
+                compareTextByVerse: compare
+            )
+        } catch {
+            Logger.repository.error("Error prefetching chapter for paged reading: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func makePagedChapterContent(key: ChapterKey, verses: [BibleVerse], compareTextByVerse: [Int: String]) -> ChapterContent {
+        ChapterContent(key: key, verses: verses, compareTextByVerse: compareTextByVerse)
+    }
 }
