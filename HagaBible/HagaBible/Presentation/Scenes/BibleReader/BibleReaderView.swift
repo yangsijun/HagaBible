@@ -54,6 +54,8 @@ struct BibleReaderView: View {
     /// top bar (e.g. a narrow iPad window) instead of being dropped — the shrink decision
     /// is real measured width, not a size-class guess.
     @State private var availableWidth: CGFloat = 0
+    /// Window x of the paged reader's verse column; the toolbar title aligns to it.
+    @State private var pagedTextLeadingX: CGFloat?
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -246,7 +248,8 @@ struct BibleReaderView: View {
                     afterTapping: verse - 1, start: selectStartIndex, end: selectEndIndex
                 )
             },
-            contextMenu: pagedVerseMenu
+            contextMenu: pagedVerseMenu,
+            onTextLeadingChanged: { pagedTextLeadingX = $0 }
         )
     }
 
@@ -453,6 +456,7 @@ struct BibleReaderView: View {
                     chapterNum: viewModel.chapterNum,
                     bibleVersion: viewModel.bibleVersion,
                     availableWidth: availableWidth,
+                    alignedLeadingX: appState.isPagedReadingEnabled ? pagedTextLeadingX : nil,
                     showBibleNavigation: $showBibleNavigation,
                     showFontThemeConfig: $showFontThemeConfig,
                     onListenTapped: handleListenTapped,

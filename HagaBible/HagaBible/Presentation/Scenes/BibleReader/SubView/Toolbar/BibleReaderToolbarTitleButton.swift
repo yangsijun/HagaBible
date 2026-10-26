@@ -20,6 +20,19 @@ struct BibleReaderToolbarTitleButton: View {
     /// dropped, never truncated.
     let availableWidth: CGFloat
 
+    /// Window x the title's glass pill should start at, when the reader wants it lined up
+    /// with its verse column (paged mode, where a side safe area pushes the text inward).
+    /// The bar's own pill can't be moved (padding only grows it, a spacer item costs a
+    /// whole item slot), so in that case the item's shared background is hidden, the
+    /// button draws its own glass, and leading padding outside the glass does the moving.
+    let alignedLeadingX: CGFloat?
+    /// Leading padding currently applied; corrected from the measured pill position.
+    @State private var leadingShift: CGFloat = 0
+    /// Corrections left for the current target: a safety net so a bar that never
+    /// settles can't keep the layout spinning.
+    @State private var correctionsLeft = 0
+    private static let correctionBudget = 6
+
     /// Re-evaluate the (Dynamic-Type-derived) base sizes when the user changes text size.
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -79,13 +92,47 @@ struct BibleReaderToolbarTitleButton: View {
     }
 
     var body: some View {
+        if alignedLeadingX != nil, #available(iOS 26.0, *) {
+            button
+                .buttonStyle(.glass)
+                // Without the shared background the bar offers the item its minimum
+                // width, which collapses the compressible title; claim the natural size.
+                .fixedSize()
+                // A UIKit marker under the pill (inside the padding) reports the pill's
+                // final window x the moment the bar lays it out: UIKit lays out once per
+                // change, unlike SwiftUI geometry, which also reports every animated
+                // frame on the way and would feed the shift back into itself.
+                .background(WindowPositionMarker { x in adjustShift(measuredX: x) })
+                .padding(.leading, leadingShift)
+                .onAppear { correctionsLeft = Self.correctionBudget }
+                .onChange(of: alignedLeadingX) { correctionsLeft = Self.correctionBudget }
+                .onChange(of: availableWidth) { correctionsLeft = Self.correctionBudget }
+        } else {
+            button
+        }
+    }
+
+    /// One correction step per layout, within the budget; padding moves the pill
+    /// one-to-one, so the first step lands it and later layouts find nothing to do.
+    private func adjustShift(measuredX: CGFloat) {
+        guard let alignedLeadingX, correctionsLeft > 0 else { return }
+        let delta = alignedLeadingX - measuredX
+        guard abs(delta) >= 0.5 else { return }
+        correctionsLeft -= 1
+        leadingShift = max(0, leadingShift + delta)
+    }
+
+    @ViewBuilder
+    private var button: some View {
         if #available(iOS 26.0, *) {
             Button(action: {
                 showBibleNavigation.toggle()
             }) {
                 adaptiveTitle
                     .foregroundStyle(Color(.label))
-                    .padding(.vertical, 8)
+                    // The glass button style pads more than the bar's pill; 2pt brings
+                    // its height back to the bar's 44pt.
+                    .padding(.vertical, alignedLeadingX == nil ? 8 : 2)
             }
         } else {
             Button(action: {
@@ -118,6 +165,52 @@ struct BibleReaderToolbarTitleButton: View {
     }
 }
 
+
+/// Invisible view that reports its own window x after each UIKit layout pass.
+private struct WindowPositionMarker: UIViewRepresentable {
+    let onLayout: (CGFloat) -> Void
+
+    func makeUIView(context: Context) -> MarkerView {
+        let view = MarkerView()
+        view.isUserInteractionEnabled = false
+        view.onLayout = onLayout
+        return view
+    }
+
+    func updateUIView(_ view: MarkerView, context: Context) {
+        view.onLayout = onLayout
+        // The marker's own bounds never change, so UIKit won't lay it out again when the
+        // bar moves it (rotation, fold), and a new target with an unmoved pill would be
+        // deduplicated away. Every SwiftUI update of the title asks for one fresh report
+        // on the next layout pass, when the bar's frames are final.
+        view.lastX = nil
+        view.setNeedsLayout()
+    }
+
+    final class MarkerView: UIView {
+        var onLayout: ((CGFloat) -> Void)?
+        var lastX: CGFloat?
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            report()
+        }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            report()
+        }
+
+        private func report() {
+            guard window != nil else { return }
+            let x = convert(bounds, to: nil).minX
+            guard x != lastX else { return }
+            lastX = x
+            onLayout?(x)
+        }
+    }
+}
+
 #Preview {
     ZStack {
         BibleReaderToolbarTitleButton(
@@ -125,6 +218,7 @@ struct BibleReaderToolbarTitleButton: View {
             chapterNum: 1,
             bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", versionShortName: "개역한글", language: "Korean", isDownloaded: true),
             availableWidth: 0,
+            alignedLeadingX: nil,
             showBibleNavigation: .constant(false)
         )
     }

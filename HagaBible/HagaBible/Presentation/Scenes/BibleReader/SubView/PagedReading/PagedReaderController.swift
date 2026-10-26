@@ -31,36 +31,55 @@ enum PageSide {
 /// - A crease running left-to-right can't be a spine; text flows around it instead
 ///   (`exclusionBand` becomes an exclusion path on every page).
 /// - Without a crease, landscape (wider than tall) is a spread, portrait a single page.
+///   A spread spans the area between the side safe areas (`sideInsets`) so both pages
+///   are the same width whichever side the Dynamic Island or a toolbar column is on.
 struct PagedReaderLayout: Equatable {
     var pageAreaFrame: CGRect
     var isSpread: Bool
-    /// Extra inset on a page's spine side: half the crease width (0 without a spine crease).
+    /// The spread is pinned to a fold crease (half-folded device) rather than laid out freely.
+    var isCreaseCentred = false
+    /// Extra inset on a page's spine side so text clears the crease (0 without a spine
+    /// crease). Half the crease, less `spineMarginTrim`: next to the spine the page gives
+    /// up part of its base margin, so the text sits `textInsets.left - spineMarginTrim`
+    /// from the crease edge instead of a full margin and the two halves read closer.
     var spineGutter: CGFloat = 0
+    /// How much of the base side margin a half-folded page spends on the spine side.
+    static let spineMarginTrim: CGFloat = 12
+    /// Likewise on the outer edge: a half-folded page is narrow, so it keeps a tighter
+    /// frame there too (`textInsets.left - outerMarginTrim` plus the side safe area).
+    static let outerMarginTrim: CGFloat = 12
     /// Vertical band (page-area coordinates) text must avoid on every page.
     var exclusionBand: ClosedRange<CGFloat>?
 
-    static func resolve(bounds: CGRect, divisionRegions: [CGRect]) -> PagedReaderLayout {
+    static func resolve(bounds: CGRect, divisionRegions: [CGRect], sideInsets: (left: CGFloat, right: CGFloat) = (0, 0)) -> PagedReaderLayout {
         let regions = divisionRegions.filter { !$0.isEmpty && $0.intersects(bounds) }
         if let crease = regions.first(where: { $0.height > $0.width }) {
             let center = crease.midX
             let half = min(center - bounds.minX, bounds.maxX - center)
             // A crease near an edge can't carry a readable spread; ignore it.
-            guard half >= 160 else { return fallback(bounds) }
+            guard half >= 160 else { return fallback(bounds, sideInsets: sideInsets) }
             return PagedReaderLayout(
                 pageAreaFrame: CGRect(x: center - half, y: bounds.minY, width: half * 2, height: bounds.height),
                 isSpread: true,
-                spineGutter: ceil(crease.width / 2)
+                isCreaseCentred: true,
+                spineGutter: max(0, ceil(crease.width / 2) - spineMarginTrim)
             )
         }
-        var layout = fallback(bounds)
+        var layout = fallback(bounds, sideInsets: sideInsets)
         if let crease = regions.first(where: { $0.width >= $0.height }) {
             layout.exclusionBand = (crease.minY - bounds.minY)...(crease.maxY - bounds.minY)
         }
         return layout
     }
 
-    private static func fallback(_ bounds: CGRect) -> PagedReaderLayout {
-        PagedReaderLayout(pageAreaFrame: bounds, isSpread: bounds.width > bounds.height)
+    private static func fallback(_ bounds: CGRect, sideInsets: (left: CGFloat, right: CGFloat)) -> PagedReaderLayout {
+        let isSpread = bounds.width > bounds.height
+        var area = bounds
+        if isSpread, bounds.width - sideInsets.left - sideInsets.right >= 320 {
+            area.origin.x += sideInsets.left
+            area.size.width -= sideInsets.left + sideInsets.right
+        }
+        return PagedReaderLayout(pageAreaFrame: area, isSpread: isSpread)
     }
 }
 
@@ -97,6 +116,10 @@ final class PagedReaderController: UIViewController {
     var onVerseTapped: ((Int) -> Void)?
     /// Long-press menu for a verse of the current chapter (verse number); `nil` for none.
     var contextMenu: ((Int) -> UIMenu?)?
+    /// Fired when the left edge of the text column (window coordinates) moves, so the
+    /// toolbar title can line up with the verses instead of the bar's own margin.
+    var onTextLeadingChanged: ((CGFloat) -> Void)?
+    private var reportedTextLeadingX: CGFloat?
 
     /// Screen regions the text must stay out of (the safe area, since the view itself
     /// extends under the bars). Changing it re-typesets.
@@ -121,6 +144,9 @@ final class PagedReaderController: UIViewController {
     private var pendingLandingVerse: Int?
 
     private var pageViewController: UIPageViewController?
+    /// The old pages, kept on top while a fold, unfold or rotation opens the new ones.
+    private var relayoutSnapshot: UIView?
+    private var relayoutAnimationsInFlight = 0
     private var layout: PagedReaderLayout?
     /// The insets the current pagination was computed with; a change re-typesets.
     private var paginatedInsets: UIEdgeInsets = .zero
@@ -139,37 +165,65 @@ final class PagedReaderController: UIViewController {
     /// already excludes it in portrait, but in landscape (tab bar in the trailing corner)
     /// it does not, and text must still stay clear of it.
     private var tabBarReserve: CGFloat = 0
+    /// A tab bar that is not a bottom strip (a vertical pill at the trailing edge on a
+    /// foldable), in view coordinates. Text flows around it on the pages it covers
+    /// instead of giving up the whole bottom of every page.
+    private var tabBarOcclusion: CGRect?
+    /// Stands in for the device's fold creases (unit tests only; no foldable simulator).
+    var divisionRegionsForTesting: [CGRect]? {
+        didSet { view.setNeedsLayout() }
+    }
 
-    /// Margins around a page's text, before the spine gutter.
+    /// Margins around a page's text, before the spine gutter and the outer safe inset.
+    /// A single page keeps the side safe areas (the Dynamic Island in landscape) out of
+    /// both margins; a spread handles them through `outerInset` instead.
     private var textInsets: UIEdgeInsets {
         let base = PageViewController.textInsets
         return UIEdgeInsets(
             top: base.top + contentInsets.top,
-            left: base.left,
+            left: base.left + (isSpread ? 0 : contentInsets.left),
             bottom: base.bottom + max(contentInsets.bottom, tabBarReserve),
-            right: base.right
+            right: base.right + (isSpread ? 0 : contentInsets.right)
         )
+    }
+
+    /// Adjustment to each spread page's outer-edge margin; the spine side never gets it.
+    /// A plain spread already sits between the side safe areas (`sideInsets` in the
+    /// layout), so only a crease-centred spread needs them: it is pinned to the crease,
+    /// and both halves keep the same margin (the larger side) so the book stays
+    /// symmetric. Less `outerMarginTrim`, so the half-folded frame is a little tighter;
+    /// negative when there is no safe area at all (the base margin shrinks).
+    private var outerInset: CGFloat {
+        guard let layout, layout.isCreaseCentred else { return 0 }
+        return max(contentInsets.left, contentInsets.right) - PagedReaderLayout.outerMarginTrim
     }
 
     /// Tallest strip a bottom tab bar can plausibly take; anything else found in the
     /// window (a hidden/top-anchored bar) is ignored rather than blanking the pages.
     private static let maxTabBarReserve: CGFloat = 120
 
-    /// How far a visible bottom tab bar overlapping this view reaches up into it. The
-    /// bar's own frame is not trusted (it can be a strip, or the whole window, depending
-    /// on the OS); the strip is taken from its visible content views instead.
-    private func measureTabBarReserve() -> CGFloat {
-        guard let window = view.window else { return 0 }
-        let candidates = Self.tabBars(in: window).compactMap { bar -> CGFloat? in
-            guard !bar.isHidden, bar.alpha > 0 else { return nil }
+    /// Where the visible tab bar sits over this view. The bar's own frame is not trusted
+    /// (it can be a strip, or the whole window, depending on the OS); its visible content
+    /// views are measured instead. A wide band along the bottom becomes a bottom reserve;
+    /// anything else (a trailing-edge pill) becomes an occlusion rect.
+    private func measureTabBar() -> (reserve: CGFloat, occlusion: CGRect?) {
+        guard let window = view.window else { return (0, nil) }
+        var reserve: CGFloat = 0
+        var occlusion: CGRect?
+        for bar in Self.tabBars(in: window) where !bar.isHidden && bar.alpha > 0 {
             let contentFrames = bar.subviews
                 .filter { !$0.isHidden && $0.alpha > 0 && !$0.bounds.isEmpty }
                 .map { $0.convert($0.bounds, to: view) }
             let frame = contentFrames.dropFirst().reduce(contentFrames.first ?? bar.convert(bar.bounds, to: view)) { $0.union($1) }
-            guard frame.intersects(view.bounds), frame.minY >= view.bounds.maxY - Self.maxTabBarReserve else { return nil }
-            return view.bounds.maxY - frame.minY
+            guard frame.intersects(view.bounds) else { continue }
+            let isBottomStrip = frame.minY >= view.bounds.maxY - Self.maxTabBarReserve && frame.width >= view.bounds.width / 2
+            if isBottomStrip {
+                reserve = max(reserve, view.bounds.maxY - frame.minY)
+            } else {
+                occlusion = occlusion.map { $0.union(frame) } ?? frame
+            }
         }
-        return candidates.max() ?? 0
+        return (reserve, occlusion)
     }
 
     private static func tabBars(in view: UIView) -> [UITabBar] {
@@ -187,7 +241,7 @@ final class PagedReaderController: UIViewController {
         let insets = textInsets
         let base = PageViewController.textInsets
         var size = CGSize(
-            width: pageSize.width - insets.left - insets.right - (layout?.spineGutter ?? 0),
+            width: pageSize.width - insets.left - insets.right - (layout?.spineGutter ?? 0) - outerInset,
             height: pageSize.height - insets.top - insets.bottom
         )
         if size.width < 120 { size.width = pageSize.width - base.left - base.right }
@@ -195,12 +249,27 @@ final class PagedReaderController: UIViewController {
         return size
     }
 
-    /// The crease band translated into page text coordinates (same on every page since
-    /// the band spans the whole width).
-    private var exclusionRects: [CGRect] {
-        guard let band = layout?.exclusionBand else { return [] }
-        let top = band.lowerBound - textInsets.top
-        return [CGRect(x: -1_000, y: top, width: 10_000, height: band.upperBound - band.lowerBound)]
+    /// Areas text must flow around on the page at `index`, in page text coordinates: the
+    /// crease band (every page) and the tab bar pill (only the page it actually covers).
+    private func exclusionRects(forPage index: Int) -> [CGRect] {
+        var rects: [CGRect] = []
+        let insets = textInsets
+        let pageSide = side(of: PageRef(key: ChapterKey(versionCode: "", bookCode: "", chapter: 0), index: index))
+        if let band = layout?.exclusionBand {
+            rects.append(CGRect(x: -1_000, y: band.lowerBound - insets.top, width: 10_000, height: band.upperBound - band.lowerBound))
+        }
+        if let occlusion = tabBarOcclusion, let layout {
+            var pageFrame = layout.pageAreaFrame
+            pageFrame.size = pageSize
+            if pageSide == .right { pageFrame.origin.x += pageSize.width }
+            let textOriginX = insets.left + (pageSide == .right ? layout.spineGutter : outerInset)
+            let textFrame = CGRect(origin: CGPoint(x: pageFrame.minX + textOriginX, y: pageFrame.minY + insets.top), size: textSize)
+            let padded = occlusion.insetBy(dx: -12, dy: -12)
+            if padded.intersects(textFrame) {
+                rects.append(padded.offsetBy(dx: -textFrame.minX, dy: -textFrame.minY))
+            }
+        }
+        return rects
     }
 
     // MARK: - Input
@@ -282,32 +351,107 @@ final class PagedReaderController: UIViewController {
         super.viewDidLayoutSubviews()
         let bounds = view.bounds
         guard bounds.width > 0, bounds.height > 0 else { return }
-        let newLayout = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: divisionRegionFrames())
-        let newReserve = measureTabBarReserve()
-        guard newLayout != layout || pageViewController == nil || paginatedInsets != contentInsets || newReserve != tabBarReserve else { return }
+        let newLayout = PagedReaderLayout.resolve(
+            bounds: bounds,
+            divisionRegions: divisionRegionFrames(),
+            sideInsets: (contentInsets.left, contentInsets.right)
+        )
+        let tabBar = measureTabBar()
+        // Cheap and idempotent; also catches the view being moved into its window after
+        // the first layout, which changes window coordinates without changing the layout.
+        defer { reportTextLeadingIfNeeded() }
+        guard newLayout != layout || pageViewController == nil || paginatedInsets != contentInsets
+                || tabBar.reserve != tabBarReserve || tabBar.occlusion != tabBarOcclusion else { return }
 
         let landingVerse = pendingLandingVerse ?? currentFirstVisibleVerse()
         pendingLandingVerse = nil
         let spreadChanged = newLayout.isSpread != layout?.isSpread
+        let previousLayout = layout
+        let isRelayout = previousLayout != nil && previousLayout != newLayout
+        let oldPages = isRelayout ? pageViewController?.view.snapshotView(afterScreenUpdates: false) : nil
         layout = newLayout
         paginatedInsets = contentInsets
-        tabBarReserve = newReserve
-        if spreadChanged || pageViewController == nil {
-            rebuildPageViewController()
+        tabBarReserve = tabBar.reserve
+        tabBarOcclusion = tabBar.occlusion
+        // This often runs inside UIKit's size-transition animation, which would animate
+        // every new frame from zero (pages sliding in from the top-left corner). The new
+        // pages are laid out in place; `animateRelayout` supplies the motion instead.
+        UIView.performWithoutAnimation {
+            if spreadChanged || pageViewController == nil {
+                rebuildPageViewController()
+            }
+            pageViewController?.view.frame = newLayout.pageAreaFrame
+            repaginateAllSlots()
+            if let landingVerse {
+                display(pageContaining: landingVerse, animated: false)
+            } else if currentSlot != nil {
+                display(pageContaining: 1, animated: false)
+            }
+            pageViewController?.view.layoutIfNeeded()
         }
-        pageViewController?.view.frame = newLayout.pageAreaFrame
-        repaginateAllSlots()
-        if let landingVerse {
-            display(pageContaining: landingVerse, animated: false)
-        } else if currentSlot != nil {
-            display(pageContaining: 1, animated: false)
+        if isRelayout, let previousLayout {
+            animateRelayout(from: oldPages, oldFrame: previousLayout.pageAreaFrame)
         }
+    }
+
+    /// A fold, unfold or rotation re-typesets everything, so the old pages can't morph
+    /// into the new ones. The new spread opens from its centre (the spine) while the old
+    /// pages fade out, widening the same way, so the book reads as opening further.
+    private func animateRelayout(from snapshot: UIView?, oldFrame: CGRect) {
+        guard let pageView = pageViewController?.view, view.window != nil else { return }
+        relayoutSnapshot?.removeFromSuperview()
+        relayoutSnapshot = snapshot
+        UIView.performWithoutAnimation {
+            if let snapshot {
+                // Centred on the new spine so the old pages dissolve where the new ones
+                // open; no autoresizing, or the rotating bounds would stretch them.
+                snapshot.autoresizingMask = []
+                snapshot.bounds = CGRect(origin: .zero, size: oldFrame.size)
+                snapshot.center = CGPoint(x: pageView.frame.midX, y: pageView.frame.midY)
+                view.addSubview(snapshot)
+            }
+            pageView.transform = CGAffineTransform(scaleX: 0.85, y: 1)
+            pageView.alpha = 0
+        }
+        relayoutAnimationsInFlight += 1
+        UIView.animate(
+            withDuration: 0.45, delay: 0, usingSpringWithDamping: 0.9, initialSpringVelocity: 0,
+            options: [.overrideInheritedDuration, .overrideInheritedCurve, .overrideInheritedOptions, .allowUserInteraction]
+        ) {
+            pageView.transform = .identity
+            pageView.alpha = 1
+            snapshot?.transform = CGAffineTransform(scaleX: 1.1, y: 1)
+            snapshot?.alpha = 0
+        } completion: { [weak self, weak snapshot] _ in
+            snapshot?.removeFromSuperview()
+            guard let self else { return }
+            relayoutAnimationsInFlight -= 1
+            if relayoutSnapshot === snapshot { relayoutSnapshot = nil }
+        }
+    }
+
+    /// Whether a relayout animation is still running (tests).
+    var isAnimatingRelayout: Bool { relayoutAnimationsInFlight > 0 }
+
+    /// Where the first (or only) page's verse numbers start, in window coordinates.
+    var textLeadingX: CGFloat {
+        guard let layout else { return 0 }
+        let x = layout.pageAreaFrame.minX + textInsets.left + outerInset
+        return view.convert(CGPoint(x: x, y: 0), to: nil).x
+    }
+
+    private func reportTextLeadingIfNeeded() {
+        let x = textLeadingX
+        guard x != reportedTextLeadingX else { return }
+        reportedTextLeadingX = x
+        onTextLeadingChanged?(x)
     }
 
     /// Active fold creases in the view's coordinates (foldable iPhone, iOS 27.1+). The
     /// physical crease only: the region's frame also carries recommended margins, which
     /// would double the gutter on a half-folded device.
     private func divisionRegionFrames() -> [CGRect] {
+        if let divisionRegionsForTesting { return divisionRegionsForTesting }
         if #available(iOS 27.1, *) {
             return view.reservedRegions(kind: .division)
                 .filter(\.isActive)
@@ -356,7 +500,7 @@ final class PagedReaderController: UIViewController {
             slot.paginator = nil
             return
         }
-        slot.paginator = ChapterPaginator(content: slot.content, style: style, pageSize: textSize, exclusionRects: exclusionRects)
+        slot.paginator = ChapterPaginator(content: slot.content, style: style, pageSize: textSize) { [self] index in exclusionRects(forPage: index) }
     }
 
     private func replaceCurrent(with content: ChapterContent, styleChanged: Bool) {
@@ -457,10 +601,14 @@ final class PagedReaderController: UIViewController {
         let paginator = isFiller(ref) ? nil : slot(for: ref.key)?.paginator
         let isCurrentChapter = ref.key == currentSlot?.content.key
         var insets = textInsets
-        // The gutter sits on the spine side so the outer margins stay at their usual width.
+        // The gutter sits on the spine side, the safe-area inset (if any) on the outer side.
         switch pageSide {
-        case .left: insets.right += layout?.spineGutter ?? 0
-        case .right: insets.left += layout?.spineGutter ?? 0
+        case .left:
+            insets.left += outerInset
+            insets.right += layout?.spineGutter ?? 0
+        case .right:
+            insets.left += layout?.spineGutter ?? 0
+            insets.right += outerInset
         case .single: break
         }
         let page = PageViewController(
@@ -600,6 +748,8 @@ final class PageViewController: UIViewController {
         didSet { textView?.contextMenu = contextMenu }
     }
     var verseTapRecognizer: UITapGestureRecognizer? { textView?.tapRecognizer }
+    /// The text container this page typesets into (nil for a filler).
+    var textContainer: NSTextContainer? { textView?.textContainer }
 
     init(
         ref: PageRef,
@@ -668,7 +818,8 @@ final class PageTextView: UIView {
 
     private let paginator: ChapterPaginator
     private let pageIndex: Int
-    private let textOriginX: CGFloat
+    let textOriginX: CGFloat
+    var textContainer: NSTextContainer? { paginator.container(at: pageIndex) }
     var bookmarkStripes: [Int: [BookmarkStripe?]]
     var highlights: PageHighlights
     var pageBackgroundColor: UIColor = .systemBackground

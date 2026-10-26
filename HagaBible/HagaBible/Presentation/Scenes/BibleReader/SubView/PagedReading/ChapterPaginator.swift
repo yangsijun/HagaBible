@@ -87,9 +87,9 @@ final class ChapterPaginator {
     var pageCount: Int { containers.count }
 
     /// - Parameter exclusionRects: areas (in page text coordinates) text must flow
-    ///   around on every page — the fold crease of a foldable held with the crease
-    ///   running across the page.
-    init(content: ChapterContent, style: PageTextStyle, pageSize: CGSize, exclusionRects: [CGRect] = []) {
+    ///   around on the given page — a fold crease running across every page, or a
+    ///   floating tab bar that covers a corner of right-hand pages only.
+    init(content: ChapterContent, style: PageTextStyle, pageSize: CGSize, exclusionRects: (_ pageIndex: Int) -> [CGRect] = { _ in [] }) {
         let built = Self.buildText(content: content, style: style)
         self.textStorage = NSTextStorage(attributedString: built.text)
         self.verseRanges = built.verseRanges
@@ -156,13 +156,13 @@ final class ChapterPaginator {
 
     // MARK: - Layout
 
-    private func paginate(exclusionRects: [CGRect]) {
+    private func paginate(exclusionRects: (Int) -> [CGRect]) {
         let totalGlyphs = layoutManager.numberOfGlyphs
         var laidOut = 0
         repeat {
             let container = NSTextContainer(size: pageSize)
             container.lineFragmentPadding = 0
-            container.exclusionPaths = exclusionRects.map { UIBezierPath(rect: $0) }
+            container.exclusionPaths = exclusionRects(containers.count).map { UIBezierPath(rect: $0) }
             layoutManager.addTextContainer(container)
             containers.append(container)
             let glyphRange = layoutManager.glyphRange(for: container)

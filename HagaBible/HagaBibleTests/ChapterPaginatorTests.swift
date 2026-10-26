@@ -122,7 +122,7 @@ struct ChapterPaginatorTests {
         let content = makeContent(makeVerses(count: 31))
         let plain = ChapterPaginator(content: content, style: style, pageSize: CGSize(width: 320, height: 500))
         let band = CGRect(x: -1_000, y: 240, width: 10_000, height: 20)
-        let creased = ChapterPaginator(content: content, style: style, pageSize: CGSize(width: 320, height: 500), exclusionRects: [band])
+        let creased = ChapterPaginator(content: content, style: style, pageSize: CGSize(width: 320, height: 500), exclusionRects: { _ in [band] })
         #expect(creased.pageCount >= plain.pageCount)
         for page in 0..<creased.pageCount {
             let container = creased.container(at: page)!
@@ -149,16 +149,20 @@ struct PagedReaderLayoutTests {
         #expect(!PagedReaderLayout.resolve(bounds: CGRect(x: 0, y: 0, width: 402, height: 780), divisionRegions: []).isSpread)
     }
 
-    @Test("A vertical crease becomes the spine: spread centred on it, equal page widths, gutter half the crease")
+    @Test("A vertical crease becomes the spine: spread centred on it, equal page widths, gutter half the crease less the trimmed margin")
     func verticalCreaseIsSpine() {
         let bounds = CGRect(x: 0, y: 0, width: 760, height: 740)
-        let crease = CGRect(x: 370, y: 0, width: 20, height: 740)   // centre 380, right of the view's centre
+        let crease = CGRect(x: 360, y: 0, width: 40, height: 740)   // centre 380, right of the view's centre
         let layout = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [crease])
         #expect(layout.isSpread)
         #expect(layout.pageAreaFrame.midX == 380)
         #expect(layout.pageAreaFrame.width == 760)
-        #expect(layout.spineGutter == 10)
+        #expect(layout.spineGutter == 20 - PagedReaderLayout.spineMarginTrim)
         #expect(layout.exclusionBand == nil)
+
+        // A crease narrower than the trimmed margin needs no gutter at all; the base margin already clears it.
+        let narrow = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [CGRect(x: 370, y: 0, width: 20, height: 740)])
+        #expect(narrow.spineGutter == 0)
 
         let offCentre = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [CGRect(x: 290, y: 0, width: 20, height: 740)])
         #expect(offCentre.pageAreaFrame.midX == 300)
@@ -248,6 +252,136 @@ struct PagedReaderControllerTests {
         }
         #expect(oddPageVerse != nil)
         _ = pageViewController
+    }
+
+    /// Hosts the controller in a window next to a tab bar whose visible content sits at `barFrame`.
+    private func makeHostedController(size: CGSize, barFrame: CGRect) -> (PagedReaderController, UIWindow) {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        let controller = PagedReaderController()
+        window.rootViewController = controller
+        let bar = UITabBar(frame: barFrame)
+        bar.addSubview(UIView(frame: bar.bounds))
+        window.addSubview(bar)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        return (controller, window)
+    }
+
+    @Test("A size change opens the new pages from the centre over a fading snapshot, never sliding them in")
+    func relayoutOpensFromCentre() async throws {
+        let (controller, window) = makeHostedController(size: CGSize(width: 402, height: 874), barFrame: .zero)
+        let pageView = try #require(controller.children.compactMap { $0 as? UIPageViewController }.first?.view)
+        #expect(!controller.isAnimatingRelayout)
+        #expect(pageView.transform == .identity)
+
+        window.frame = CGRect(x: 0, y: 0, width: 874, height: 402)
+        controller.view.frame = window.bounds
+        controller.view.layoutIfNeeded()
+
+        let spread = try #require(controller.children.compactMap { $0 as? UIPageViewController }.first?.view)
+        #expect(controller.isAnimatingRelayout)
+        #expect(spread.frame == window.bounds)   // laid out in place: no frame animation from zero
+        #expect(spread.layer.animationKeys()?.contains("transform") == true)   // the opening (scale-x) animation is attached
+        #expect(displayedPages(controller).count == 2)
+
+        // The spring nominally takes 0.45s; under a loaded test host the completion can land late.
+        for _ in 0..<30 where controller.isAnimatingRelayout {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        #expect(!controller.isAnimatingRelayout)
+        #expect(spread.transform == .identity)
+        #expect(spread.alpha == 1)
+    }
+
+    private func displayedPages(_ controller: PagedReaderController) -> [PageViewController] {
+        let pageViewController = controller.children.compactMap { $0 as? UIPageViewController }.first
+        return pageViewController?.viewControllers?.compactMap { $0 as? PageViewController } ?? []
+    }
+
+    @Test("A bottom tab bar strip shortens every page; a trailing pill only carves the page it covers")
+    func tabBarPlacement() throws {
+        let size = CGSize(width: 874, height: 402)
+        let fullHeight = size.height - PageViewController.textInsets.top - PageViewController.textInsets.bottom
+
+        let (strip, stripWindow) = makeHostedController(size: size, barFrame: CGRect(x: 0, y: 338, width: 874, height: 64))
+        let stripPages = displayedPages(strip)
+        #expect(stripPages.count == 2)
+        for page in stripPages {
+            let container = try #require(page.textContainer)
+            #expect(container.size.height == fullHeight - 64)
+            #expect(container.exclusionPaths.isEmpty)
+        }
+
+        let pill = CGRect(x: 820, y: 180, width: 44, height: 200)
+        let (pillReader, pillWindow) = makeHostedController(size: size, barFrame: pill)
+        let pillPages = displayedPages(pillReader)
+        #expect(pillPages.count == 2)
+        let left = try #require(pillPages.first?.textContainer)
+        let right = try #require(pillPages.last?.textContainer)
+        #expect(left.size.height == fullHeight)
+        #expect(left.exclusionPaths.isEmpty)
+        #expect(right.size.height == fullHeight)
+        let carved = try #require(right.exclusionPaths.first?.bounds)
+        // In the right page's text coordinates the pill sits at the trailing edge.
+        let rightTextOriginX = size.width / 2 + PageViewController.textInsets.left
+        #expect(abs(carved.minX - (pill.minX - 12 - rightTextOriginX)) < 1)
+        #expect(abs(carved.minY - (pill.minY - 12 - PageViewController.textInsets.top)) < 1)
+        // Text really flows around it: the last verse on the right page starts lower than it would unobstructed.
+        #expect(right.exclusionPaths.count == 1)
+        _ = (stripWindow, pillWindow)
+    }
+
+    @Test("Side safe areas stay out of the text: each spread page clears its own side, a single page clears both")
+    func sideSafeAreas() throws {
+        let base = PageViewController.textInsets
+        let spread = makeController(size: CGSize(width: 874, height: 402))
+        spread.contentInsets = UIEdgeInsets(top: 0, left: 59, bottom: 21, right: 0)
+        spread.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        spread.view.layoutIfNeeded()
+        let pages = displayedPages(spread)
+        #expect(pages.count == 2)
+        // The island is on the left only: the spread starts after it and the remaining
+        // width is split evenly, so both pages (and their text) are the same width.
+        let pageViewController = try #require(spread.children.compactMap { $0 as? UIPageViewController }.first)
+        #expect(pageViewController.view.frame == CGRect(x: 59, y: 0, width: 874 - 59, height: 402))
+        for page in pages {
+            let container = try #require(page.textContainer)
+            #expect(container.size.width == (874 - 59) / 2 - base.left - base.right)
+            #expect(container.exclusionPaths.isEmpty)
+            let text = try #require(page.view.subviews.compactMap { $0 as? PageTextView }.first)
+            #expect(text.textOriginX == base.left)
+        }
+        #expect(spread.textLeadingX == 59 + base.left)
+
+        let single = makeController(size: CGSize(width: 402, height: 874))
+        single.contentInsets = UIEdgeInsets(top: 59, left: 20, bottom: 34, right: 0)
+        single.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        single.view.layoutIfNeeded()
+        let container = try #require(displayedPages(single).first?.textContainer)
+        #expect(container.size.width == 402 - base.left - base.right - 20)
+    }
+
+    @Test("Half-folded, both pages keep the same (trimmed) outer margin even when only one side has a safe area")
+    func halfFoldedSymmetricMargins() throws {
+        let base = PageViewController.textInsets
+        let controller = makeController(size: CGSize(width: 874, height: 402))
+        controller.divisionRegionsForTesting = [CGRect(x: 417, y: 0, width: 40, height: 402)]   // half 20 → gutter 8
+        controller.contentInsets = UIEdgeInsets(top: 0, left: 0, bottom: 21, right: 59)
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let pages = displayedPages(controller)
+        #expect(pages.count == 2)
+        for page in pages {
+            let container = try #require(page.textContainer)
+            #expect(container.exclusionPaths.isEmpty)
+            #expect(container.size.width == 437 - base.left - base.right - (59 - PagedReaderLayout.outerMarginTrim) - 8)
+        }
+        let leftText = try #require(pages[0].view.subviews.compactMap { $0 as? PageTextView }.first)
+        let rightText = try #require(pages[1].view.subviews.compactMap { $0 as? PageTextView }.first)
+        #expect(leftText.textOriginX == base.left + 59 - PagedReaderLayout.outerMarginTrim)
+        #expect(rightText.textOriginX == base.left + 8)
     }
 
     @Test("Navigating to a verse lands on its page; a prefetched neighbour continues the sequence")

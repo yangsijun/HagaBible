@@ -15,6 +15,9 @@ struct BibleReaderToolbarContent: ToolbarContent {
     /// can cap its width to the real available space and shrink to fit a cramped top bar
     /// instead of being dropped.
     let availableWidth: CGFloat
+    /// Window x the title should start at (the paged reader's verse column); `nil` keeps
+    /// the bar's own placement.
+    let alignedLeadingX: CGFloat?
     @Binding var showBibleNavigation: Bool
     @Binding var showFontThemeConfig: Bool
     let onListenTapped: () -> Void
@@ -36,9 +39,12 @@ struct BibleReaderToolbarContent: ToolbarContent {
                 chapterNum: chapterNum,
                 bibleVersion: bibleVersion,
                 availableWidth: availableWidth,
+                alignedLeadingX: alignedLeadingX,
                 showBibleNavigation: $showBibleNavigation
             )
         }
+        // When the title aligns to the reader's text it draws its own glass and moves it.
+        .sharedBackgroundVisibility(alignedLeadingX == nil ? .automatic : .hidden)
         ToolbarItem {
             BibleReaderToolbarMenuButton {
                 if isTTSEnabled {
@@ -101,6 +107,7 @@ struct BibleReaderToolbarContent: ToolbarContent {
                     chapterNum: 1,
                     bibleVersion: .init(versionCode: "KRV", versionName: "개역한글", versionShortName: "개역한글", language: "Korean", isDownloaded: true),
                     availableWidth: 0,
+                    alignedLeadingX: nil,
                     showBibleNavigation: .constant(false),
                     showFontThemeConfig: .constant(false),
                     onListenTapped: {},

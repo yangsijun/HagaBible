@@ -28,6 +28,8 @@ struct PagedBibleReaderView: UIViewControllerRepresentable {
     let onVerseTapped: (Int) -> Void
     /// Long-press menu for a verse (verse number) of the displayed chapter.
     let contextMenu: (Int) -> UIMenu?
+    /// Window x where the verse column starts; the toolbar title lines up with it.
+    let onTextLeadingChanged: (CGFloat) -> Void
 
     func makeUIViewController(context: Context) -> PagedReaderController {
         PagedReaderController()
@@ -42,6 +44,7 @@ struct PagedBibleReaderView: UIViewControllerRepresentable {
         controller.onUserInteraction = onUserInteraction
         controller.onVerseTapped = onVerseTapped
         controller.contextMenu = contextMenu
+        controller.onTextLeadingChanged = onTextLeadingChanged
         controller.apply(
             content: content,
             style: style,
