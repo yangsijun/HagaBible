@@ -49,7 +49,13 @@ struct PagedReaderLayout: Equatable {
     /// Likewise on the outer edge: a half-folded page is narrow, so it keeps a tighter
     /// frame there too (`textInsets.left - outerMarginTrim` plus the side safe area).
     static let outerMarginTrim: CGFloat = 4
-    static func resolve(bounds: CGRect, divisionRegions: [CGRect], sideInsets: (left: CGFloat, right: CGFloat) = (0, 0)) -> PagedReaderLayout {
+    /// `spreadEnabled` false (the Labs "Two-Page Spread" toggle) keeps a single page
+    /// whatever the orientation; a vertical crease then runs through the page like a
+    /// horizontal one does.
+    static func resolve(
+        bounds: CGRect, divisionRegions: [CGRect], sideInsets: (left: CGFloat, right: CGFloat) = (0, 0), spreadEnabled: Bool = true
+    ) -> PagedReaderLayout {
+        guard spreadEnabled else { return PagedReaderLayout(pageAreaFrame: bounds, isSpread: false) }
         let regions = divisionRegions.filter { !$0.isEmpty && $0.intersects(bounds) }
         if let crease = regions.first(where: { $0.height > $0.width }) {
             let center = crease.midX
@@ -113,6 +119,10 @@ final class PagedReaderController: UIViewController {
     /// Fired when the left edge of the text column (window coordinates) moves, so the
     /// toolbar title can line up with the verses instead of the bar's own margin.
     var onTextLeadingChanged: ((CGFloat) -> Void)?
+    /// Two pages side by side in landscape (the Labs toggle); off keeps one page always.
+    var isSpreadEnabled = true {
+        didSet { if isSpreadEnabled != oldValue { view.setNeedsLayout() } }
+    }
     private var reportedTextLeadingX: CGFloat?
 
     /// Screen regions the text must stay out of (the safe area, since the view itself
@@ -347,7 +357,8 @@ final class PagedReaderController: UIViewController {
         let newLayout = PagedReaderLayout.resolve(
             bounds: bounds,
             divisionRegions: divisionRegionFrames(),
-            sideInsets: (contentInsets.left, contentInsets.right)
+            sideInsets: (contentInsets.left, contentInsets.right),
+            spreadEnabled: isSpreadEnabled
         )
         let tabBar = measureTabBar()
         // Cheap and idempotent; also catches the view being moved into its window after

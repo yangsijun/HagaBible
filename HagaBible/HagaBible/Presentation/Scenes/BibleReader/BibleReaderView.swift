@@ -224,6 +224,7 @@ struct BibleReaderView: View {
                 language: viewModel.bibleVersion?.language ?? "English",
                 compareLanguage: viewModel.compareVersion?.language ?? "English"
             ),
+            isSpreadEnabled: appState.isPagedSpreadEnabled,
             highlightedVerseNum: viewModel.navigatedVerseNum,
             ttsVerseIndex: ttsViewModel.playbackState != .idle ? ttsViewModel.currentVerseIndex : nil,
             selectedVerses: selectStartIndex.map { start in (start + 1)...((selectEndIndex ?? start) + 1) },

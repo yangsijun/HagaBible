@@ -567,6 +567,16 @@
         }
       }
     },
+    "In landscape, show two pages side by side like an open book." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가로 모드에서 펼친 책처럼 두 쪽을 나란히 표시합니다."
+          }
+        }
+      }
+    },
     "Keep screen on" : {
       "localizations" : {
         "ko" : {
@@ -897,12 +907,12 @@
         }
       }
     },
-    "Read like a book, turning pages instead of scrolling. Landscape shows two pages side by side." : {
+    "Read like a book, turning pages instead of scrolling." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "스크롤 대신 책처럼 쪽을 넘겨 읽습니다. 가로 모드에서는 두 쪽을 나란히 보여줍니다."
+            "value" : "책처럼 스크롤 대신 페이지를 넘기며 읽습니다."
           }
         }
       }
@@ -1418,6 +1428,16 @@
     },
     "Translation" : {
 
+    },
+    "Two-Page Spread" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "두 쪽 보기"
+          }
+        }
+      }
     },
     "TTS Settings" : {
       "localizations" : {

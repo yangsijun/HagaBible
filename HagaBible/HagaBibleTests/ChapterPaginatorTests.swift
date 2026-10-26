@@ -169,6 +169,18 @@ struct PagedReaderLayoutTests {
         #expect(offCentre.pageAreaFrame.minX == 0)
     }
 
+    @Test("With the spread turned off, landscape and a vertical crease both stay one page")
+    func spreadOffKeepsOnePage() {
+        let bounds = CGRect(x: 0, y: 0, width: 874, height: 402)
+        let plain = PagedReaderLayout.resolve(bounds: bounds, divisionRegions: [], spreadEnabled: false)
+        #expect(!plain.isSpread)
+        #expect(plain.pageAreaFrame == bounds)
+        let folded = PagedReaderLayout.resolve(
+            bounds: bounds, divisionRegions: [CGRect(x: 427, y: 0, width: 20, height: 402)], spreadEnabled: false
+        )
+        #expect(folded == plain)
+    }
+
     @Test("A horizontal crease (half-folded in portrait) is ignored: one page, text straight across")
     func horizontalCreaseIsIgnored() {
         let layout = PagedReaderLayout.resolve(

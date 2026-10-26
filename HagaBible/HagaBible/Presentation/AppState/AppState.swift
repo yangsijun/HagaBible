@@ -74,6 +74,10 @@ class AppState {
     var isPagedReadingEnabled: Bool = ExperimentalFeaturePreferences.isPagedReadingEnabled {
         didSet { ExperimentalFeaturePreferences.isPagedReadingEnabled = isPagedReadingEnabled }
     }
+    /// Page mode shows two pages side by side in landscape (on by default); off keeps one page.
+    var isPagedSpreadEnabled: Bool = ExperimentalFeaturePreferences.isPagedSpreadEnabled {
+        didSet { ExperimentalFeaturePreferences.isPagedSpreadEnabled = isPagedSpreadEnabled }
+    }
 
     /// Screen-wake settings for the reader, persisted via `ScreenDisplayPreferences`.
     /// `keepScreenOn` (default true) keeps the display awake; when on,

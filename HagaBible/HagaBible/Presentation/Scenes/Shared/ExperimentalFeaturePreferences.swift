@@ -16,6 +16,7 @@ enum ExperimentalFeaturePreferences {
     private static let ttsEnabledKey = "experimental.ttsEnabled"
     private static let recordingEnabledKey = "experimental.recordingEnabled"
     private static let pagedReadingEnabledKey = "experimental.pagedReadingEnabled"
+    private static let pagedSpreadEnabledKey = "experimental.pagedSpreadEnabled"
 
     static var isTTSEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: ttsEnabledKey) }
@@ -31,5 +32,12 @@ enum ExperimentalFeaturePreferences {
     static var isPagedReadingEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: pagedReadingEnabledKey) }
         set { UserDefaults.standard.set(newValue, forKey: pagedReadingEnabledKey) }
+    }
+
+    /// Two pages side by side in landscape / half-folded page mode. Unlike the other
+    /// flags this defaults to **on**, so an absent key reads as `true`.
+    static var isPagedSpreadEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: pagedSpreadEnabledKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: pagedSpreadEnabledKey) }
     }
 }

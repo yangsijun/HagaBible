@@ -13,6 +13,8 @@ struct PagedBibleReaderView: UIViewControllerRepresentable {
     /// the page curl covers the whole screen.
     let contentInsets: EdgeInsets
     let style: PageTextStyle
+    /// Two pages side by side in landscape (Labs toggle, on by default).
+    let isSpreadEnabled: Bool
     let highlightedVerseNum: Int?
     let ttsVerseIndex: Int?
     /// Selected verse numbers (1-based), mirrored from the reader's selection indices.
@@ -39,6 +41,7 @@ struct PagedBibleReaderView: UIViewControllerRepresentable {
         controller.contentInsets = UIEdgeInsets(
             top: contentInsets.top, left: contentInsets.leading, bottom: contentInsets.bottom, right: contentInsets.trailing
         )
+        controller.isSpreadEnabled = isSpreadEnabled
         controller.fetchNeighbor = fetchNeighbor
         controller.onPageChanged = onPageChanged
         controller.onUserInteraction = onUserInteraction

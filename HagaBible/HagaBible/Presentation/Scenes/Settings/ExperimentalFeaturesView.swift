@@ -40,10 +40,18 @@ struct ExperimentalFeaturesView: View {
                     Toggle(isOn: $appState.isPagedReadingEnabled) {
                         featureLabel(
                             title: "Page Turning",
-                            subtitle: "Read like a book, turning pages instead of scrolling. Landscape shows two pages side by side.",
+                            subtitle: "Read like a book, turning pages instead of scrolling.",
                             systemImage: "book.pages"
                         )
                     }
+                    Toggle(isOn: $appState.isPagedSpreadEnabled) {
+                        featureLabel(
+                            title: "Two-Page Spread",
+                            subtitle: "In landscape, show two pages side by side like an open book.",
+                            systemImage: "book"
+                        )
+                    }
+                    .disabled(!appState.isPagedReadingEnabled)
                 } header: {
                     Text("Experimental Features")
                 } footer: {
