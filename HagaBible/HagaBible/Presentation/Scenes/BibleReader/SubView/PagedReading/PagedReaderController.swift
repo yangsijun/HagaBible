@@ -44,7 +44,8 @@ struct PagedReaderLayout: Equatable {
         if let crease = regions.first(where: { $0.height > $0.width }) {
             let center = crease.midX
             let half = min(center - bounds.minX, bounds.maxX - center)
-            guard half > 0 else { return fallback(bounds) }
+            // A crease near an edge can't carry a readable spread; ignore it.
+            guard half >= 160 else { return fallback(bounds) }
             return PagedReaderLayout(
                 pageAreaFrame: CGRect(x: center - half, y: bounds.minY, width: half * 2, height: bounds.height),
                 isSpread: true,
@@ -150,32 +151,48 @@ final class PagedReaderController: UIViewController {
         )
     }
 
-    /// How far the tab bar (if any, visible, and overlapping this view) reaches up into
-    /// the view from the bottom.
+    /// Tallest strip a bottom tab bar can plausibly take; anything else found in the
+    /// window (a hidden/top-anchored bar) is ignored rather than blanking the pages.
+    private static let maxTabBarReserve: CGFloat = 120
+
+    /// How far a visible bottom tab bar overlapping this view reaches up into it. The
+    /// bar's own frame is not trusted (it can be a strip, or the whole window, depending
+    /// on the OS); the strip is taken from its visible content views instead.
     private func measureTabBarReserve() -> CGFloat {
-        guard let window = view.window, let tabBar = Self.findTabBar(in: window),
-              !tabBar.isHidden, tabBar.alpha > 0 else { return 0 }
-        let barFrame = tabBar.convert(tabBar.bounds, to: view)
-        guard barFrame.intersects(view.bounds) else { return 0 }
-        return max(0, view.bounds.maxY - barFrame.minY)
+        guard let window = view.window else { return 0 }
+        let candidates = Self.tabBars(in: window).compactMap { bar -> CGFloat? in
+            guard !bar.isHidden, bar.alpha > 0 else { return nil }
+            let contentFrames = bar.subviews
+                .filter { !$0.isHidden && $0.alpha > 0 && !$0.bounds.isEmpty }
+                .map { $0.convert($0.bounds, to: view) }
+            let frame = contentFrames.dropFirst().reduce(contentFrames.first ?? bar.convert(bar.bounds, to: view)) { $0.union($1) }
+            guard frame.intersects(view.bounds), frame.minY >= view.bounds.maxY - Self.maxTabBarReserve else { return nil }
+            return view.bounds.maxY - frame.minY
+        }
+        return candidates.max() ?? 0
     }
 
-    private static func findTabBar(in view: UIView) -> UITabBar? {
-        if let bar = view as? UITabBar { return bar }
-        for subview in view.subviews {
-            if let bar = findTabBar(in: subview) { return bar }
-        }
-        return nil
+    private static func tabBars(in view: UIView) -> [UITabBar] {
+        var found: [UITabBar] = []
+        if let bar = view as? UITabBar { found.append(bar) }
+        for subview in view.subviews { found += tabBars(in: subview) }
+        return found
     }
 
     /// Text area of one page. The gutter is taken once (it lands on the spine side), so
-    /// both halves of a spread share one text width.
+    /// both halves of a spread share one text width. Never collapses: if the insets
+    /// would leave no room (an unexpected crease or bar measurement), the page falls
+    /// back to its base margins rather than typesetting nothing.
     private var textSize: CGSize {
         let insets = textInsets
-        return CGSize(
+        let base = PageViewController.textInsets
+        var size = CGSize(
             width: pageSize.width - insets.left - insets.right - (layout?.spineGutter ?? 0),
             height: pageSize.height - insets.top - insets.bottom
         )
+        if size.width < 120 { size.width = pageSize.width - base.left - base.right }
+        if size.height < 120 { size.height = pageSize.height - base.top - base.bottom }
+        return size
     }
 
     /// The crease band translated into page text coordinates (same on every page since
@@ -294,7 +311,10 @@ final class PagedReaderController: UIViewController {
         if #available(iOS 27.1, *) {
             return view.reservedRegions(kind: .division)
                 .filter(\.isActive)
-                .map { $0.frame.inset(by: $0.margins) }
+                .map { region in
+                    let crease = region.frame.inset(by: region.margins)
+                    return crease.isNull || crease.width <= 0 || crease.height <= 0 ? region.frame : crease
+                }
         }
         return []
     }

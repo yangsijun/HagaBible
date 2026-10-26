@@ -38,12 +38,16 @@ struct PageTextStyle: Equatable {
     /// Colors compare by resolved value: the theme hands out a fresh `UIColor` object on
     /// every access, and treating each as a change would re-typeset (and replace the
     /// pages) on every SwiftUI update, including mid-flip.
+    private static func sameColor(_ lhs: UIColor, _ rhs: UIColor) -> Bool {
+        lhs == rhs || lhs.cgColor == rhs.cgColor
+    }
+
     static func == (lhs: PageTextStyle, rhs: PageTextStyle) -> Bool {
         lhs.font == rhs.font
             && lhs.compareFont == rhs.compareFont
-            && lhs.textColor.cgColor == rhs.textColor.cgColor
-            && lhs.verseNumberColor.cgColor == rhs.verseNumberColor.cgColor
-            && lhs.backgroundColor.cgColor == rhs.backgroundColor.cgColor
+            && sameColor(lhs.textColor, rhs.textColor)
+            && sameColor(lhs.verseNumberColor, rhs.verseNumberColor)
+            && sameColor(lhs.backgroundColor, rhs.backgroundColor)
             && lhs.alignment == rhs.alignment
             && lhs.compareAlignment == rhs.compareAlignment
             && lhs.lineSpacing == rhs.lineSpacing
