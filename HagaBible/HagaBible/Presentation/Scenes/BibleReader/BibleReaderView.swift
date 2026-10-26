@@ -379,10 +379,12 @@ struct BibleReaderView: View {
             return
         }
         let wasActive = ttsViewModel.isReading(viewModel)
+        // Drop the selection before the verses change hands: its indices belong to the
+        // chapter being left, and the action bar would index the new list with them.
+        selectStartIndex = nil
+        selectEndIndex = nil
         Task {
             await viewModel.applyBibleSelectionAsync(bookCode: key.bookCode, chapterNum: key.chapter, verseNum: firstVerse)
-            selectStartIndex = nil
-            selectEndIndex = nil
             if wasActive {
                 ttsViewModel.switchChapter(from: viewModel)
             }

@@ -35,7 +35,11 @@ struct BibleReaderActionBar: View {
     var onButtonsFrameChange: (_ frame: CGRect, _ tabBarParts: [CGRect]) -> Void = { _, _ in }
 
     var bibleVersesString: String {
-        bibleActionService.makeVerseStringFromVerseList(bibleVerseList, start: selectStartIndex ?? 0, end: selectEndIndex ?? 0)
+        // A stale selection can outlive its chapter for a frame; never index past the list.
+        guard selectedRange.start < bibleVerseList.count else { return "" }
+        return bibleActionService.makeVerseStringFromVerseList(
+            bibleVerseList, start: selectedRange.start, end: min(selectedRange.end, bibleVerseList.count - 1)
+        )
     }
 
     private var selectedRange: (start: Int, end: Int) {
