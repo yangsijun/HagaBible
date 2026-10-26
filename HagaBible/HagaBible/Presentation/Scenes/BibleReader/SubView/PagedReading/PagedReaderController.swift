@@ -148,8 +148,23 @@ final class PagedReaderController: UIViewController {
     private var highlights = PageHighlights()
     private var bookmarkStripes: [Int: [BookmarkStripe?]] = [:]
     private var lastNavigationToken: Bool?
-    /// Verse to land on once the view has a size (content can arrive before layout).
-    private var pendingLandingVerse: Int?
+    /// Where to open after the pages are re-typeset. Opening on the verse that starts
+    /// the old first page can jump back a whole page when that verse continued from the
+    /// page before, so a relayout of the same text anchors on the page's first character
+    /// instead: the new page holds it, and never starts past it. A selection that was
+    /// on screen outranks both, so it stays on screen.
+    struct Landing: Equatable {
+        var verse: Int
+        var character: Int?
+        var textLength: Int?
+    }
+
+    /// Landing to apply once the view has a size (content can arrive before layout).
+    private var pendingLanding: Landing?
+    /// The landing the pages on screen were opened on, until the user turns a page. A
+    /// rotation relayouts twice (new bounds, then new safe area); anchoring the second
+    /// pass on the first pass's page would step back a page each time.
+    private var relayoutAnchor: Landing?
 
     private var pageViewController: UIPageViewController?
     /// The old pages, kept on top while a fold, unfold or rotation opens the new ones.
@@ -318,11 +333,11 @@ final class PagedReaderController: UIViewController {
         view.backgroundColor = style.backgroundColor
         // The side margin moves the verse column without a layout pass; tell the toolbar now.
         if styleChanged { reportTextLeadingIfNeeded() }
-        var landingVerse: Int?
+        var landing: Landing?
 
         if let slot = currentSlot, slot.content.key == content.key {
             if styleChanged || slot.content != content {
-                landingVerse = currentFirstVisibleVerse() ?? targetVerse
+                landing = currentLanding() ?? Landing(verse: targetVerse)
                 replaceCurrent(with: content, styleChanged: styleChanged)
             }
         } else if let slot = nextSlot, slot.content.key == content.key {
@@ -331,7 +346,7 @@ final class PagedReaderController: UIViewController {
             currentSlot = slot
             nextSlot = nil
             if styleChanged || slot.content != content {
-                landingVerse = currentFirstVisibleVerse() ?? targetVerse
+                landing = currentLanding() ?? Landing(verse: targetVerse)
                 replaceCurrent(with: content, styleChanged: styleChanged)
             }
             fetchNeighborIfNeeded(forward: true)
@@ -340,7 +355,7 @@ final class PagedReaderController: UIViewController {
             currentSlot = slot
             previousSlot = nil
             if styleChanged || slot.content != content {
-                landingVerse = currentFirstVisibleVerse() ?? targetVerse
+                landing = currentLanding() ?? Landing(verse: targetVerse)
                 replaceCurrent(with: content, styleChanged: styleChanged)
             }
             fetchNeighborIfNeeded(forward: false)
@@ -349,14 +364,14 @@ final class PagedReaderController: UIViewController {
             previousSlot = nil
             nextSlot = nil
             currentSlot = makeSlot(content)
-            landingVerse = targetVerse
+            landing = Landing(verse: targetVerse)
             fetchNeighborIfNeeded(forward: true)
             fetchNeighborIfNeeded(forward: false)
         }
 
         if let lastNavigationToken, lastNavigationToken != navigationToken {
             // Explicit navigation (navigation sheet, search, bookmark, App Intent).
-            landingVerse = targetVerse
+            landing = Landing(verse: targetVerse)
         }
         lastNavigationToken = navigationToken
 
@@ -364,13 +379,13 @@ final class PagedReaderController: UIViewController {
         self.highlights = highlights
         self.bookmarkStripes = bookmarkStripes
 
-        if let landingVerse {
+        if let landing {
             if pageSize == .zero || isTransitioning {
                 // Applied once the view has a size / the flip in flight has settled;
                 // replacing the pages under a running curl breaks the page view controller.
-                pendingLandingVerse = landingVerse
+                pendingLanding = landing
             } else {
-                display(pageContaining: landingVerse, animated: false)
+                display(landing, animated: false)
             }
         } else if highlights.ttsVerseIndex != previousHighlights.ttsVerseIndex {
             followTTS()
@@ -400,8 +415,8 @@ final class PagedReaderController: UIViewController {
         guard newLayout != layout || pageViewController == nil || paginatedInsets != contentInsets
                 || tabBar.reserve != tabBarReserve || tabBar.occlusion != tabBarOcclusion else { return }
 
-        let landingVerse = pendingLandingVerse ?? currentFirstVisibleVerse()
-        pendingLandingVerse = nil
+        let landing = pendingLanding ?? currentLanding()
+        pendingLanding = nil
         let spreadChanged = newLayout.isSpread != layout?.isSpread
         let previousLayout = layout
         let isRelayout = previousLayout != nil && previousLayout != newLayout
@@ -419,10 +434,10 @@ final class PagedReaderController: UIViewController {
             }
             pageViewController?.view.frame = newLayout.pageAreaFrame
             repaginateAllSlots()
-            if let landingVerse {
-                display(pageContaining: landingVerse, animated: false)
+            if let landing {
+                display(landing, animated: false)
             } else if currentSlot != nil {
-                display(pageContaining: 1, animated: false)
+                display(Landing(verse: 1), animated: false)
             }
             pageViewController?.view.layoutIfNeeded()
         }
@@ -684,17 +699,38 @@ final class PagedReaderController: UIViewController {
 
     private var displayedRefs: [PageRef] { displayedPages.map(\.ref) }
 
-    private func currentFirstVisibleVerse() -> Int? {
+    /// Where the pages on screen would reopen after a relayout (see `Landing`).
+    private func currentLanding() -> Landing? {
+        let shown = displayedRefs.filter { !isFiller($0) }
+        if let selected = highlights.selectedVerses,
+           shown.contains(where: { ref in
+               slot(for: ref.key)?.paginator?.verses(onPage: ref.index).contains { selected.contains($0) } ?? false
+           }) {
+            return Landing(verse: selected.lowerBound)
+        }
+        return relayoutAnchor ?? firstCharacterLanding()
+    }
+
+    /// The first page on screen, by its first character (and first verse as the fallback).
+    private func firstCharacterLanding() -> Landing? {
         for ref in displayedRefs where !isFiller(ref) {
-            if let verse = slot(for: ref.key)?.paginator?.firstVerse(onPage: ref.index) { return verse }
+            guard let paginator = slot(for: ref.key)?.paginator, let verse = paginator.firstVerse(onPage: ref.index) else { continue }
+            return Landing(verse: verse, character: paginator.firstCharacter(onPage: ref.index), textLength: paginator.flowTextLength)
         }
         return nil
     }
 
-    private func display(pageContaining verse: Int, animated: Bool) {
+    private func display(_ landing: Landing, animated: Bool) {
         guard let currentSlot, let paginator = currentSlot.paginator else { return }
-        let index = paginator.pageIndex(containingVerse: verse) ?? 0
-        display(PageRef(key: currentSlot.content.key, index: index), direction: .forward, animated: animated)
+        var index: Int?
+        if let character = landing.character, landing.textLength == paginator.flowTextLength {
+            index = paginator.pageIndex(containingCharacter: character)
+        }
+        index = index ?? paginator.pageIndex(containingVerse: landing.verse) ?? 0
+        display(PageRef(key: currentSlot.content.key, index: index ?? 0), direction: .forward, animated: animated)
+        // A verse landing (navigation, selection) is anchored by what it opened on; a
+        // character landing keeps its own character, so later passes don't creep back.
+        relayoutAnchor = landing.character != nil ? landing : firstCharacterLanding()
     }
 
     /// Shows the spread (or page) that contains `ref`: in a spread the left page is the
@@ -702,6 +738,7 @@ final class PagedReaderController: UIViewController {
     /// right with its preceding page on the left, never forced to the left.
     private func display(_ ref: PageRef, direction: UIPageViewController.NavigationDirection, animated: Bool) {
         guard let pageViewController, !isTransitioning else { return }
+        relayoutAnchor = nil
         // The pages being replaced may have a verse menu open; close it with them on screen.
         displayedPages.forEach { $0.dismissVerseMenu() }
         guard isSpread else {
@@ -767,15 +804,16 @@ extension PagedReaderController: UIPageViewControllerDataSource, UIPageViewContr
         transitionCompleted completed: Bool
     ) {
         isTransitioning = false
+        if completed { relayoutAnchor = nil }
         onUserInteraction?()
         // Any page replacement waits for the next run-loop turn: changing the page view
         // controller's pages from inside its own completion callback stalls it, which
         // showed up as the reader freezing after a burst of fast flips.
         Task { @MainActor [weak self] in
             guard let self else { return }
-            if let verse = self.pendingLandingVerse, !self.isTransitioning {
-                self.pendingLandingVerse = nil
-                self.display(pageContaining: verse, animated: false)
+            if let landing = self.pendingLanding, !self.isTransitioning {
+                self.pendingLanding = nil
+                self.display(landing, animated: false)
             }
             if completed { self.reportDisplayedPosition() }
         }

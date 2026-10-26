@@ -371,6 +371,92 @@ struct PagedReaderControllerTests {
         #expect(spread.alpha == 1)
     }
 
+    /// Character range of the text laid out on a displayed page.
+    private func characterRange(of page: PageViewController) throws -> NSRange {
+        let container = try #require(page.textContainer)
+        let layoutManager = try #require(container.layoutManager)
+        return layoutManager.characterRange(forGlyphRange: layoutManager.glyphRange(for: container), actualGlyphRange: nil)
+    }
+
+    private func makeLongFirstVerseContent() -> ChapterContent {
+        ChapterContent(
+            key: ChapterKey(versionCode: "KRV", bookCode: "GEN", chapter: 1),
+            verses: (1...31).map { n in
+                BibleVerse(
+                    bookCode: "GEN", bookName: "창세기", bookOrder: 1, chapter: 1, verse: n,
+                    verseText: Array(repeating: "하나님이 천지를 창조하시니라", count: n == 1 ? 400 : 8).joined(separator: " "),
+                    versionCode: "KRV"
+                )
+            },
+            compareTextByVerse: [:]
+        )
+    }
+
+    @Test("A relayout reopens on the page holding the old first page's first character, not the start of a verse continued from before")
+    func relayoutKeepsTheFirstVisibleCharacter() throws {
+        let controller = makeController(size: CGSize(width: 874, height: 402))
+        let content = makeLongFirstVerseContent()
+        controller.apply(content: content, style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 2)
+        controller.view.layoutIfNeeded()
+        let before = displayedPages(controller)
+        #expect(before.count == 2)
+        // The spread for verse 2 opens inside the long verse 1: its left page starts mid-verse.
+        let oldFirstCharacter = try characterRange(of: before[0]).location
+        #expect(before[0].ref.index > 0)
+        #expect(oldFirstCharacter > 0)
+
+        controller.view.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        controller.view.layoutIfNeeded()
+        let after = try #require(displayedPages(controller).first)
+        #expect(after.ref.index > 0)   // the old rule went back to verse 1's first page
+        #expect(NSLocationInRange(oldFirstCharacter, try characterRange(of: after)))
+    }
+
+    @Test("A rotation's two relayout passes (bounds, then safe area) land on the same place, not a page further back each time")
+    func relayoutPassesDoNotDrift() throws {
+        let (controller, window) = makeHostedController(size: CGSize(width: 874, height: 402), barFrame: .zero)
+        defer { window.isHidden = true }
+        controller.contentInsets = UIEdgeInsets(top: 0, left: 59, bottom: 21, right: 0)
+        controller.view.layoutIfNeeded()
+        let content = makeContent(chapter: 1, verses: 31)
+        controller.apply(content: content, style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: true, targetVerse: 13)
+        controller.view.layoutIfNeeded()
+        let oldFirstCharacter = try characterRange(of: try #require(displayedPages(controller).first)).location
+        #expect(oldFirstCharacter > 0)
+
+        window.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        controller.view.frame = window.bounds
+        controller.view.layoutIfNeeded()
+        #expect(try NSLocationInRange(oldFirstCharacter, characterRange(of: try #require(displayedPages(controller).first))))
+
+        // SwiftUI then delivers the portrait safe area and re-applies the same content.
+        controller.contentInsets = UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+        controller.apply(content: content, style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: true, targetVerse: 13)
+        controller.view.layoutIfNeeded()
+        #expect(try NSLocationInRange(oldFirstCharacter, characterRange(of: try #require(displayedPages(controller).first))))
+    }
+
+    @Test("A selection that was on screen stays on screen through a relayout")
+    func relayoutKeepsTheSelectionOnScreen() throws {
+        let controller = makeController(size: CGSize(width: 874, height: 402))
+        let content = makeLongFirstVerseContent()
+        controller.apply(content: content, style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let right = try #require(displayedPages(controller).last)
+        let paginator = ChapterPaginator(content: content, style: style, pageSize: try #require(right.textContainer).size)
+        // A verse on the right page only, after the long verse 1.
+        let verse = try #require(paginator.verses(onPage: right.ref.index).first { $0 > 1 } ?? paginator.firstVerse(onPage: right.ref.index + 1))
+        var highlights = PageHighlights()
+        highlights.selectedVerses = verse...verse
+        controller.apply(content: content, style: style, highlights: highlights, bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        controller.view.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        controller.view.layoutIfNeeded()
+        let after = try #require(displayedPages(controller).first)
+        let portrait = ChapterPaginator(content: content, style: style, pageSize: try #require(after.textContainer).size)
+        #expect(portrait.pageIndex(containingVerse: verse) == after.ref.index)
+    }
+
     @Test("The side margin setting pushes the text column inward on both sides")
     func sideMarginNarrowsTheColumn() throws {
         let controller = makeController(size: CGSize(width: 390, height: 844))

@@ -171,6 +171,22 @@ final class ChapterPaginator {
         verses(onPage: pageIndex).first
     }
 
+    /// Length of the flowing text; a relayout with the same length can be anchored by
+    /// character. Parallel pages keep their own storages, so they answer `nil`.
+    var flowTextLength: Int? { isParallel ? nil : textStorage.length }
+
+    /// Where the page's text starts in the flowing storage (`nil` on parallel pages).
+    func firstCharacter(onPage pageIndex: Int) -> Int? {
+        guard !isParallel, pages.indices.contains(pageIndex) else { return nil }
+        return pages[pageIndex].range.location
+    }
+
+    /// The page whose text contains the character at `location` (`nil` on parallel pages).
+    func pageIndex(containingCharacter location: Int) -> Int? {
+        guard !isParallel else { return nil }
+        return pages.firstIndex { NSLocationInRange(location, $0.range) } ?? pages.indices.last
+    }
+
     /// The verse whose text lies under `point` (page text coordinates), or `nil` when the
     /// point is in a margin or below the last line — a tap there must not select.
     func verse(at point: CGPoint, onPage pageIndex: Int) -> Int? {
