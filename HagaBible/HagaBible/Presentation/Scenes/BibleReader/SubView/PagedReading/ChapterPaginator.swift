@@ -223,40 +223,60 @@ final class ChapterPaginator {
 
     // MARK: - Text
 
-    /// Verse-number column metrics; they track the body font exactly like `BibleVerseView`.
+    /// Verse-number column metrics; they track the body font exactly like `BibleVerseView`,
+    /// which this mirrors row for row: a 12pt (scaled) column that only a wide number
+    /// widens, digits narrowed the same way for two- and three-digit verses, and the
+    /// number centred on the row's 22pt (scaled) number box rather than on the baseline.
     private struct Metrics {
-        let numberAttributes: [NSAttributedString.Key: Any]
+        let scale: CGFloat
+        let numberFont: UIFont
+        let numberColor: UIColor
+        /// The column's minimum width; `textIndent` is where the comparison text starts.
         let numberWidth: CGFloat
         let textIndent: CGFloat
         let verseGap: CGFloat
 
         init(content: ChapterContent, style: PageTextStyle) {
-            let scale = style.font.pointSize / BibleVerseView.baseBodyFontSize
-            numberAttributes = [
-                .font: UIFont.systemFont(ofSize: 12 * scale),
-                .foregroundColor: style.verseNumberColor,
-            ]
-            let widestNumber = "\(content.verses.map(\.verse).max() ?? 1)" as NSString
-            numberWidth = max(
-                BibleVerseView.verseNumberColumnWidth(forBodyFontSize: style.font.pointSize),
-                widestNumber.size(withAttributes: numberAttributes).width
-            )
+            scale = style.font.pointSize / BibleVerseView.baseBodyFontSize
+            numberFont = .systemFont(ofSize: 12 * scale)
+            numberColor = style.verseNumberColor
+            numberWidth = BibleVerseView.verseNumberColumnWidth(forBodyFontSize: style.font.pointSize)
             textIndent = ceil(numberWidth + BibleVerseView.verseNumberSpacing)
             verseGap = 16 + style.lineSpacing
         }
 
+        /// The number's font, narrowed like `BibleVerseView` does so wide numbers stay in the column.
+        func numberFont(for verse: Int) -> UIFont {
+            let width: UIFont.Width = verse < 10 ? .standard : (verse < 100 ? .condensed : .compressed)
+            return .systemFont(ofSize: numberFont.pointSize, weight: .regular, width: width)
+        }
+
+        /// This verse's column: the minimum, or the number's own width when that is wider.
+        func columnWidth(for verse: Int) -> CGFloat {
+            max(numberWidth, ("\(verse)" as NSString).size(withAttributes: [.font: numberFont(for: verse)]).width)
+        }
+
+        /// Raises the number off the baseline so its centre sits where the scroll reader's
+        /// does: 11pt (scaled) below the row top, the middle of its 22pt number box.
+        func numberBaselineOffset(bodyFont: UIFont) -> CGFloat {
+            let digitCentreOnBaseline = bodyFont.ascender - numberFont.capHeight / 2
+            let digitCentreInBox = 11 * scale + numberFont.ascender - numberFont.capHeight / 2 - numberFont.lineHeight / 2
+            return digitCentreOnBaseline - digitCentreInBox
+        }
+
         /// Hanging-indent paragraph: the number centred in its column, the text after it.
-        func paragraph(alignment: NSTextAlignment, lineSpacing: CGFloat, spacingAfter: CGFloat) -> NSParagraphStyle {
+        func paragraph(alignment: NSTextAlignment, lineSpacing: CGFloat, spacingAfter: CGFloat, columnWidth: CGFloat) -> NSParagraphStyle {
+            let indent = ceil(columnWidth + BibleVerseView.verseNumberSpacing)
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = alignment
             paragraph.lineSpacing = lineSpacing
             paragraph.firstLineHeadIndent = 0
-            paragraph.headIndent = textIndent
+            paragraph.headIndent = indent
             paragraph.tabStops = [
-                NSTextTab(textAlignment: .center, location: numberWidth / 2),
-                NSTextTab(textAlignment: .left, location: textIndent),
+                NSTextTab(textAlignment: .center, location: columnWidth / 2),
+                NSTextTab(textAlignment: .left, location: indent),
             ]
-            paragraph.defaultTabInterval = textIndent
+            paragraph.defaultTabInterval = indent
             paragraph.paragraphSpacing = spacingAfter
             return paragraph
         }
@@ -267,9 +287,13 @@ final class ChapterPaginator {
             verse: Int, text: String, font: UIFont, color: UIColor, alignment: NSTextAlignment, lineSpacing: CGFloat,
             spacingAfter: CGFloat, terminated: Bool
         ) -> NSAttributedString {
-            let paragraph = paragraph(alignment: alignment, lineSpacing: lineSpacing, spacingAfter: spacingAfter)
-            var number = numberAttributes
-            number[.paragraphStyle] = paragraph
+            let paragraph = paragraph(alignment: alignment, lineSpacing: lineSpacing, spacingAfter: spacingAfter, columnWidth: columnWidth(for: verse))
+            let number: [NSAttributedString.Key: Any] = [
+                .font: numberFont(for: verse),
+                .foregroundColor: numberColor,
+                .baselineOffset: numberBaselineOffset(bodyFont: font),
+                .paragraphStyle: paragraph,
+            ]
             let result = NSMutableAttributedString(string: "\t\(verse)\t", attributes: number)
             result.append(NSAttributedString(
                 string: text + (terminated ? "\n" : ""),

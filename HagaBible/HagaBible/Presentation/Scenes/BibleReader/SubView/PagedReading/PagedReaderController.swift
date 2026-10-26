@@ -785,7 +785,7 @@ final class PageViewController: UIViewController {
     /// Margins around the text area beyond the safe area; the bottom one also holds the footer.
     /// Side margins match the scroll reader's verse rows (8pt row padding + 8pt inner
     /// padding), so switching modes keeps the verse column in the same place.
-    static let textInsets = UIEdgeInsets(top: 12, left: 16, bottom: 32, right: 16)
+    static let textInsets = UIEdgeInsets(top: 24, left: 16, bottom: 32, right: 16)
 
     let ref: PageRef
     let side: PageSide
@@ -841,8 +841,10 @@ final class PageViewController: UIViewController {
         super.viewDidLayoutSubviews()
         let insets = textInsets
         // The text view spans the page's full width (the stripe gutter lives left of the
-        // text) and is offset inside by `textOriginX`.
-        textView?.frame = CGRect(x: 0, y: insets.top, width: view.bounds.width, height: view.bounds.height - insets.top - insets.bottom)
+        // text) and is offset inside by `textOriginX`. It also reaches a band's height
+        // above and below the text, so the first and last verses' bands are not clipped.
+        let reach = PageTextView.textOriginY
+        textView?.frame = CGRect(x: 0, y: insets.top - reach, width: view.bounds.width, height: view.bounds.height - insets.top - insets.bottom + reach * 2)
         footer.frame = CGRect(
             x: insets.left,
             y: view.bounds.height - insets.bottom + 8,
@@ -870,8 +872,12 @@ final class PageViewController: UIViewController {
 final class PageTextView: UIView {
     /// How far a highlight band reaches beyond the verse's glyphs, like the scroll
     /// reader's padded row: sideways through the whole margin (edge to edge on a single
-    /// page), a little above and below.
-    static let bandPadding = CGSize(width: 16, height: 6)
+    /// page), the row's 8pt padding above and below (so neighbouring bands are the line
+    /// spacing apart, as in the scroll reader).
+    static let bandPadding = CGSize(width: 16, height: 8)
+    /// Where the text starts inside the view: one band padding down, leaving room for
+    /// the top verse's band above its glyphs.
+    static let textOriginY = bandPadding.height
     /// Sideways reach of the band and stripe edge: the base padding plus the user's
     /// extra side margin, so a selection covers the margin like the scroll reader's row.
     let bandInset: CGFloat
@@ -917,11 +923,11 @@ final class PageTextView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private func verse(at point: CGPoint) -> Int? {
-        paginator.verse(at: CGPoint(x: point.x - textOriginX, y: point.y), onPage: pageIndex)
+        paginator.verse(at: CGPoint(x: point.x - textOriginX, y: point.y - Self.textOriginY), onPage: pageIndex)
     }
 
     func rect(forVerse verse: Int) -> CGRect? {
-        paginator.rect(forVerse: verse, onPage: pageIndex)?.offsetBy(dx: textOriginX, dy: 0)
+        paginator.rect(forVerse: verse, onPage: pageIndex)?.offsetBy(dx: textOriginX, dy: Self.textOriginY)
     }
 
     /// The band behind a run of verses: the full column width (number through text),
@@ -958,19 +964,19 @@ final class PageTextView: UIView {
     override func draw(_ rect: CGRect) {
         guard let container = paginator.container(at: pageIndex), let layoutManager = paginator.layoutManager(forPage: pageIndex) else { return }
         drawHighlights()
-        let origin = CGPoint(x: textOriginX, y: 0)
+        let origin = CGPoint(x: textOriginX, y: Self.textOriginY)
         let glyphRange = layoutManager.glyphRange(for: container)
         layoutManager.drawGlyphs(forGlyphRange: glyphRange, at: origin)
         drawStripes()
     }
 
-    /// Same colors as the scroll reader: orange for a navigated verse, green for the
-    /// verse being read aloud, accent for the selection (drawn last, so it wins).
+    /// Same colors and stacking as the scroll reader's row backgrounds: the selection
+    /// underneath, the verse being read aloud over it, a navigated verse on top.
     private func drawHighlights() {
         var bands: [(ClosedRange<Int>, UIColor)] = []
-        if let verse = highlights.navigatedVerse { bands.append((verse...verse, UIColor.orange.withAlphaComponent(0.25))) }
-        if let index = highlights.ttsVerseIndex { bands.append((index + 1...index + 1, UIColor.green.withAlphaComponent(0.2))) }
         if let selected = highlights.selectedVerses { bands.append((selected, UIColor.tintColor.withAlphaComponent(0.25))) }
+        if let index = highlights.ttsVerseIndex { bands.append((index + 1...index + 1, UIColor.green.withAlphaComponent(0.2))) }
+        if let verse = highlights.navigatedVerse { bands.append((verse...verse, UIColor.orange.withAlphaComponent(0.25))) }
         for (verses, color) in bands {
             guard let band = band(forVerses: verses) else { continue }
             color.setFill()

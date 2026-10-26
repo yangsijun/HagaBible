@@ -436,6 +436,98 @@ struct PagedReaderControllerTests {
         #expect(tintedInMargin)
     }
 
+    @Test("A page's verse number and text land where the scroll reader's do", arguments: [1, 31, 119])
+    func pageMatchesScrollRow(firstVerse: Int) throws {
+        let text = "In the beginning God created the heavens and the earth. The earth was formless and empty, and darkness was on the surface of the deep."
+        let verses = (0..<3).map {
+            BibleVerse(bookCode: "GEN", bookName: "Genesis", bookOrder: 1, chapter: 1, verse: firstVerse + $0, verseText: text, versionCode: "WEBBE")
+        }
+        let size = CGSize(width: 390, height: 844)
+        let configuration = FontConfiguration.defaultFontConfiguration
+
+        // The scroll reader's rows draw through UITextView, so they need a window, not
+        // ImageRenderer. The hosted list does not sit at the window's top, so its rows
+        // are measured from the first row's text view.
+        let list = BibleVerseListView(
+            verses: verses, language: "English", fontConfiguration: configuration, theme: .light,
+            highlightedVerseNum: nil, ttsCurrentVerseIndex: nil, bibleActionService: BibleActionService(),
+            selectStartIndex: .constant(nil), selectEndIndex: .constant(nil)
+        )
+        .ignoresSafeArea()
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: list)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        defer { window.isHidden = true }
+        let scrollInk = try inkTester(of: window)
+        let textView = try #require(window.firstSubview(ofType: UITextView.self))
+        let rowTop = Int(textView.convert(textView.bounds, to: window).minY)
+
+        let controller = makeController(size: size)
+        let pageStyle = PageTextStyle.make(fontConfiguration: configuration, theme: .light, language: "English", compareLanguage: "English")
+        controller.apply(
+            content: ChapterContent(key: ChapterKey(versionCode: "WEBBE", bookCode: "GEN", chapter: 1), verses: verses, compareTextByVerse: [:]),
+            style: pageStyle, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: firstVerse
+        )
+        controller.view.layoutIfNeeded()
+        let pageInk = try inkTester(of: controller.view)
+
+        // One row: number ink left of x = 32, text ink from there on.
+        func bounds(_ ink: (Int, Int) -> Bool, from top: Int, xs: Range<Int>) -> (top: Int, bottom: Int, left: Int) {
+            var first = Int.max, last = -1, left = Int.max
+            for y in top..<(top + 50) { for x in xs where ink(x, y) { first = min(first, y); last = max(last, y); left = min(left, x) } }
+            return (first - top, last - top, left)
+        }
+        let pageRowTop = Int(PageViewController.textInsets.top)
+        let scrollNumber = bounds(scrollInk, from: rowTop, xs: 10..<32), pageNumber = bounds(pageInk, from: pageRowTop, xs: 10..<32)
+        let scrollText = bounds(scrollInk, from: rowTop, xs: 32..<390), pageText = bounds(pageInk, from: pageRowTop, xs: 32..<390)
+        try #require(scrollNumber.bottom >= 0 && pageNumber.bottom >= 0 && scrollText.bottom >= 0 && pageText.bottom >= 0)
+        // Two-digit numbers narrow to fit the column; a three-digit one may widen it by a point.
+        #expect(abs(scrollText.left - pageText.left) <= (firstVerse < 100 ? 0 : 1))
+        #expect(scrollText.top == pageText.top)
+        #expect(abs((scrollNumber.top + scrollNumber.bottom) - (pageNumber.top + pageNumber.bottom)) <= 1)
+        // The scroll list numbers rows by position, so only the first row's digit is comparable.
+        if firstVerse == 1 { #expect(abs(scrollNumber.left - pageNumber.left) <= 1) }
+        // The scroll reader's first row starts 24pt in (16pt list + 8pt row padding), like the page's.
+        #expect(pageRowTop == 24)
+    }
+
+    @Test("The top verse's band keeps its padding above the text instead of being clipped")
+    func topVerseBandIsNotClipped() throws {
+        let controller = makeController(size: CGSize(width: 390, height: 844))
+        var highlights = PageHighlights()
+        highlights.selectedVerses = 1...1
+        controller.apply(content: makeContent(chapter: 1, verses: 10), style: style, highlights: highlights, bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        controller.view.layoutIfNeeded()
+        let page = try #require(displayedPages(controller).first)
+        let text = try #require(page.view.subviews.compactMap { $0 as? PageTextView }.first)
+        let verseRect = try #require(text.rect(forVerse: 1))
+        #expect(text.frame.minY == PageViewController.textInsets.top - PageTextView.bandPadding.height)
+        #expect(verseRect.minY >= PageTextView.bandPadding.height)
+        // The band above the glyphs is tinted inside the view's own bounds.
+        let alpha = renderedAlpha(of: text)
+        #expect(alpha(Int(text.bounds.midX), 2) > 0.05)
+    }
+
+    /// Renders `view` over white through its layer and answers whether a pixel is darker than paper.
+    private func inkTester(of view: UIView) throws -> (Int, Int) -> Bool {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let rendered = UIGraphicsImageRenderer(bounds: view.bounds, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(view.bounds)
+            view.layer.render(in: context.cgContext)
+        }
+        let image = try #require(rendered.cgImage)
+        let data = try #require(image.dataProvider?.data) as Data
+        return { x, y in
+            guard x >= 0, y >= 0, x < image.width, y < image.height else { return false }
+            let i = y * image.bytesPerRow + x * (image.bitsPerPixel / 8)
+            return Int(data[i]) + Int(data[i + 1]) + Int(data[i + 2]) < 600
+        }
+    }
+
     @Test("The context-menu lift is a copy of the verse band, so the rest of the page stays visible")
     func contextMenuLiftsACopyOfTheVerse() throws {
         // Targeted previews need a window (UIKit asserts otherwise), like the real reader has.
@@ -826,5 +918,16 @@ struct TabBarClearanceTests {
         let parts = TabBarGeometry.visibleParts(in: window)
         #expect(parts.contains(CGRect(x: 38, y: 338, width: 180, height: 44)))
         #expect(!parts.contains(CGRect(x: 300, y: 338, width: 44, height: 44)))
+    }
+}
+
+
+private extension UIView {
+    func firstSubview<T: UIView>(ofType type: T.Type) -> T? {
+        for subview in subviews {
+            if let match = subview as? T { return match }
+            if let match = subview.firstSubview(ofType: type) { return match }
+        }
+        return nil
     }
 }
