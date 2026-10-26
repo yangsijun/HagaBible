@@ -39,6 +39,15 @@ enum TabBarGeometry {
         return found
     }
 
+    /// The trailing safe area when it is system chrome rather than a notch. A notch or
+    /// Dynamic Island insets both sides of a landscape iPhone equally; an unfolded
+    /// foldable's trailing column (status bar, toolbar, tab bar, search) insets one side
+    /// only. Controls that ignore the horizontal safe area to hug a notch's edge must
+    /// still give way to the column.
+    static func trailingChromeInset(safeArea: EdgeInsets) -> CGFloat {
+        abs(safeArea.trailing - safeArea.leading) > 1 ? safeArea.trailing : 0
+    }
+
     /// How far something resting at `frame` must move up and left to keep `margin`
     /// clear of every part it touches. Each part is dodged the shorter way: a bottom
     /// pill is cleared by lifting, a trailing column by shifting left.

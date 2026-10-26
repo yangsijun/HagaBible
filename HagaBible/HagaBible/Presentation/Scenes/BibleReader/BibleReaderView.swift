@@ -67,6 +67,8 @@ struct BibleReaderView: View {
     /// visible parts (a landscape pill, a foldable's trailing column); see `TabBarGeometry`.
     @State private var actionBarLift: CGFloat = 0
     @State private var actionBarShift: CGFloat = 0
+    /// The reader's safe area; its trailing inset is a foldable's system column.
+    @State private var readerSafeAreaInsets = EdgeInsets()
 
     @State var selectStartIndex: Int?
     @State var selectEndIndex: Int?
@@ -360,7 +362,8 @@ struct BibleReaderView: View {
             onButtonsFrameChange: updateActionBarClearance
         )
         .padding(.bottom, actionBarLift)
-        .padding(.trailing, actionBarShift)
+        // The bar hugs a notch's edge, so a trailing system column is put back by hand.
+        .padding(.trailing, actionBarShift + TabBarGeometry.trailingChromeInset(safeArea: readerSafeAreaInsets))
         .ignoresSafeArea(edges: .horizontal)
     }
 
@@ -470,6 +473,9 @@ struct BibleReaderView: View {
             } action: { newWidth in
                 availableWidth = newWidth
             }
+            .onGeometryChange(for: EdgeInsets.self) { proxy in
+                proxy.safeAreaInsets
+            } action: { readerSafeAreaInsets = $0 }
             .toolbarTitleDisplayMode(.inline)
             // In scroll mode the bar insets the safe area (the list scrolls above it). In
             // page mode it floats instead: an inset would shrink the page area and

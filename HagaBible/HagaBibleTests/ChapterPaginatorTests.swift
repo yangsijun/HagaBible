@@ -805,6 +805,14 @@ struct TabBarClearanceTests {
         #expect(clearance.shift == 0)
     }
 
+    @Test("A notch insets both sides alike and is ignored; a one-sided trailing column is not")
+    func trailingChromeInset() {
+        #expect(TabBarGeometry.trailingChromeInset(safeArea: EdgeInsets(top: 0, leading: 59, bottom: 21, trailing: 59)) == 0)
+        #expect(TabBarGeometry.trailingChromeInset(safeArea: EdgeInsets(top: 0, leading: 0, bottom: 21, trailing: 92)) == 92)
+        #expect(TabBarGeometry.trailingChromeInset(safeArea: EdgeInsets(top: 0, leading: 92, bottom: 21, trailing: 0)) == 0)
+        #expect(TabBarGeometry.trailingChromeInset(safeArea: EdgeInsets()) == 0)
+    }
+
     @Test("Only the tab bar's shown subviews count, in window coordinates")
     func visiblePartsAreTheShownSubviews() {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 874, height: 402))
