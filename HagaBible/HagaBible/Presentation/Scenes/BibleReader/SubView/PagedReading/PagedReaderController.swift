@@ -188,11 +188,11 @@ final class PagedReaderController: UIViewController {
 
     /// Margins around a page's text, before the spine gutter and the outer safe inset.
     /// A single page keeps the side safe areas (the Dynamic Island in landscape) out of
-    /// both margins; a spread handles them through `outerInset` instead. The user's
-    /// extra side margin widens both sides of every page.
+    /// both margins and takes the user's extra side margin on both sides; a spread
+    /// handles both through `outerInset` instead, so the margin never widens the spine.
     private var textInsets: UIEdgeInsets {
         let base = PageViewController.textInsets
-        let extra = style?.sideMargin ?? 0
+        let extra = isSpread ? 0 : (style?.sideMargin ?? 0)
         return UIEdgeInsets(
             top: base.top + contentInsets.top,
             left: base.left + extra + (isSpread ? 0 : contentInsets.left),
@@ -206,10 +206,12 @@ final class PagedReaderController: UIViewController {
     /// layout), so only a crease-centred spread needs them: it is pinned to the crease,
     /// and both halves keep the same margin (the larger side) so the book stays
     /// symmetric. Less `outerMarginTrim`, so the half-folded frame is a little tighter;
-    /// negative when there is no safe area at all (the base margin shrinks).
+    /// negative when there is no safe area at all (the base margin shrinks). The user's
+    /// extra side margin is added here for every spread: the outer edge only.
     private var outerInset: CGFloat {
-        guard let layout, layout.isCreaseCentred else { return 0 }
-        return max(contentInsets.left, contentInsets.right) - PagedReaderLayout.outerMarginTrim
+        guard isSpread, let layout else { return 0 }
+        let crease = layout.isCreaseCentred ? max(contentInsets.left, contentInsets.right) - PagedReaderLayout.outerMarginTrim : 0
+        return crease + (style?.sideMargin ?? 0)
     }
 
     /// Tallest strip a bottom tab bar can plausibly take; anything else found in the

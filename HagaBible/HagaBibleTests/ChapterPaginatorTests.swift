@@ -660,6 +660,29 @@ struct PagedReaderControllerTests {
         #expect(container.size.width == 402 - base.left - base.right - 20)
     }
 
+    @Test("On a spread the user's side margin widens only the outer edges, never the spine")
+    func spreadSideMarginIsOuterOnly() throws {
+        let base = PageViewController.textInsets
+        let spread = makeController(size: CGSize(width: 874, height: 402))
+        spread.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        spread.view.layoutIfNeeded()
+        let plain = try #require(displayedPages(spread).first?.textContainer).size.width
+        let plainRightOrigin = try #require(displayedPages(spread).last?.view.subviews.compactMap { $0 as? PageTextView }.first).textOriginX
+
+        var wide = style
+        wide.sideMargin = 20
+        spread.apply(content: makeContent(chapter: 1, verses: 31), style: wide, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+        spread.view.layoutIfNeeded()
+        let pages = displayedPages(spread)
+        #expect(pages.count == 2)
+        let texts = try pages.map { try #require($0.view.subviews.compactMap { $0 as? PageTextView }.first) }
+        // Each page loses the margin once (its outer edge); the text starts 20pt further in
+        // on the left page and where it was on the right page (its margin is on the far edge).
+        for page in pages { #expect(try #require(page.textContainer).size.width == plain - 20) }
+        #expect(texts[0].textOriginX == base.left + 20)
+        #expect(texts[1].textOriginX == plainRightOrigin)
+    }
+
     @Test("Half-folded, both pages keep the same (trimmed) outer margin even when only one side has a safe area")
     func halfFoldedSymmetricMargins() throws {
         let base = PageViewController.textInsets
