@@ -573,5 +573,37 @@ struct PagedReaderControllerTests {
         }
         #expect(crossed)
     }
+
+    @Test("A page flipped into from the prefetched next chapter selects verses once that chapter is current")
+    func flippedIntoNeighbourGainsTapHandlers() async throws {
+        let controller = makeController(size: CGSize(width: 390, height: 844))
+        controller.onVerseTapped = { _ in }
+        controller.fetchNeighbor = { key, forward in
+            forward ? self.makeContent(chapter: key.chapter + 1, verses: 10) : nil
+        }
+        controller.apply(content: makeContent(chapter: 1, verses: 31), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 31)
+        try await Task.sleep(for: .milliseconds(200))
+
+        let pageViewController = try #require(controller.children.compactMap { $0 as? UIPageViewController }.first)
+        var cursor: UIViewController = try #require(pageViewController.viewControllers?.first)
+        var landed: PageViewController?
+        for _ in 0..<40 {
+            guard let next = controller.pageViewController(pageViewController, viewControllerAfter: cursor) as? PageViewController else { break }
+            if next.ref.key.chapter == 2 { landed = next; break }
+            cursor = next
+        }
+        let page = try #require(landed)
+        // As a neighbour it has no handler, so a tap there turns the page instead.
+        #expect(page.onVerseTapped == nil)
+
+        // The curl lands on it, then the view model follows and re-applies that chapter.
+        pageViewController.setViewControllers([page], direction: .forward, animated: false)
+        controller.apply(content: makeContent(chapter: 2, verses: 10), style: style, highlights: .init(), bookmarkStripes: [:], navigationToken: false, targetVerse: 1)
+
+        let displayed = try #require(pageViewController.viewControllers?.first as? PageViewController)
+        #expect(displayed === page)
+        #expect(displayed.onVerseTapped != nil)
+        #expect(displayed.contextMenu != nil)
+    }
 }
 

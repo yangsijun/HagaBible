@@ -684,6 +684,12 @@ final class PagedReaderController: UIViewController {
     private func redrawDisplayedPages() {
         for page in displayedPages where page.ref.key == currentSlot?.content.key {
             page.update(bookmarkStripes: bookmarkStripes, highlights: highlights)
+            // A page built as a prefetched neighbour had no handlers (its taps turned the
+            // page); once its chapter is current, verse taps must select on it too.
+            if page.onVerseTapped == nil {
+                page.onVerseTapped = { [weak self] verse in self?.onVerseTapped?(verse) }
+                page.contextMenu = { [weak self] verse in self?.contextMenu?(verse) }
+            }
         }
     }
 
