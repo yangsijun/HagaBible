@@ -26,6 +26,13 @@ struct RootView: View {
     @State private var window: WindowState
     @State private var searchViewModel: SearchViewModel
 
+    /// This window's reader position (JSON `PersistedReaderPosition`), kept by the system per
+    /// scene. iOS can tear a background window's UI down and rebuild it (e.g. when another
+    /// window closes); the rebuilt `WindowState` seeds from the app-wide last-read position,
+    /// which may be the other window's, so this puts the window back at its own chapter.
+    @SceneStorage("readerPosition") private var savedReaderPosition: String?
+    @State private var hasRestoredScene = false
+
     init() {
         let window = DIContainer.makeWindowState()
         _window = State(initialValue: window)
@@ -48,9 +55,18 @@ struct RootView: View {
         Group {
             if showLoadingView {
                 InitialLoadingView(progressText: downloadProgress)
-            } else {
+            } else if hasRestoredScene {
+                // Gated so the reader's first load already sees the restored position.
                 mainContent
             }
+        }
+        .onAppear {
+            guard !hasRestoredScene else { return }
+            if let data = savedReaderPosition?.data(using: .utf8),
+               let position = try? JSONDecoder().decode(PersistedReaderPosition.self, from: data) {
+                window.reader.restore(position)
+            }
+            hasRestoredScene = true
         }
         // Here rather than on the `WindowGroup`: reading the theme in `App.body` would rebuild
         // `RootView` (and a throwaway `WindowState`) on every theme change.
@@ -119,6 +135,11 @@ struct RootView: View {
         .environment(window.reader)
         .environment(window.navigation)
         .environment(searchViewModel)
+        .onChange(of: window.reader.position, initial: true) { _, position in
+            if let data = try? JSONEncoder().encode(position) {
+                savedReaderPosition = String(data: data, encoding: .utf8)
+            }
+        }
         .onAppear {
             ttsViewModel.onChapterFinished = { [ttsViewModel] in
                 ttsViewModel.goToNextChapter(forcePlay: true)

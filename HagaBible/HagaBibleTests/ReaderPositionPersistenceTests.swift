@@ -287,6 +287,36 @@ struct WindowStateTests {
         }
     }
 
+    /// Regression: closing window B rebuilt window A, whose fresh reader seeded from the
+    /// app-wide last-read position (B's chapter). Restoring A's own scene position must win,
+    /// and must not overwrite the app-wide position until A actually navigates.
+    @Test("A rebuilt window restores its own position, not the last window's")
+    func rebuiltWindowRestoresOwnPosition() async throws {
+        try await preservingSavedPosition {
+            let appState = AppState()
+            let b = WindowStatePreviewFactory.make(appState: appState)
+            await b.reader.fetchAvailableVersions()
+            await b.reader.applyBibleSelectionAsync(versionCode: "KRV", bookCode: "EXO", chapterNum: 2, verseNum: 1)
+
+            let rebuiltA = WindowStatePreviewFactory.make(appState: appState)
+            #expect(rebuiltA.reader.bookCode == "EXO")
+            rebuiltA.reader.restore(PersistedReaderPosition(versionCode: "KRV", bookCode: "GEN", chapter: 3, verse: 5))
+            #expect(appState.bibleReaderState.bibleBook?.bookCode == "EXO")
+
+            // What the reader view does on appear.
+            await rebuiltA.reader.fetchAvailableVersions()
+            await rebuiltA.reader.fetchBibleVersion()
+            await rebuiltA.reader.fetchBibleBook()
+            await rebuiltA.reader.fetchBibleChapter()
+            rebuiltA.reader.fetchBibleVerse()
+
+            #expect(rebuiltA.reader.bibleBook?.bookCode == "GEN")
+            #expect(rebuiltA.reader.bibleChapter?.chapter == 3)
+            #expect(rebuiltA.reader.position == PersistedReaderPosition(versionCode: "KRV", bookCode: "GEN", chapter: 3, verse: 5))
+            #expect(b.reader.bibleBook?.bookCode == "EXO")
+        }
+    }
+
     @Test("showReader moves only its own window to the reader tab")
     func showReaderSwitchesOwnTab() async throws {
         try await preservingSavedPosition {

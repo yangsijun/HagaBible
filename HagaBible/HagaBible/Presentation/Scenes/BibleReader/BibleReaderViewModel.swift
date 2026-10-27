@@ -134,6 +134,20 @@ class BibleReaderViewModel {
         // nil and write those nils through to `appState.bibleReaderState`, and the next new
         // window would open at the launch-time position. The reader view loads on appear.
     }
+
+    /// This window's position as plain identifiers, for per-scene state restoration.
+    var position: PersistedReaderPosition {
+        PersistedReaderPosition(versionCode: versionCode, bookCode: bookCode, chapter: chapterNum, verse: verseNum)
+    }
+
+    /// Puts a recreated window back where it was. Only the identifiers change, before the
+    /// reader view loads them, so nothing is written through to the app-wide position.
+    func restore(_ position: PersistedReaderPosition) {
+        versionCode = position.versionCode ?? versionCode
+        bookCode = position.bookCode ?? bookCode
+        chapterNum = position.chapter ?? chapterNum
+        verseNum = position.verse ?? verseNum
+    }
     
     func fetchAvailableVersions() async {
         do {
