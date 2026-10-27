@@ -263,6 +263,30 @@ struct WindowStateTests {
         }
     }
 
+    /// Regression: a new reader's init used to run the fetch chain against an empty catalog,
+    /// which resolved every entity to nil and wrote those nils through to
+    /// `AppState.bibleReaderState`. The next window then fell back to the position restored
+    /// at launch, so every new window opened at the same stale chapter.
+    @Test("Creating a window does not wipe the last-read position for the next one")
+    func newWindowKeepsLastReadPosition() async throws {
+        try await preservingSavedPosition {
+            let appState = AppState()
+            let first = WindowStatePreviewFactory.make(appState: appState)
+            await first.reader.fetchAvailableVersions()
+            await first.reader.applyBibleSelectionAsync(versionCode: "KRV", bookCode: "EXO", chapterNum: 2, verseNum: 1)
+
+            _ = WindowStatePreviewFactory.make(appState: appState)
+            try await Task.sleep(for: .milliseconds(100))
+
+            #expect(appState.bibleReaderState.bibleBook?.bookCode == "EXO")
+            #expect(appState.bibleReaderState.bibleChapter?.chapter == 2)
+            let next = WindowStatePreviewFactory.make(appState: appState)
+            #expect(next.reader.versionCode == "KRV")
+            #expect(next.reader.bookCode == "EXO")
+            #expect(next.reader.chapterNum == 2)
+        }
+    }
+
     @Test("showReader moves only its own window to the reader tab")
     func showReaderSwitchesOwnTab() async throws {
         try await preservingSavedPosition {

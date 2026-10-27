@@ -130,13 +130,9 @@ class BibleReaderViewModel {
         self.bookCode = appState.bibleReaderState.bibleBook?.bookCode ?? restored?.bookCode ?? "GEN"
         self.chapterNum = appState.bibleReaderState.bibleChapter?.chapter ?? restored?.chapter ?? 1
         self.verseNum = appState.bibleReaderState.bibleVerse?.verse ?? restored?.verse ?? 1
-        
-        applyBibleSelection(
-            versionCode: versionCode,
-            bookCode: bookCode,
-            chapterNum: chapterNum,
-            verseNum: verseNum
-        )
+        // No fetch here: the catalog is still empty, so resolving would set every entity to
+        // nil and write those nils through to `appState.bibleReaderState`, and the next new
+        // window would open at the launch-time position. The reader view loads on appear.
     }
     
     func fetchAvailableVersions() async {
